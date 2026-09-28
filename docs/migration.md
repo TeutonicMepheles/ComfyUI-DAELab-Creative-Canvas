@@ -9,6 +9,8 @@
 
 ## 升级顺序
 
+配套业务库变更：[PR #20](https://github.com/TeutonicMepheles/ComfyUI-DAELab-Custom-Nodes-Library/pull/20)，迁移提交 `ee0d463af3cb09cc14e0e03ec0d2787d1a6f3762`。该 PR 基于 #18，尚未合入业务库默认分支；在其合并前，请使用这个迁移分支，不能只更新业务库 main 后就假定已兼容。已验证的画布代码基线是本仓库初始提交 `2323e91`。
+
 1. 保存当前工作流 JSON。关闭 ComfyUI 前完成正常任务。
 2. 安装本仓库，并将业务库更新至“拆分创作画布仓库”的迁移 PR 或其后继版本。两个目录一次性更新，不在半迁移状态启动。
 3. 重启 ComfyUI，刷新浏览器，重新打开工作流。无需改节点 ID、素材路径或工作流 JSON。
