@@ -7,12 +7,87 @@
 在 ComfyUI 的 `custom_nodes` 下克隆本仓库并重启 ComfyUI：
 
 ```sh
-git clone https://github.com/TeutonicMepheles/ComfyUI-DAELab-Creative-Canvas.git
+git clone --branch codex/creative-canvas-update-20260928 https://github.com/TeutonicMepheles/ComfyUI-DAELab-Creative-Canvas.git
 ```
 
 工作流模式菜单 → **创作画布**，双击空白处 → **上传**。支持 PNG、JPG、WebP、MP4、WebM、MOV；浏览器能否预览视频取决于文件编码。
 
 已有 DAELab 节点库用户应先按 [迁移说明](docs/migration.md) 更新业务库。不要与仍内置创作画布／上传节点的旧业务库版本同时安装。
+
+## 协作者 Agent 环境准备指南
+
+接手此仓库的 Agent 请按以下顺序准备环境，再开始功能开发。优先复用已安装环境，不覆盖工作流、素材、凭据或未提交的改动。
+
+### 1. 阅读规则并确认版本
+
+先阅读 [AGENTS.md](AGENTS.md)、[适配器契约](docs/adapter-contract.md)、[共享控件开发约定](docs/architecture/CONTRIBUTING_CONTROLS.md)；需要业务库时再读 [迁移说明](docs/migration.md)。执行 `git status --short`、`git remote -v`、`git branch --show-current`、`git log -1 --oneline`，确认操作的是本仓库。
+
+截至 2026-09-28，素材上传与编组验收基线为 `737383428fd9ba9a35c1f74adc8aa7eaa145c4ff`，交付分支为 `codex/creative-canvas-update-20260928`，尚未进入 `main`。安装命令指定此分支；后续以维护者确认的合并版本为准，不自行假定默认分支包含已验收功能。开发前从交付版本建立自己的功能分支，通过 PR 合作。
+
+已有克隆时先 `git fetch origin` 并检查本地改动，再切换或创建跟踪交付分支；不要重复克隆、强制重置或丢弃本地改动。
+
+### 2. 找到实际运行的 ComfyUI
+
+通过启动日志、启动命令或 Desktop 配置确认实际使用的用户数据／base directory、`custom_nodes`、Python 解释器和服务 URL。不要照抄维护者电脑上的绝对路径或端口；Desktop 应用程序目录与插件数据目录可能不同。无法确认目标实例时，向协作者询问安装路径，避免装到另一套 ComfyUI。
+
+先确认 ComfyUI 本身可以启动，再安装扩展。本仓库声明 Python ≥3.10，但运行环境必须同时满足 ComfyUI 自身要求，并提供 `comfy_api.latest`、视频 API 及其原有 torch、numpy、Pillow 依赖。目前没有经过验证的 ComfyUI 最低版本范围；遇到 API 缺失时先核对版本，不向系统 Python 盲目安装依赖或替换现有 torch。
+
+仅使用上传、编组和画布不需要模型、API Key 或付费生成服务，已在 CPU 服务验证。模块测试需要 Node.js ≥22；使用辅助前端构建时还须满足锁定 Vite 版本的 Node engines 要求。运行正式画布不需要 Node.js 或 npm 构建。
+
+### 3. 按并列目录安装
+
+```text
+<实际 ComfyUI 数据目录>/
+├─ custom_nodes/
+│  ├─ ComfyUI-DAELab-Creative-Canvas/       # 必需，本仓库
+│  │  ├─ __init__.py
+│  │  ├─ nodes/
+│  │  └─ web/
+│  ├─ ComfyTV/                            # 可选，上游插件
+│  └─ ComfyUI-DAELab-Custom-Nodes-Library/  # 可选，业务节点库
+├─ input/
+├─ output/
+└─ user/
+```
+
+每个扩展目录第一层应直接包含 `__init__.py`，不要形成重复嵌套目录，也不要把其他插件克隆到本仓库里。仅开发上传与编组时，先采用只安装本仓库的最小环境。
+
+需要测试 ComfyTV 联动时，在同一个 `custom_nodes` 目录执行以下命令。ComfyTV 保持只读上游；兼容改动放在本仓库适配器内。
+
+```sh
+git clone https://github.com/jtydhr88/ComfyTV.git
+```
+
+ComfyTV 安装参考其 [官方说明](https://github.com/jtydhr88/ComfyTV#install)。记录实际安装的提交，避免协作者之间上游版本不一致。
+
+需要表格、分镜或 LibTV 业务时才安装业务库。截至 2026-09-28，配套迁移 [PR #20](https://github.com/TeutonicMepheles/ComfyUI-DAELab-Custom-Nodes-Library/pull/20) 尚未合并，使用以下兼容分支；后续先核查该 PR 的合并状态和迁移说明。
+
+```sh
+git clone --branch codex/split-creative-canvas https://github.com/TeutonicMepheles/ComfyUI-DAELab-Custom-Nodes-Library.git
+```
+
+不要同时启用仍内置画布和 `DAELAB.MediaUpload` 的旧业务库。业务库自身依赖按其说明安装到目标 ComfyUI 的 Python 环境；本画布扩展没有新增 Python 安装依赖。
+
+### 4. 启动与检查
+
+安装完成后完整重启目标 ComfyUI 后端，再刷新浏览器。确认启动日志没有本扩展导入错误，工作流模式菜单中只有一个“创作画布”入口，上传节点和素材组可以正常注册。
+
+在本仓库根目录执行：
+
+```sh
+npm test
+npm run verify:assets
+```
+
+只有需要辅助 Vue 陈列页面或浏览器测试依赖时，才进入 `frontend` 执行 `npm ci`；辅助页面用 `npm run dev`，构建用 `npm run build`。不要把 Vue/Vite 安装到 ComfyUI 根目录。实际画布从 ComfyUI 服务打开，不能通过直接打开 HTML 或辅助 Vite 页面代替。
+
+用独立测试工作流创建至少两个素材节点：检查图片／视频上传、编组、拖入移出、双击标题重命名、选中成员与组的 Slot 互斥、缩放、模式切换，以及保存 JSON 后刷新重载。检查长名称和控件溢出。涉及可选集成的改动还需验证联合安装。浏览器自动用例及素材夹具要求见 [素材组验证](docs/material-groups.md#验证)；不要在协作者正在编辑的工作流中运行破坏性测试。
+
+工作流 JSON 不包含素材文件。共享示例时单独提供所需图片／视频并保留 `input` 相对路径，或重新上传。不要提交实际用户素材、访问令牌、日志、缓存、`node_modules` 或 IDE 私有配置。
+
+### 5. 向协作者报告准备结果
+
+报告实际插件路径、服务 URL、ComfyUI／前端版本、Python／Node 版本、各已安装仓库的分支和提交，以及模块测试、资源检查和真实画布验证结果。明确区分“环境已启动”“自动测试通过”和“实际交互已验证”；缺少运行条件时说明未验证项，不将构建成功当作产品验收。环境准备不要求执行付费生成。
 
 ## 所有权与依赖
 
