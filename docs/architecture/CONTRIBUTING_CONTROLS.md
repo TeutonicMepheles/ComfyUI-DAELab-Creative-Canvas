@@ -2,6 +2,8 @@
 
 本规范以用户确认的当前原生陈列为验收基准。仅适用于创作画布及已接入节点；展厅、徽章旧 App Mode 保持原调用方式。ComfyTV 上游只读。独立 Vue 陈列仅辅助测试，不作为替换产品样式的依据。
 
+视觉与产品行为按 [前端与交互规范](FRONTEND_INTERACTION.md) 的任务表阅读；本文件只维护实现边界、复用与生命周期契约。
+
 ## 一、如何调整通用交互
 
 1. 先查找现有实现和消费方，再决定修改。当前入口：`web/creative_button.mjs`、`web/creative_field.mjs`；宿主生命周期在 `web/creative_canvas_view.mjs`；样式限定 `.dae-creative`，保留已有 studio 视觉变体。

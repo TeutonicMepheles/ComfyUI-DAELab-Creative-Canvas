@@ -20,7 +20,7 @@ git clone --branch codex/creative-canvas-update-20260928 https://github.com/Teut
 
 ### 1. 阅读规则并确认版本
 
-先阅读 [AGENTS.md](AGENTS.md)、[适配器契约](docs/adapter-contract.md)、[共享控件开发约定](docs/architecture/CONTRIBUTING_CONTROLS.md)；需要业务库时再读 [迁移说明](docs/migration.md)。执行 `git status --short`、`git remote -v`、`git branch --show-current`、`git log -1 --oneline`，确认操作的是本仓库。
+先阅读 [AGENTS.md](AGENTS.md)。前端任务按 [前端与交互规范](docs/architecture/FRONTEND_INTERACTION.md#按任务阅读) 的任务表加载对应章节；共享控件开发和面板接入再按表阅读实现契约。仅安装环境不需要通读前端规范；需要业务库时再读 [迁移说明](docs/migration.md)。执行 `git status --short`、`git remote -v`、`git branch --show-current`、`git log -1 --oneline`，确认操作的是本仓库。
 
 截至 2026-09-28，素材上传与编组验收基线为 `737383428fd9ba9a35c1f74adc8aa7eaa145c4ff`，交付分支为 `codex/creative-canvas-update-20260928`，尚未进入 `main`。安装命令指定此分支；后续以维护者确认的合并版本为准，不自行假定默认分支包含已验收功能。开发前从交付版本建立自己的功能分支，通过 PR 合作。
 
