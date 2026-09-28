@@ -25,7 +25,7 @@ function install(node){
         asset=readAsset(data.value);const next=JSON.stringify(asset);if(next===signature)return;signature=next;
         stage.querySelector('video')?.pause();stage.replaceChildren();status.textContent='';
         choose.textContent=asset?'替换素材':'上传图片 / 视频';download.hidden=fullscreen.hidden=!asset;
-        info.textContent=asset?.name||'本地素材';info.title=info.textContent;
+        info.textContent=asset?.name||'';info.title=info.textContent;
         if(!asset){const hint=document.createElement('div');hint.className='dae-upload-empty';hint.textContent='拖入图片或视频\nPNG · JPG · WebP · MP4 · WebM · MOV';stage.append(hint);return;}
         const media=document.createElement(asset.kind==='video'?'video':'img');media.src=assetURL(asset);
         if(asset.kind==='video'){media.controls=true;media.preload='metadata';media.playsInline=true;}else{media.alt=asset.name;media.draggable=false;}
@@ -55,7 +55,7 @@ function install(node){
     picker.onchange=()=>void upload(picker.files[0]);
     root.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();root.dataset.dragging='true';});
     root.addEventListener('dragleave',()=>delete root.dataset.dragging);
-    root.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();delete root.dataset.dragging;if(e.dataTransfer.files.length!==1){status.textContent='每个上传节点承载一份素材，请一次选择一个文件';return;}void upload(e.dataTransfer.files[0]);});
+    root.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();delete root.dataset.dragging;if(e.dataTransfer.files.length!==1)return;void upload(e.dataTransfer.files[0]);});
     for(const event of ['pointerdown','dblclick','keydown','wheel'])root.addEventListener(event,e=>e.stopPropagation());
     const widget=node.addDOMWidget('media_upload','custom',root,{serialize:false,hideOnZoom:false,getValue:()=>'',setValue:()=>render(),getMinHeight:()=>320});widget.serialize=false;
     const releaseAvailability=bindPanelAvailability(node,root);

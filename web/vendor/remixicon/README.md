@@ -17,3 +17,9 @@ The bundled Remix Icon license applies.
 2026-09-08: Added official icons/Arrows/arrow-down-line.svg, icons/Arrows/arrow-up-line.svg, icons/System/delete-bin-line.svg from the same Remix-Design/RemixIcon repository.
 
 2026-09-28: Added Media/image-line.svg, Media/video-line.svg, Design/scissors-cut-line.svg and Design/layout-grid-line.svg from the same official repository for the four-item creative node menu.
+
+2026-09-28: Added official System/download-line.svg, Media/fullscreen-line.svg and Arrows/arrow-left-right-line.svg for selected-media actions. The bundled license applies.
+
+2026-09-28: Added official System/lock-line.svg, System/lock-unlock-line.svg, Design/edit-line.svg and Design/palette-line.svg for group controls; bundled license applies.
+
+2026-09-28: Added official Editor/list-ordered.svg for the numbering toggle. The bundled Remix Icon license applies.

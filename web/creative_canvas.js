@@ -1,6 +1,7 @@
 import {app} from '/scripts/app.js';
 import {createCreativeCanvas} from './creative_canvas_view.mjs';
 import {STATE_KEY} from './creative_canvas_model.mjs';
+import {installMaterialGroups} from './material_groups.mjs';
 
 import {publishAPI} from './creative_contract.mjs';
 import './adapters/upload.mjs';
@@ -61,6 +62,7 @@ app.registerExtension({
         },true);
         // Diagnostics + integration surface for the DAELab extension, not an upstream patch.
         app.daelabCreativeCanvas=view;
+        installMaterialGroups(app);
         if(app.graph?.extra?.[STATE_KEY]?.active)void switchMode(true);syncMenu();
     },
     beforeConfigureGraph(){view?.hide(false);restoreLabels();},
