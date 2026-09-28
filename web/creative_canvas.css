@@ -1,0 +1,133 @@
+@import './creative_theme.css';
+
+/* Canvas shell. Its host ComfyUI navigation keeps the native theme. */
+.dae-creative{position:fixed;inset:96px 12px 62px 58px;z-index:25;overflow:hidden;background:var(--dae-bg-canvas);border:1px solid var(--dae-border);border-radius:var(--dae-radius-overlay);touch-action:none;user-select:none;isolation:isolate;outline:none}
+.dae-creative[hidden]{display:none}
+.dae-creative *,.dae-creative *::before,.dae-creative *::after{box-sizing:border-box}
+.dae-creative :is(button,input,select,textarea){font:inherit;color:inherit}
+.dae-creative button:where(:not(.comfytv-root button)){min-height:var(--dae-control-height);border:1px solid var(--dae-border);border-radius:var(--dae-radius-button);background:var(--dae-surface-raised);padding:7px 16px;cursor:pointer;font-weight:500;transition:background var(--dae-duration-fast) var(--dae-easing),border-color var(--dae-duration-fast) var(--dae-easing)}
+.dae-creative button:where(:not(.comfytv-root button)):hover:not(:disabled){background:var(--dae-surface-hover);border-color:var(--dae-border-control)}
+.dae-creative button:where(:not(.comfytv-root button)):active:not(:disabled){background:var(--dae-secondary-container)}
+.dae-creative :is(button,input,select,textarea,[tabindex]):focus-visible{outline:var(--dae-focus-width) solid var(--dae-focus);outline-offset:var(--dae-focus-offset)}
+.dae-creative button:disabled{opacity:.38;cursor:default}
+.dae-creative button[aria-busy=true]{cursor:progress}
+.dae-creative-world{position:absolute;left:0;top:0;transform-origin:0 0}
+.dae-creative-marquee{position:absolute;pointer-events:none;z-index:3;border:1px solid var(--dae-focus);background:color-mix(in srgb,var(--dae-focus) 12%,transparent)}
+.dae-creative-marquee[hidden]{display:none}
+.dae-creative[data-panning=true],.dae-creative[data-panning=true] *{cursor:grabbing!important}
+.dae-creative-grid{position:absolute;inset:0;background-image:radial-gradient(var(--dae-grid-dot) .7px,transparent .7px);background-size:24px 24px;pointer-events:none;opacity:.65}
+.dae-creative-card{position:absolute;border:1px solid var(--dae-border);background:var(--dae-surface);border-radius:var(--dae-radius-card);box-shadow:var(--dae-elevation-card);overflow:visible}
+.dae-creative-card[data-selected=true]{border-color:var(--dae-node-selected);box-shadow:0 0 0 1px var(--dae-node-selected),var(--dae-elevation-card)}
+.dae-creative-card[data-inactive=true]{opacity:.55}
+.dae-creative-heading{display:flex;align-items:center;gap:12px;padding:16px;cursor:grab;user-select:none}
+.dae-creative-heading strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--dae-font-title);font-weight:500;line-height:1.5}
+.dae-creative-heading button{min-height:32px;padding:4px 14px;font-size:12px;background:var(--dae-secondary-container);color:var(--dae-on-secondary-container);border-color:transparent}
+.dae-creative-heading input{flex:1;min-width:0;background:var(--dae-surface-low);border:1px solid var(--dae-accent);border-radius:8px;padding:4px 8px}
+.dae-creative-media{margin:0 16px 12px;border-radius:12px;overflow:hidden;background:var(--dae-bg-canvas)}
+.dae-creative-media:empty{display:none}
+.dae-creative-media video,.dae-creative-media img{display:block;width:100%;max-height:300px;object-fit:contain}
+.dae-creative-summary{padding:0 16px 16px;color:var(--dae-text-muted);white-space:pre-wrap;max-height:130px;overflow:hidden;line-height:1.7}
+.dae-creative-body{padding:0 12px 12px;max-height:720px;overflow:auto;cursor:auto;user-select:text;touch-action:auto;scrollbar-width:thin;scrollbar-color:var(--dae-border) transparent}
+.dae-creative-body[hidden]{display:none}
+.dae-creative-body>.dae-table-host{width:100%!important}
+.dae-creative-body>.comfytv-root{position:relative!important;transform:none!important;min-height:260px!important;max-height:650px;height:auto!important;overflow:auto!important}
+.dae-creative-body>.dae-libtv{height:auto;max-height:650px}
+.dae-creative-body .workbench-expand{display:none}
+.dae-creative-type{display:table;max-width:calc(100% - 32px);margin:0 16px 16px;padding:3px 10px;border:1px solid var(--dae-border);border-radius:999px;color:var(--dae-text-muted);background:var(--dae-surface-low);font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+
+/* Custom graph sockets: compact visible dot, larger invisible pointer target. */
+.dae-creative-ports{position:absolute;inset:0;pointer-events:none}
+.dae-creative-ports>div{position:absolute;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:16px}
+.dae-creative-ports>div[data-side=input]{left:-7px}
+.dae-creative-ports>div[data-side=output]{right:-7px}
+.dae-creative-ports button{position:relative;pointer-events:auto;width:14px;height:14px;min-width:14px;min-height:14px;padding:0;border:2px solid var(--dae-accent);border-radius:50%;background:var(--dae-surface);touch-action:none}
+.dae-creative-ports button::after{content:'';position:absolute;inset:-7px;border-radius:50%}
+.dae-creative-ports button:hover:not(:disabled){background:var(--dae-primary-container);border-color:var(--dae-on-primary-container);box-shadow:0 0 0 5px #b8c4ff1f}
+.dae-creative-ports button[data-linked=true]{background:var(--dae-accent)}
+/* DAELab-owned cards use one floating connector per meaningful direction.
+   Opacity preserves wire anchors while the controls are hidden. */
+.dae-creative-card[data-unified=true]>.dae-creative-ports>div[data-side=input]{left:-54px}
+.dae-creative-card[data-unified=true]>.dae-creative-ports>div[data-side=output]{right:-54px}
+.dae-creative-card[data-unified=true]>.dae-creative-ports button{width:32px;height:32px;min-width:32px;min-height:32px;padding:0;display:grid;place-items:center;font-size:23px;line-height:1;font-weight:400;border-color:var(--dae-border-control);color:var(--dae-text);background:var(--dae-bg-canvas);opacity:0;pointer-events:none;transition:opacity var(--dae-duration-fast) var(--dae-easing)}
+.dae-creative-card[data-unified=true]>.dae-creative-ports button::after{inset:-8px}
+.dae-creative-card[data-unified=true]:is(:hover,:focus-within)>.dae-creative-ports button,.dae-creative[data-connecting=true] .dae-creative-card[data-unified=true]>.dae-creative-ports button{opacity:1;pointer-events:auto}
+.dae-creative-card[data-unified=true]>.dae-creative-ports button:hover:not(:disabled){background:var(--dae-surface-hover);border-color:var(--dae-focus)}
+.dae-creative-card[data-unified=true]>.dae-creative-ports button[data-magnetic=true]{opacity:1;pointer-events:auto;background:var(--dae-secondary-container);border-color:var(--dae-focus);box-shadow:0 0 0 6px var(--dae-surface-hover)}
+.dae-creative.dae-port-magnet{cursor:crosshair}
+.dae-creative-card[data-unified=true]>.dae-creative-ports button:disabled{opacity:0;pointer-events:none}
+.dae-creative-card[data-unified=true]:is(:hover,:focus-within)>.dae-creative-ports button:disabled{opacity:.38}
+@media(prefers-reduced-motion:reduce){.dae-creative-card[data-unified=true]>.dae-creative-ports button{transition:none}}
+.dae-creative-wires{position:absolute;overflow:visible;width:1px;height:1px;pointer-events:none}
+.dae-creative-wires path{fill:none;stroke:var(--dae-wire);stroke-opacity:.85;stroke-width:3;vector-effect:non-scaling-stroke;pointer-events:stroke;cursor:pointer}
+.dae-creative-wires path:hover,.dae-creative-wires path[data-selected=true]{stroke:var(--dae-wire-hover);stroke-opacity:1;stroke-width:5}
+.dae-creative-wires path[data-preview]{pointer-events:none;stroke-dasharray:5 4}
+
+.dae-creative-status{position:absolute;left:20px;bottom:16px;max-width:calc(100% - 40px);padding:6px 12px;border-radius:8px;background:var(--dae-surface-low);color:var(--dae-text-muted);font-size:12px;pointer-events:none}
+.dae-creative-zoom{position:absolute;right:16px;top:16px;display:flex;gap:4px;align-items:center;padding:4px;background:var(--dae-surface-raised);border:1px solid var(--dae-border);border-radius:999px;box-shadow:var(--dae-elevation-card)}
+.dae-creative-zoom button{min-width:32px;min-height:32px;padding:4px 10px;background:transparent;border-color:transparent}
+.dae-creative-zoom span{min-width:48px;text-align:center;font-size:12px;font-variant-numeric:tabular-nums;color:var(--dae-text-muted)}
+.dae-creative-empty{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);text-align:center;color:var(--dae-text-muted);pointer-events:none}
+.dae-creative-empty strong{display:block;font-size:28px;font-weight:500;color:var(--dae-text);margin-bottom:12px}
+.dae-creative-picker{position:absolute;width:224px;max-width:calc(100% - 24px);max-height:calc(100% - 24px);display:flex;flex-direction:column;gap:8px;background:var(--dae-surface-raised);padding:8px;border:1px solid var(--dae-border);border-radius:16px;box-shadow:var(--dae-elevation-overlay);z-index:2}
+.dae-creative-picker h2{font-size:12px;font-weight:500;color:var(--dae-text-muted);margin:6px 8px 2px}
+.dae-creative-picker>div{overflow:auto;min-height:0;scrollbar-width:thin}
+.dae-creative-picker button{display:flex;align-items:center;gap:12px;width:100%;text-align:left;margin:2px 0;min-height:40px;border-color:transparent;border-radius:10px;background:transparent;white-space:normal;font-size:16px;padding:6px 8px}
+.dae-creative-picker button:disabled{opacity:.38}
+.dae-creative-picker .dae-creative-icon{width:20px;height:20px}
+.dae-creative-icon{display:inline-block;width:18px;height:18px;background:currentColor;mask:var(--dae-icon) center/contain no-repeat;flex-shrink:0}
+.dae-creative-menu-item{display:flex;align-items:center;gap:8px;width:100%;min-height:36px;padding:8px;border:0;border-radius:5px;background:transparent;color:inherit;font:inherit;cursor:pointer;text-align:left}
+.dae-creative-menu-item:hover,.dae-creative-menu-item:focus{background:#ffffff12;outline:none}
+.dae-creative-mode-label{display:inline-flex;align-items:center;gap:7px}
+body[data-daelab-creative=true] #graph-canvas{visibility:hidden}
+body[data-daelab-creative=true] [data-testid="minimap-container"]{display:none!important}
+body[data-daelab-creative=true] [data-testid="selection-toolbox"]{display:none!important}
+body[data-daelab-creative=true] [role="toolbar"]:has(> [data-testid="zoom-controls-button"]){display:none!important}
+
+/* Font inheritance also covers leased panels that carry their own font shorthand.
+   !important is limited to this scope to win against the existing Studio theme. */
+.dae-creative :is(.dae-studio,.comfytv-root),.dae-creative :is(.dae-studio,.comfytv-root) *:not(.pi):not(.pi *){font-family:var(--dae-font-family)!important}
+.dae-creative .dae-studio{--studio-bg:var(--dae-surface-low);--studio-line:var(--dae-border);--studio-accent:var(--dae-accent);background:var(--dae-surface-low)!important;color:var(--dae-text)!important;border-color:var(--dae-border)!important;border-radius:16px!important;font-size:14px!important;line-height:1.6!important}
+.dae-creative .dae-studio :is(label,small,p,summary,.studio-hint){color:var(--dae-text-muted)}
+.dae-creative .dae-studio :is(small,.studio-hint){font-size:12px}
+.dae-creative .dae-studio .badge{background:var(--dae-secondary-container);color:var(--dae-on-secondary-container);border-color:transparent;border-radius:999px;font-size:12px}
+.dae-creative .dae-studio :is(header,footer){border-color:var(--dae-border)}
+.dae-creative .dae-studio .refs{background:var(--dae-surface);border-color:var(--dae-border);border-radius:12px}
+
+/* Shared controls retain their bindings, business events and native semantics. */
+.dae-creative :is([data-creative-button],.dae-studio button,.dae-creative-body>button){min-height:36px;border-radius:var(--dae-radius-button)!important;background:var(--dae-surface-raised)!important;color:var(--dae-text)!important;border:1px solid var(--dae-border-control)!important;font-size:14px!important;font-weight:500;padding:7px 16px}
+.dae-creative :is([data-creative-button],.dae-studio button,.dae-creative-body>button):hover:not(:disabled){background:var(--dae-surface-hover)!important}
+.dae-creative :is([data-creative-button],.dae-studio button,.dae-creative-body>button):active:not(:disabled){background:var(--dae-secondary-container)!important}
+.dae-creative :is([data-creative-button],.dae-studio button,.dae-creative-body>button)[data-primary]{background:var(--dae-accent)!important;color:var(--dae-text-on-accent)!important;border-color:transparent!important;font-weight:600}
+.dae-creative :is([data-creative-button],.dae-studio button,.dae-creative-body>button)[data-primary]:hover:not(:disabled){background:var(--dae-on-primary-container)!important}
+.dae-creative :is([data-creative-button],.dae-studio button,.dae-creative-body>button):focus-visible{outline:2px solid var(--dae-focus)!important;outline-offset:3px}
+.dae-creative :is([data-creative-field],.dae-studio input,.dae-studio select,.dae-studio textarea,.dae-creative-fields input,.dae-creative-fields select,.dae-creative-fields textarea){min-height:40px;background:var(--dae-surface)!important;color:var(--dae-text)!important;border:1px solid var(--dae-border-control)!important;border-radius:8px!important;padding:8px 12px!important;font-family:var(--dae-font-family)!important;font-size:14px!important;line-height:1.6;transition:border-color var(--dae-duration-fast) var(--dae-easing);accent-color:var(--dae-accent)}
+.dae-creative .dae-creative-fields :is(input,select,textarea){width:100%}
+.dae-creative :is([data-creative-field],.dae-studio input,.dae-studio select,.dae-studio textarea,.dae-creative-fields input,.dae-creative-fields select,.dae-creative-fields textarea):focus-visible{outline:2px solid var(--dae-focus)!important;outline-offset:2px;box-shadow:none}
+.dae-creative [data-creative-field][aria-invalid=true]{outline:2px solid var(--dae-danger)!important;outline-offset:2px;border-color:var(--dae-danger)!important}
+.dae-creative :is([data-creative-field],.dae-studio input,.dae-studio select,.dae-studio textarea):disabled{opacity:.38;cursor:not-allowed}
+.dae-creative :is([data-creative-field],.dae-studio input)[type=checkbox]{min-height:18px;width:18px!important;height:18px!important;padding:0!important}
+@media(max-width:800px){.dae-creative{left:8px;right:8px}.dae-creative-status{font-size:11px;left:12px;bottom:12px;max-width:calc(100% - 24px)}.dae-creative-zoom{right:12px;top:12px}.dae-creative-picker{padding:8px}}
+
+.dae-creative .dae-studio td :is(input,textarea,select){min-height:32px;padding:4px 8px!important}
+.dae-creative .dae-studio .studio-tabs button{min-height:32px;padding:4px 12px}
+
+.dae-creative .dae-creative-picker button:focus-visible{outline-offset:-2px}
+
+/* Wide editors own a workspace, rather than a narrow parameter stack. */
+.dae-creative-card[data-workspace=true] .dae-creative-body{max-height:none}
+.dae-creative-card[data-workspace=true] .dae-creative-body>.comfytv-root{height:650px!important;max-height:none}
+.dae-creative-workspace{position:fixed;inset:0;width:calc(100vw - 32px);height:calc(100dvh - 32px);max-width:none;max-height:none;margin:auto;padding:0;border:1px solid var(--dae-border);border-radius:20px;background:var(--dae-surface);color:var(--dae-text);overflow:hidden;user-select:text;touch-action:auto}
+.dae-creative-workspace[open]{display:flex;flex-direction:column}
+.dae-creative-workspace::backdrop{background:#0009}
+.dae-creative-workspace>header{display:flex;align-items:center;gap:16px;padding:12px 16px;flex-shrink:0}
+.dae-creative-workspace>header strong{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dae-creative-workspace>.dae-creative-body{flex:1;min-height:0;max-height:none;overflow:auto}
+.dae-creative-workspace>.dae-creative-body>.comfytv-root{height:100%!important;min-height:650px!important;min-width:1120px;max-height:none}
+
+/* Neutral graph chrome lets media and editing state carry emphasis. */
+.dae-creative-heading>.dae-creative-icon{width:18px;height:18px;color:var(--dae-text-muted)}
+.dae-creative-wires path[data-selected=true]{stroke:var(--dae-wire-selected)}
+.dae-creative-ports button{border-color:var(--dae-wire);opacity:.75}
+.dae-creative-ports button[data-linked=true]{background:var(--dae-wire);opacity:1}
+.dae-creative-card:is(:hover,:focus-within,[data-selected=true]) .dae-creative-ports button{opacity:1;border-color:var(--dae-wire-selected)}
+.dae-creative-ports button:hover:not(:disabled){background:var(--dae-wire-selected);border-color:var(--dae-wire-selected);box-shadow:0 0 0 5px #ffffff14}

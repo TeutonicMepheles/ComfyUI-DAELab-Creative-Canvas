@@ -1,0 +1,940 @@
+{
+  "id": "00000000-0000-0000-0000-000000000000",
+  "revision": 0,
+  "last_node_id": 7,
+  "last_link_id": 2,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "DAELAB.Table",
+      "pos": [
+        100,
+        150
+      ],
+      "size": [
+        1100,
+        720
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "table_data",
+          "name": "table_data",
+          "type": "STRING",
+          "widget": {
+            "name": "table_data"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "table_json",
+          "name": "table_json",
+          "type": "STRING",
+          "links": [
+            1
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DAELAB.Table",
+        "daelabTableReports": {}
+      },
+      "widgets_values": [
+        "{\"version\":1,\"fields\":[{\"id\":\"title\",\"name\":\"镜头名称\",\"type\":\"text\",\"width\":150,\"hidden\":false},{\"id\":\"description\",\"name\":\"画面描述\",\"type\":\"longtext\",\"width\":260,\"hidden\":false},{\"id\":\"duration\",\"name\":\"时长\",\"type\":\"number\",\"width\":90,\"hidden\":false},{\"id\":\"approved\",\"name\":\"已复核\",\"type\":\"checkbox\",\"width\":90,\"hidden\":false},{\"id\":\"assets\",\"name\":\"参考素材\",\"type\":\"assets\",\"width\":150,\"hidden\":false}],\"records\":[{\"id\":\"gallery-row-a\",\"selected\":false,\"values\":{\"title\":\"清晨山景\",\"description\":\"保留真实表格的输入、换行、素材预览与撤销交互。\",\"duration\":5,\"approved\":true,\"assets\":[{\"id\":\"gallery-asset-a\",\"url\":\"/view?filename=daelab-gallery-mountain.png&subfolder=daelab-gallery&type=input\",\"name\":\"陈列山景\",\"kind\":\"image\"}]}},{\"id\":\"gallery-row-b\",\"selected\":false,\"values\":{\"title\":\"空素材状态\",\"description\":\"此行用于检查空值、复选框和数字输入。\",\"duration\":10,\"approved\":false,\"assets\":[]}}],\"view\":\"table\",\"meta\":{}}"
+      ],
+      "widgets_values_named": {
+        "table_data": "{\"version\":1,\"fields\":[{\"id\":\"title\",\"name\":\"镜头名称\",\"type\":\"text\",\"width\":150,\"hidden\":false},{\"id\":\"description\",\"name\":\"画面描述\",\"type\":\"longtext\",\"width\":260,\"hidden\":false},{\"id\":\"duration\",\"name\":\"时长\",\"type\":\"number\",\"width\":90,\"hidden\":false},{\"id\":\"approved\",\"name\":\"已复核\",\"type\":\"checkbox\",\"width\":90,\"hidden\":false},{\"id\":\"assets\",\"name\":\"参考素材\",\"type\":\"assets\",\"width\":150,\"hidden\":false}],\"records\":[{\"id\":\"gallery-row-a\",\"selected\":false,\"values\":{\"title\":\"清晨山景\",\"description\":\"保留真实表格的输入、换行、素材预览与撤销交互。\",\"duration\":5,\"approved\":true,\"assets\":[{\"id\":\"gallery-asset-a\",\"url\":\"/view?filename=daelab-gallery-mountain.png&subfolder=daelab-gallery&type=input\",\"name\":\"陈列山景\",\"kind\":\"image\"}]}},{\"id\":\"gallery-row-b\",\"selected\":false,\"values\":{\"title\":\"空素材状态\",\"description\":\"此行用于检查空值、复选框和数字输入。\",\"duration\":10,\"approved\":false,\"assets\":[]}}],\"view\":\"table\",\"meta\":{}}"
+      }
+    },
+    {
+      "id": 2,
+      "type": "DAELAB.LibTV.VideoGenerate",
+      "pos": [
+        1350,
+        150
+      ],
+      "size": [
+        480,
+        720
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "first_frame",
+          "name": "first_frame",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "last_frame",
+          "name": "last_frame",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "reference_images",
+          "name": "reference_images",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "reference_video",
+          "name": "reference_video",
+          "shape": 7,
+          "type": "COMFYTV_VIDEO",
+          "link": null
+        },
+        {
+          "localized_name": "project_uuid",
+          "name": "project_uuid",
+          "type": "STRING",
+          "widget": {
+            "name": "project_uuid"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "request_id",
+          "name": "request_id",
+          "type": "STRING",
+          "widget": {
+            "name": "request_id"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "model",
+          "name": "model",
+          "type": "COMBO",
+          "widget": {
+            "name": "model"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "mode",
+          "name": "mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "mode"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "prompt",
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "duration",
+          "name": "duration",
+          "type": "INT",
+          "widget": {
+            "name": "duration"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "resolution",
+          "name": "resolution",
+          "type": "COMBO",
+          "widget": {
+            "name": "resolution"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "ratio",
+          "name": "ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "ratio"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "sound",
+          "name": "sound",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "sound"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "reference_files",
+          "name": "reference_files",
+          "type": "STRING",
+          "widget": {
+            "name": "reference_files"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "video",
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "localized_name": "comfytv_video",
+          "name": "comfytv_video",
+          "type": "COMFYTV_VIDEO",
+          "links": null
+        },
+        {
+          "localized_name": "local_path",
+          "name": "local_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "localized_name": "task_report",
+          "name": "task_report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DAELAB.LibTV.VideoGenerate"
+      },
+      "widgets_values": [
+        "",
+        "gallery-video-a",
+        "Seedance 2.5",
+        "text2video",
+        "山间清晨，镜头缓慢掠过山脊。陈列实例 A。",
+        5,
+        "720p",
+        "16:9",
+        false,
+        "[]"
+      ],
+      "widgets_values_named": {
+        "project_uuid": "",
+        "request_id": "gallery-video-a",
+        "model": "Seedance 2.5",
+        "mode": "text2video",
+        "prompt": "山间清晨，镜头缓慢掠过山脊。陈列实例 A。",
+        "duration": 5,
+        "resolution": "720p",
+        "ratio": "16:9",
+        "sound": false,
+        "reference_files": "[]"
+      }
+    },
+    {
+      "id": 3,
+      "type": "DAELAB.LibTV.VideoGenerate",
+      "pos": [
+        1950,
+        150
+      ],
+      "size": [
+        480,
+        720
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "first_frame",
+          "name": "first_frame",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "last_frame",
+          "name": "last_frame",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "reference_images",
+          "name": "reference_images",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": null
+        },
+        {
+          "localized_name": "reference_video",
+          "name": "reference_video",
+          "shape": 7,
+          "type": "COMFYTV_VIDEO",
+          "link": null
+        },
+        {
+          "localized_name": "project_uuid",
+          "name": "project_uuid",
+          "type": "STRING",
+          "widget": {
+            "name": "project_uuid"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "request_id",
+          "name": "request_id",
+          "type": "STRING",
+          "widget": {
+            "name": "request_id"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "model",
+          "name": "model",
+          "type": "COMBO",
+          "widget": {
+            "name": "model"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "mode",
+          "name": "mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "mode"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "prompt",
+          "name": "prompt",
+          "type": "STRING",
+          "widget": {
+            "name": "prompt"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "duration",
+          "name": "duration",
+          "type": "INT",
+          "widget": {
+            "name": "duration"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "resolution",
+          "name": "resolution",
+          "type": "COMBO",
+          "widget": {
+            "name": "resolution"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "ratio",
+          "name": "ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "ratio"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "sound",
+          "name": "sound",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "sound"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "reference_files",
+          "name": "reference_files",
+          "type": "STRING",
+          "widget": {
+            "name": "reference_files"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "video",
+          "name": "video",
+          "type": "VIDEO",
+          "links": null
+        },
+        {
+          "localized_name": "comfytv_video",
+          "name": "comfytv_video",
+          "type": "COMFYTV_VIDEO",
+          "links": null
+        },
+        {
+          "localized_name": "local_path",
+          "name": "local_path",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "localized_name": "task_report",
+          "name": "task_report",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DAELAB.LibTV.VideoGenerate"
+      },
+      "widgets_values": [
+        "",
+        "gallery-video-b",
+        "Seedance 2.5",
+        "text2video",
+        "海岸黄昏，镜头沿岸线推进。陈列实例 B。",
+        5,
+        "720p",
+        "16:9",
+        false,
+        "[]"
+      ],
+      "widgets_values_named": {
+        "project_uuid": "",
+        "request_id": "gallery-video-b",
+        "model": "Seedance 2.5",
+        "mode": "text2video",
+        "prompt": "海岸黄昏，镜头沿岸线推进。陈列实例 B。",
+        "duration": 5,
+        "resolution": "720p",
+        "ratio": "16:9",
+        "sound": false,
+        "reference_files": "[]"
+      }
+    },
+    {
+      "id": 4,
+      "type": "DAELAB.LibTV.StoryboardBatch",
+      "pos": [
+        100,
+        1100
+      ],
+      "size": [
+        480,
+        720
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "storyboard_json",
+          "name": "storyboard_json",
+          "type": "STRING",
+          "link": 1
+        },
+        {
+          "localized_name": "project_uuid",
+          "name": "project_uuid",
+          "type": "STRING",
+          "widget": {
+            "name": "project_uuid"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "request_id",
+          "name": "request_id",
+          "type": "STRING",
+          "widget": {
+            "name": "request_id"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "model",
+          "name": "model",
+          "type": "COMBO",
+          "widget": {
+            "name": "model"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "mode",
+          "name": "mode",
+          "type": "COMBO",
+          "widget": {
+            "name": "mode"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "duration",
+          "name": "duration",
+          "type": "INT",
+          "widget": {
+            "name": "duration"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "resolution",
+          "name": "resolution",
+          "type": "COMBO",
+          "widget": {
+            "name": "resolution"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "ratio",
+          "name": "ratio",
+          "type": "COMBO",
+          "widget": {
+            "name": "ratio"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "sound",
+          "name": "sound",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "sound"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "batch_report",
+          "name": "batch_report",
+          "type": "STRING",
+          "links": null
+        },
+        {
+          "localized_name": "video_paths",
+          "name": "video_paths",
+          "type": "STRING",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "DAELAB.LibTV.StoryboardBatch"
+      },
+      "widgets_values": [
+        "",
+        "gallery-batch",
+        "Seedance 2.0",
+        "mixed2video",
+        5,
+        "720p",
+        "16:9",
+        false
+      ],
+      "widgets_values_named": {
+        "project_uuid": "",
+        "request_id": "gallery-batch",
+        "model": "Seedance 2.0",
+        "mode": "mixed2video",
+        "duration": 5,
+        "resolution": "720p",
+        "ratio": "16:9",
+        "sound": false
+      }
+    },
+    {
+      "id": 5,
+      "type": "ComfyTV.AssetImageLoaderStage",
+      "pos": [
+        1350,
+        1100
+      ],
+      "size": [
+        480,
+        720
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "project_id",
+          "name": "project_id",
+          "type": "STRING",
+          "widget": {
+            "name": "project_id"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "parent_output_id",
+          "name": "parent_output_id",
+          "type": "INT",
+          "widget": {
+            "name": "parent_output_id"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "asset_url",
+          "name": "asset_url",
+          "type": "STRING",
+          "widget": {
+            "name": "asset_url"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "asset_id",
+          "name": "asset_id",
+          "type": "INT",
+          "widget": {
+            "name": "asset_id"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "category",
+          "name": "category",
+          "type": "STRING",
+          "widget": {
+            "name": "category"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "图像",
+          "name": "image",
+          "type": "COMFYTV_IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ComfyTV.AssetImageLoaderStage"
+      },
+      "widgets_values": [
+        "",
+        0,
+        "/view?filename=daelab-gallery-mountain.png&subfolder=daelab-gallery&type=input",
+        0,
+        "all"
+      ],
+      "widgets_values_named": {
+        "project_id": "",
+        "parent_output_id": 0,
+        "asset_url": "/view?filename=daelab-gallery-mountain.png&subfolder=daelab-gallery&type=input",
+        "asset_id": 0,
+        "category": "all"
+      }
+    },
+    {
+      "id": 6,
+      "type": "ComfyTV.AssetVideoLoaderStage",
+      "pos": [
+        1950,
+        1100
+      ],
+      "size": [
+        480,
+        720
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "project_id",
+          "name": "project_id",
+          "type": "STRING",
+          "widget": {
+            "name": "project_id"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "parent_output_id",
+          "name": "parent_output_id",
+          "type": "INT",
+          "widget": {
+            "name": "parent_output_id"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "asset_url",
+          "name": "asset_url",
+          "type": "STRING",
+          "widget": {
+            "name": "asset_url"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "asset_id",
+          "name": "asset_id",
+          "type": "INT",
+          "widget": {
+            "name": "asset_id"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "category",
+          "name": "category",
+          "type": "STRING",
+          "widget": {
+            "name": "category"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "视频",
+          "name": "video",
+          "type": "COMFYTV_VIDEO",
+          "links": [
+            2
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ComfyTV.AssetVideoLoaderStage"
+      },
+      "widgets_values": [
+        "",
+        0,
+        "/view?filename=daelab-gallery-motion.webm&subfolder=daelab-gallery&type=input",
+        0,
+        "all"
+      ],
+      "widgets_values_named": {
+        "project_id": "",
+        "parent_output_id": 0,
+        "asset_url": "/view?filename=daelab-gallery-motion.webm&subfolder=daelab-gallery&type=input",
+        "asset_id": 0,
+        "category": "all"
+      }
+    },
+    {
+      "id": 7,
+      "type": "ComfyTV.VideoExtractFrameStage",
+      "pos": [
+        2550,
+        1100
+      ],
+      "size": [
+        480,
+        720
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "localized_name": "视频",
+          "name": "video",
+          "shape": 7,
+          "type": "COMFYTV_VIDEO",
+          "link": 2
+        },
+        {
+          "localized_name": "force_run_token",
+          "name": "force_run_token",
+          "type": "INT",
+          "widget": {
+            "name": "force_run_token"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "project_id",
+          "name": "project_id",
+          "type": "STRING",
+          "widget": {
+            "name": "project_id"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "parent_output_id",
+          "name": "parent_output_id",
+          "type": "INT",
+          "widget": {
+            "name": "parent_output_id"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "位置",
+          "name": "position",
+          "type": "COMBO",
+          "widget": {
+            "name": "position"
+          },
+          "link": null
+        },
+        {
+          "localized_name": "时间点 (秒)",
+          "name": "at_seconds",
+          "type": "FLOAT",
+          "widget": {
+            "name": "at_seconds"
+          },
+          "link": null
+        }
+      ],
+      "outputs": [
+        {
+          "localized_name": "图像",
+          "name": "image",
+          "type": "COMFYTV_IMAGE",
+          "links": null
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "ComfyTV.VideoExtractFrameStage"
+      },
+      "widgets_values": [
+        0,
+        "",
+        0,
+        "middle",
+        0
+      ],
+      "widgets_values_named": {
+        "force_run_token": 0,
+        "project_id": "",
+        "parent_output_id": 0,
+        "position": "middle",
+        "at_seconds": 0
+      }
+    }
+  ],
+  "links": [
+    [
+      1,
+      1,
+      0,
+      4,
+      0,
+      "STRING"
+    ],
+    [
+      2,
+      6,
+      0,
+      7,
+      0,
+      "COMFYTV_VIDEO"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.9,
+      "offset": [
+        416,
+        110
+      ]
+    },
+    "daelabCreativeCanvasV1": {
+      "version": 1,
+      "active": true,
+      "viewport": {
+        "x": 35,
+        "y": 45,
+        "zoom": 0.72
+      },
+      "cards": {
+        "1": {
+          "x": 0,
+          "y": 0,
+          "width": 1060,
+          "expanded": true,
+          "portsExpanded": false
+        },
+        "2": {
+          "x": 1130,
+          "y": 0,
+          "width": 480,
+          "expanded": true,
+          "portsExpanded": false
+        },
+        "3": {
+          "x": 1680,
+          "y": 0,
+          "width": 480,
+          "expanded": true,
+          "portsExpanded": false
+        },
+        "4": {
+          "x": 0,
+          "y": 850,
+          "width": 480,
+          "expanded": true,
+          "portsExpanded": false
+        },
+        "5": {
+          "x": 550,
+          "y": 850,
+          "width": 480,
+          "expanded": true,
+          "portsExpanded": false
+        },
+        "6": {
+          "x": 1130,
+          "y": 850,
+          "width": 480,
+          "expanded": true,
+          "portsExpanded": false
+        },
+        "7": {
+          "x": 1680,
+          "y": 850,
+          "width": 480,
+          "expanded": true,
+          "portsExpanded": false
+        }
+      }
+    },
+    "daelabGallery": {
+      "version": 1,
+      "purpose": "现有创作画布真实节点控件陈列",
+      "notes": "新工作流；不提交生成；空项目标识需用户显式配置。",
+      "nodeIds": {
+        "table": "1",
+        "videoA": "2",
+        "videoB": "3",
+        "batch": "4",
+        "image": "5",
+        "video": "6",
+        "frame": "7"
+      }
+    },
+    "daelabControlGallery": {
+      "x": 2230,
+      "y": 0
+    }
+  },
+  "version": 0.4
+}

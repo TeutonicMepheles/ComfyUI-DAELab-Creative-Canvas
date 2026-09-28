@@ -1,0 +1,22 @@
+@import './creative_theme.css';
+.dae-ui.dae-upload{font-family:var(--dae-font-family);color:var(--dae-text);width:100%;min-width:0;background:var(--dae-surface);border-radius:var(--dae-radius-card);overflow:visible}
+.dae-upload-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 12px}
+.dae-upload-info{flex:1 1 160px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--dae-text-muted)}
+.dae-ui.dae-upload :is(button,a){font:500 14px/1.5 var(--dae-font-family);color:var(--dae-text);border:1px solid var(--dae-border-control);background:var(--dae-surface-raised);border-radius:var(--dae-radius-button);padding:6px 12px;cursor:pointer;text-decoration:none}
+.dae-ui.dae-upload :is(button,a):hover{background:var(--dae-surface-hover)}
+.dae-ui.dae-upload :is(button,a):focus-visible{outline:2px solid var(--dae-focus);outline-offset:3px}
+.dae-ui.dae-upload button:disabled{opacity:.38;cursor:progress}
+.dae-upload [hidden]{display:none!important}
+.dae-upload-stage{background:var(--dae-bg-canvas);border:1px solid var(--dae-border-control);border-radius:12px;overflow:hidden;min-height:160px;display:flex;align-items:center;justify-content:center}
+.dae-upload-stage :is(img,video){display:block;width:100%;height:auto;max-height:560px;object-fit:contain}
+.dae-upload-stage:fullscreen{background:#000;border:0;border-radius:0}
+.dae-upload-stage:fullscreen :is(img,video){width:100%;height:100%;max-height:none}
+.dae-upload-empty{min-height:240px;display:grid;place-content:center;white-space:pre-line;text-align:center;line-height:1.8;color:var(--dae-text-muted);padding:24px}
+.dae-upload-status{margin:0;padding:8px 12px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.dae-upload-status:empty{display:none}
+.dae-upload[data-dragging=true]{outline:2px solid var(--dae-focus)}
+.dae-creative-card[data-upload=true]{background:transparent;box-shadow:none}
+.dae-creative-card[data-upload=true]>.dae-creative-heading{padding:8px 12px}
+.dae-creative-card[data-upload=true]>.dae-creative-heading button,.dae-creative-card[data-upload=true]>.dae-creative-type{display:none}
+.dae-creative-card[data-upload=true]>.dae-creative-body{padding:0;max-height:none;overflow:visible}
+.dae-creative-card[data-upload=true][data-inactive=true]>.dae-creative-body{display:none}

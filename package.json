@@ -1,0 +1,13 @@
+{
+  "name": "daelab-creative-canvas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "verify:assets": "node tools/verify_assets.mjs"
+  }
+}

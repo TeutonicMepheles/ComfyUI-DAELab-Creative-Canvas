@@ -1,0 +1,49 @@
+/* Shared by the native canvas and the auxiliary Vue gallery. No global theme. */
+@font-face {
+  font-family:'DAELab PuHuiTi 3';font-style:normal;font-weight:400;font-display:swap;
+  src:url('./vendor/alibaba-puhuiti-3/AlibabaPuHuiTi-3-55-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family:'DAELab PuHuiTi 3';font-style:normal;font-weight:500;font-display:swap;
+  src:url('./vendor/alibaba-puhuiti-3/AlibabaPuHuiTi-3-65-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family:'DAELab PuHuiTi 3';font-style:normal;font-weight:600;font-display:swap;
+  src:url('./vendor/alibaba-puhuiti-3/AlibabaPuHuiTi-3-75-SemiBold.woff2') format('woff2');
+}
+:is(.dae-creative,.dae-ui) {
+  --dae-font-family:'DAELab PuHuiTi 3','Microsoft YaHei',sans-serif;
+  --dae-bg-canvas:#141414;
+  --dae-surface:#222222;
+  --dae-surface-low:#1c1c1c;
+  --dae-surface-raised:#262626;
+  --dae-surface-high:#303030;
+  --dae-surface-hover:#3a3a3a;
+  --dae-border:#404040;
+  --dae-border-control:#909090;
+  --dae-text:#ededed;
+  --dae-text-muted:#b5b5b5;
+  --dae-accent:#b8c4ff;
+  --dae-text-on-accent:#222e61;
+  --dae-primary-container:#394578;
+  --dae-on-primary-container:#dde1ff;
+  --dae-secondary-container:#3f4559;
+  --dae-on-secondary-container:#e0e2f9;
+  --dae-focus:var(--dae-accent);
+  --dae-success:#a2d5ba;--dae-warning:#efca83;--dae-danger:#ffb4ab;--dae-info:#b8c4ff;
+  --dae-space-1:4px;--dae-space-2:8px;--dae-space-3:12px;--dae-space-4:16px;--dae-space-6:24px;
+  --dae-radius-control:12px;--dae-radius-button:999px;--dae-radius-card:16px;--dae-radius-overlay:24px;
+  --dae-font-caption:12px;--dae-font-body:14px;--dae-font-title:16px;
+  --dae-control-height:36px;--dae-control-height-compact:32px;--dae-icon-size:18px;
+  --dae-duration-fast:140ms;--dae-easing:cubic-bezier(.2,0,0,1);
+  --dae-focus-width:2px;--dae-focus-offset:3px;
+  --dae-elevation-card:0 2px 6px #0003;
+  --dae-elevation-overlay:0 8px 24px #0005,0 2px 6px #0004;
+  --dae-grid-dot:#474747;--dae-wire:#86909c;--dae-wire-hover:#c0c8d0;--dae-wire-selected:#e0e4e8;--dae-node-selected:#a8a8a8;
+  --dae-layer-floating:20;--dae-layer-modal:40;
+  color:var(--dae-text);font:400 var(--dae-font-body)/1.6 var(--dae-font-family);
+  font-synthesis:none;color-scheme:dark;
+}
+@media(prefers-reduced-motion:reduce) {
+  :is(.dae-creative,.dae-ui){--dae-duration-fast:0ms}
+}

@@ -1,0 +1,2 @@
+# Uses torch, numpy, Pillow and av already supplied by ComfyUI.
+# No additional Python packages or business-node dependencies.

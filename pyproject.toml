@@ -1,0 +1,9 @@
+[project]
+name = "comfyui-daelab-creative-canvas"
+version = "0.1.0"
+description = "Independent creative canvas and local media upload for ComfyUI"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/TeutonicMepheles/ComfyUI-DAELab-Creative-Canvas"

@@ -1,0 +1,9 @@
+@import '../../../web/creative_theme.css';
+
+.dae-ui *, .dae-ui *::before, .dae-ui *::after {box-sizing:border-box}
+.dae-ui button,.dae-ui input,.dae-ui select,.dae-ui textarea {font:inherit}
+.dae-ui :focus-visible {outline:var(--dae-focus-width) solid var(--dae-focus);outline-offset:var(--dae-focus-offset)}
+.dae-ui .dae-muted {color:var(--dae-text-muted)}
+.dae-ui .dae-error {color:var(--dae-danger)}
+.dae-ui [hidden] {display:none!important}
+@media(prefers-reduced-motion:reduce){.dae-ui{--dae-duration-fast:0ms}}

@@ -1,0 +1,20 @@
+[
+  {
+    "file": "AlibabaPuHuiTi-3-55-Regular.woff2",
+    "weight": 400,
+    "bytes": 5256740,
+    "sha256": "1cb8418d80b01ec08cb6f2d64b6244aaaf1bb80dc35491b66ddba16c5e24f444"
+  },
+  {
+    "file": "AlibabaPuHuiTi-3-65-Medium.woff2",
+    "weight": 500,
+    "bytes": 5469328,
+    "sha256": "628a0d5be684bae0e7a8e3ad15b7c4f623fd15b3375082624f778326e343467a"
+  },
+  {
+    "file": "AlibabaPuHuiTi-3-75-SemiBold.woff2",
+    "weight": 600,
+    "bytes": 5481108,
+    "sha256": "75e2ba042e1c8ad8cf3dd5bf26f25984ffeca6c4ebb86977c8f8e1abeeb2652f"
+  }
+]
