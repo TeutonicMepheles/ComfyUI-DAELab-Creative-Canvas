@@ -7,7 +7,7 @@
 在 ComfyUI 的 `custom_nodes` 下克隆本仓库并重启 ComfyUI：
 
 ```sh
-git clone --branch codex/creative-canvas-update-20260928 https://github.com/TeutonicMepheles/ComfyUI-DAELab-Creative-Canvas.git
+git clone https://github.com/TeutonicMepheles/ComfyUI-DAELab-Creative-Canvas.git
 ```
 
 工作流模式菜单 → **创作画布**，双击空白处 → **上传**。支持 PNG、JPG、WebP、MP4、WebM、MOV；浏览器能否预览视频取决于文件编码。
@@ -22,9 +22,9 @@ git clone --branch codex/creative-canvas-update-20260928 https://github.com/Teut
 
 先阅读 [AGENTS.md](AGENTS.md)。前端任务按 [前端与交互规范](docs/architecture/FRONTEND_INTERACTION.md#按任务阅读) 的任务表加载对应章节；共享控件开发和面板接入再按表阅读实现契约。仅安装环境不需要通读前端规范；需要业务库时再读 [迁移说明](docs/migration.md)。执行 `git status --short`、`git remote -v`、`git branch --show-current`、`git log -1 --oneline`，确认操作的是本仓库。
 
-截至 2026-09-28，素材上传与编组验收基线为 `737383428fd9ba9a35c1f74adc8aa7eaa145c4ff`，交付分支为 `codex/creative-canvas-update-20260928`，尚未进入 `main`。安装命令指定此分支；后续以维护者确认的合并版本为准，不自行假定默认分支包含已验收功能。开发前从交付版本建立自己的功能分支，通过 PR 合作。
+自 2026-09-28 起，`main` 是协作者同步开发的基线，包含已验收的素材上传与编组实现（功能提交 `737383428fd9ba9a35c1f74adc8aa7eaa145c4ff`）及 Agent 安装指南、独立前端与交互规范。正常安装直接克隆默认分支；开发前更新 `main`，再从它建立自己的功能分支，通过 PR 合作。
 
-已有克隆时先 `git fetch origin` 并检查本地改动，再切换或创建跟踪交付分支；不要重复克隆、强制重置或丢弃本地改动。
+已有克隆时先 `git fetch origin` 并检查本地改动，再切换到 `main` 并执行 `git pull --ff-only origin main`；本地不存在 `main` 时可用 `git switch --track origin/main` 创建。若存在未提交改动或分叉，先保留并处理，不要重复克隆、强制重置或丢弃本地改动。
 
 ### 2. 找到实际运行的 ComfyUI
 
