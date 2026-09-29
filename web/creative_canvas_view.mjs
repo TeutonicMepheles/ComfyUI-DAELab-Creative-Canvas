@@ -42,14 +42,14 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
     const reducedMotion=matchMedia('(prefers-reduced-motion:reduce)');let wireFrame=0,hoverPoint=null;
     function animateWires(){if(!wireFrame&&visible)wireFrame=requestAnimationFrame(()=>{
         wireFrame=0;
-        if(hoverPoint&&!drag){const {x,y}=hoverPoint;setMagnet(nearestPort(x,y));setIncomingWire(selectedLink??nearestIncoming(graphLinks(graph),x,y)?.id??null);}
+        if(hoverPoint&&!drag){const {x,y}=hoverPoint;setMagnet(nearestPort(x,y),hoverPoint);setIncomingWire(selectedLink??nearestIncoming(graphLinks(graph),x,y)?.id??null);}
         hoverPoint=null;drawWires();
     });}
     const cards=new Map();let fieldGallery=null,selectedLink=null,addPoint=null,pickerConnection=null,workspace=null;
     const dirty=()=>{graph.setDirtyCanvas?.(true,true);graph.change?.();};
     const message=text=>{status.textContent=text;};
     const canConnectOutput=node=>adapterFor(node)?.canConnectOutput?.(node)!==false;
-    function viewport(){const v=state.viewport;root.style.setProperty('--dae-canvas-zoom',String(v.zoom));root.style.setProperty('--dae-canvas-inverse-zoom',String(1/v.zoom));world.style.transform=`translate(${v.x}px,${v.y}px) scale(${v.zoom})`;grid.style.backgroundSize=`${24*v.zoom}px ${24*v.zoom}px`;grid.style.backgroundPosition=`${v.x}px ${v.y}px`;zoomLabel.textContent=`${Math.round(v.zoom*100)}%`;for(const c of cards.values())update(c);}
+    function viewport(){setMagnet(null);const v=state.viewport;root.style.setProperty('--dae-canvas-zoom',String(v.zoom));root.style.setProperty('--dae-canvas-inverse-zoom',String(1/v.zoom));world.style.transform=`translate(${v.x}px,${v.y}px) scale(${v.zoom})`;grid.style.backgroundSize=`${24*v.zoom}px ${24*v.zoom}px`;grid.style.backgroundPosition=`${v.x}px ${v.y}px`;zoomLabel.textContent=`${Math.round(v.zoom*100)}%`;for(const c of cards.values())update(c);}
     function setZoom(factor){state.viewport=zoomAt(state.viewport,{x:root.clientWidth/2,y:root.clientHeight/2},factor);viewport();dirty();}
     zoom.append(button('−',()=>setZoom(0.8)),zoomLabel,button('+',()=>setZoom(1.25)),button('适应',fit));
     function fit(){
@@ -388,11 +388,22 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         positionPicker();
         picker.tabIndex=-1;(picker.querySelector('button:not(:disabled)')||picker).focus();
     }
-    function setMagnet(port){
-        if(magneticPort===port)return;
-        if(magneticPort)delete magneticPort.dataset.magnetic;
+    const portOffsets=new WeakMap();
+    function portCenter(port){
+        const r=port.getBoundingClientRect(),offset=portOffsets.get(port)||{x:0,y:0};
+        return {x:r.left+r.width/2-offset.x*state.viewport.zoom,y:r.top+r.height/2-offset.y*state.viewport.zoom};
+    }
+    function setMagnet(port,point=null){
+        if(magneticPort&&magneticPort!==port){delete magneticPort.dataset.magnetic;magneticPort.style.removeProperty('translate');portOffsets.delete(magneticPort);}
         magneticPort=port;
-        if(port)port.dataset.magnetic='true';
+        if(port){
+            port.dataset.magnetic='true';
+            if(port.matches('button[data-slot]')){
+                const center=portCenter(port),dx=point&&!reducedMotion.matches?point.x-center.x:0,dy=point&&!reducedMotion.matches?point.y-center.y:0;
+                const factor=Math.min(.22,6/(Math.hypot(dx,dy)||1))/state.viewport.zoom,offset={x:dx*factor,y:dy*factor};
+                portOffsets.set(port,offset);port.style.translate=`${offset.x}px ${offset.y}px`;
+            }
+        }
         root.classList.toggle('dae-port-magnet',!!port);
     }
     function materialTargetAt(x,y,source=null){
@@ -433,7 +444,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
                     if(!compatible)continue;
                 }
                 const r=port.getBoundingClientRect();if(!r.width||!r.height||getComputedStyle(port).visibility==='hidden')continue;
-                const d=Math.hypot(x-r.left-r.width/2,y-r.top-r.height/2);
+                const center=portCenter(port),d=Math.hypot(x-center.x,y-center.y);
                 if(d<distance){best=port;distance=d;}
             }
         }
@@ -497,7 +508,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
             if(Math.abs(dx)>3||Math.abs(dy)>3)for(const c of cards.values()){const b=c.element.getBoundingClientRect();if(b.right>left&&b.left<right&&b.bottom>top&&b.top<bottom)selected.add(c.node.id);}
             paintSelection();
         }else{for(const item of drag.originals){item.card.layout.x=item.x+dx/state.viewport.zoom;item.card.layout.y=item.y+dy/state.viewport.zoom;update(item.card);}drawWires();}});
-    const endDrag=e=>{const current=drag,dropHit=current?.kind==='wire'?(nearestPort(e.clientX,e.clientY,current)||document.elementFromPoint(e.clientX,e.clientY)):document.elementFromPoint(e.clientX,e.clientY);setMagnet(null);setWireSource(null);drag=null;marquee.hidden=true;delete root.dataset.panning;wires.querySelector('[data-preview]')?.remove();if(!current)return;
+    const endDrag=e=>{if(!drag)return;const current=drag,dropHit=current?.kind==='wire'?(nearestPort(e.clientX,e.clientY,current)||document.elementFromPoint(e.clientX,e.clientY)):document.elementFromPoint(e.clientX,e.clientY);setMagnet(null);setWireSource(null);drag=null;marquee.hidden=true;delete root.dataset.panning;wires.querySelector('[data-preview]')?.remove();if(!current)return;
         if(current.kind==='detach'){if(e.type==='pointerup'&&Math.hypot(e.clientX-current.x,e.clientY-current.y)>=40){removeWire(current.id);message('已断开连线，可撤销');}else drawWires();return;}
         if(current.kind==='wire'&&e.type==='pointerup'){
             if(!validConnection(current)){message('素材或接口已改变，请重新连线');return;}

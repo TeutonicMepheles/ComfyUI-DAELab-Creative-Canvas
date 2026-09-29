@@ -1,5 +1,5 @@
 import {app} from '/scripts/app.js';
-import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20260929-slot-baseline';
+import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20260929-slot-motion-fix';
 import {STATE_KEY} from './creative_canvas_model.mjs';
 import {installMaterialGroups} from './material_groups.mjs';
 

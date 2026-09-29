@@ -3,7 +3,7 @@ import {app} from '/scripts/app.js';
 import {createCreativeButton} from './creative_button.mjs';
 import {UPLOAD_TYPE,ACCEPT,mediaKind,readAsset,assetURL,slotAllowed} from './media_upload_model.mjs';
 
-const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./media_upload.css',import.meta.url).href;document.head.append(sheet);
+const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./media_upload.css?v=20260929-toolbar-fix',import.meta.url).href;document.head.append(sheet);
 function install(node){
     if(node.__mediaUpload)return;
     const data=node.widgets.find(w=>w.name==='asset_data');
