@@ -327,6 +327,7 @@ export function createVideoEditor(host){
             previews.set(key,info);previewStatus.textContent='';syncMedia(true);
         }).catch(error=>{if(!disposed&&error.name!=='AbortError'&&previewKey===key)previewStatus.textContent='使用原始预览 · '+error.message;});
     }
+    function cancelSourceSync(){importEpoch++;importController?.abort();}
     async function syncSources(collection){
         importController?.abort();const controller=new AbortController(),epoch=++importEpoch;importController=controller;
         const assets=[];
@@ -437,11 +438,11 @@ export function createVideoEditor(host){
     const availabilityObserver=new MutationObserver(()=>{if(root.hidden||root.inert){closeClipMenu();finish({type:'pointercancel'});pause();previewController?.abort();previewKey='';}else syncMedia(true);renderThumbnails();});
     availabilityObserver.observe(root,{attributes:true,attributeFilter:['hidden','inert']});
     render();syncMedia(true);
-    return {root,syncSources,pause,close(){closeClipMenu();finish({type:'pointercancel'});pause();},
-        reload(){closeClipMenu();finish({type:'pointercancel'});pause();importEpoch++;importController?.abort();previews.clear();edit=host.read();scale=host.view().scale||1;zoom=host.view().zoom||64;snapEnabled=host.view().snap===true;scaleField.value=String(scale);selected=edit.clips[0]?.id;time=0;mediaKey='';previewKey='';render();syncMedia(true);},
+    return {root,syncSources,cancelSourceSync,pause,close(){closeClipMenu();finish({type:'pointercancel'});pause();},
+        reload(){closeClipMenu();finish({type:'pointercancel'});pause();cancelSourceSync();previews.clear();edit=host.read();scale=host.view().scale||1;zoom=host.view().zoom||64;snapEnabled=host.view().snap===true;scaleField.value=String(scale);selected=edit.clips[0]?.id;time=0;mediaKey='';previewKey='';render();syncMedia(true);},
         running(value,text=''){exporting=value;exportButton.disabled=value||!edit.clips.length;cancel.hidden=!value;if(text)say(text);},
         output(url){result.querySelector('video')?.pause();result.replaceChildren();result.hidden=!url;if(!url){if(!exporting)say('');return;}const details=el('details'),summary=el('summary','','成片预览'),movie=el('video');movie.src=url;movie.controls=true;movie.preload='metadata';details.append(summary,movie);const link=el('a','','下载成片');link.href=url;link.download='剪辑.mp4';result.append(details,link);say('导出完成');},
         error:say,
-        destroy(){disposed=true;closeClipMenu();cancelAnimationFrame(dragAnimation);drag?.layer?.remove();drag=null;tiles.forEach(releaseThumbnail);tiles.clear();pause();previewController?.abort();importController?.abort();observer.disconnect();availabilityObserver.disconnect();releaseControls.forEach(release=>release());clearMedia();result.querySelector('video')?.pause();root.remove();},
+        destroy(){disposed=true;closeClipMenu();cancelAnimationFrame(dragAnimation);drag?.layer?.remove();drag=null;tiles.forEach(releaseThumbnail);tiles.clear();pause();previewController?.abort();cancelSourceSync();observer.disconnect();availabilityObserver.disconnect();releaseControls.forEach(release=>release());clearMedia();result.querySelector('video')?.pause();root.remove();},
     };
 }

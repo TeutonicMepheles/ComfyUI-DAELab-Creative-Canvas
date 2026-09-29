@@ -18,7 +18,7 @@ function install(node){
     if(node.__videoEdit)return;
     const widget=node.widgets.find(w=>w.name==='edit_data'),history=canvasHistory(app);
     widget.hidden=true;widget.options={...widget.options,hidden:true};widget.computeSize=()=>[0,-4];if(widget.inputEl)widget.inputEl.style.display='none';
-    let disposed=false,job=null,sourceSignature=null,syncTimer=null;
+    let disposed=false,job=null,sourceSignature=null,sourceSync=null,syncTimer=null;
     const dirty=()=>{node.graph?.change?.();node.graph?.setDirtyCanvas?.(true,true);};
     const panel=createVideoEditor({
         read:()=>readEdit(widget.value),view:()=>node.properties.daelabEditView||{},
@@ -48,16 +48,24 @@ function install(node){
         proxy:(asset,scale,signal)=>request('/daelab/edit/preview',{asset,scale},signal),
         async exportVideo(){
             if(job||disposed)return;
-            const prompt=await app.graphToPrompt(),output={},target=String(node.id);
-            const include=id=>{if(output[id])return;const n=prompt.output[id];if(!n)throw new Error('节点未参与执行，请切回启用模式');output[id]=n;for(const value of Object.values(n.inputs))if(Array.isArray(value)&&value.length===2&&prompt.output[String(value[0])])include(String(value[0]));};include(target);
-            const submittedEdit=output[target].inputs.edit_data;
-            const result=await api.queuePrompt(0,{output,workflow:prompt.workflow});
-            if(disposed){await request('/api/jobs/'+encodeURIComponent(result.prompt_id)+'/cancel',{});return;}
-            job=result.prompt_id;panel.running(true,'等待导出…');
+            const task=job={id:null,cancelled:false,cancelling:false};
             try{
-                while(job&&!disposed){
-                    const response=await api.fetchApi('/history/'+encodeURIComponent(job));if(!response.ok)throw new Error('无法读取导出状态');
-                    const history=await response.json(),item=history[job];
+                const prompt=await app.graphToPrompt(),output={},target=String(node.id);
+                if(disposed||task.cancelled)return;
+                panel.running(true,'准备导出…');
+                const include=id=>{if(output[id])return;const n=prompt.output[id];if(!n)throw new Error('节点未参与执行，请切回启用模式');output[id]=n;for(const value of Object.values(n.inputs))if(Array.isArray(value)&&value.length===2&&prompt.output[String(value[0])])include(String(value[0]));};include(target);
+                const submittedEdit=output[target].inputs.edit_data;
+                const result=await api.queuePrompt(0,{output,workflow:prompt.workflow});
+                task.id=result.prompt_id;
+                if(disposed||task.cancelled){await request('/api/jobs/'+encodeURIComponent(task.id)+'/cancel',{});return;}
+                panel.running(true,'等待导出…');
+                while(job===task&&!disposed&&!task.cancelled){
+                    const response=await api.fetchApi('/history/'+encodeURIComponent(task.id));
+                    if(job!==task||disposed||task.cancelled)return;
+                    if(!response.ok)throw new Error('无法读取导出状态');
+                    const history=await response.json();
+                    if(job!==task||disposed||task.cancelled)return;
+                    const item=history[task.id];
                     if(item){
                         if(item.status?.status_str==='error'){const failure=item.status.messages?.find(([type])=>type==='execution_error');throw new Error(failure?.[1]?.exception_message||'导出已取消');}
                         const ref=item.outputs?.[target]?.videos?.[0];if(ref)node.__videoEdit.output('/view?'+new URLSearchParams(ref),submittedEdit);else panel.error('导出已取消');
@@ -65,9 +73,20 @@ function install(node){
                     }
                     await new Promise(resolve=>setTimeout(resolve,600));
                 }
-            }finally{job=null;if(!disposed)panel.running(false);}
+            }catch(error){if(job===task&&!disposed)throw error;}
+            finally{if(job===task){job=null;if(!disposed)panel.running(false,task.cancelled?'导出已取消':'');}}
         },
-        async cancelExport(){if(!job)return;await request('/api/jobs/'+encodeURIComponent(job)+'/cancel',{});job=null;panel.running(false,'导出已取消');},
+        async cancelExport(){
+            const task=job;if(!task||task.cancelling||task.cancelled)return;
+            if(!task.id){task.cancelled=true;panel.running(true,'正在取消导出…');return;}
+            task.cancelling=true;
+            try{
+                await request('/api/jobs/'+encodeURIComponent(task.id)+'/cancel',{});
+                if(job!==task||disposed)return;
+                task.cancelled=true;job=null;panel.running(false,'导出已取消');
+            }catch(error){if(job===task&&!disposed)throw error;}
+            finally{task.cancelling=false;}
+        },
     });
     function connected(){
         const assets=[];
@@ -85,22 +104,28 @@ function install(node){
         if(disposed||!node.graph||app.configuringGraph)return;
         try{
             const collection=connected(),signature=JSON.stringify(collection);
-            if(signature===sourceSignature)return;
-            sourceSignature=signature;
-            panel.syncSources(collection).catch(error=>{if(!disposed&&error.name!=='AbortError')panel.error(error.message);});
-        }catch(error){panel.error(error.message);}
+            if(signature===(sourceSync?.signature??sourceSignature))return;
+            const sync=sourceSync={signature};sourceSignature=null;
+            panel.syncSources(collection).then(()=>{
+                if(disposed||sourceSync!==sync)return;
+                sourceSignature=signature;sourceSync=null;
+            },error=>{
+                if(disposed||sourceSync!==sync)return;
+                sourceSync=null;if(error.name!=='AbortError')panel.error(error.message);
+            });
+        }catch(error){sourceSync=null;sourceSignature=null;panel.cancelSourceSync();panel.error(error.message);}
     }
     syncTimer=setInterval(syncConnections,400);
     const availability=bindPanelAvailability(node,panel.root);
     const dom=node.addDOMWidget('video_edit','custom',panel.root,{serialize:false,hideOnZoom:false,getValue:()=>'',setValue:()=>{},getMinHeight:()=>660});dom.serialize=false;
-    const progress=e=>{if(job&&e.detail.prompt_id===job&&String(e.detail.node)===String(node.id))panel.running(true,`正在导出 ${Math.round(e.detail.value/e.detail.max*100)}%`);};api.addEventListener('progress',progress);
+    const progress=e=>{if(job?.id&&!job.cancelled&&e.detail.prompt_id===job.id&&String(e.detail.node)===String(node.id))panel.running(true,`正在导出 ${Math.round(e.detail.value/e.detail.max*100)}%`);};api.addEventListener('progress',progress);
     node.__videoEdit={...panel,syncConnections,
         output(url,data){
             if(data!==widget.value){panel.error('剪辑已更新，请重新导出成片');return;}
             node.properties.daelabEditResult=url;node.properties.daelabEditResultData=data;panel.output(url);dirty();
         },
-        reload(){sourceSignature=null;panel.reload();panel.output(resultFor(node));},
-        destroy(){disposed=true;clearInterval(syncTimer);if(job)void request('/api/jobs/'+encodeURIComponent(job)+'/cancel',{}).catch(()=>{});job=null;api.removeEventListener('progress',progress);availability();panel.destroy();}};
+        reload(){sourceSync=null;sourceSignature=null;panel.reload();panel.output(resultFor(node));},
+        destroy(){disposed=true;sourceSync=null;clearInterval(syncTimer);if(job?.id)void request('/api/jobs/'+encodeURIComponent(job.id)+'/cancel',{}).catch(()=>{});job=null;api.removeEventListener('progress',progress);availability();panel.destroy();}};
     node.setSize([820,760]);if(resultFor(node))panel.output(resultFor(node));
 }
 registerAdapter('daelab.video-edit',{
