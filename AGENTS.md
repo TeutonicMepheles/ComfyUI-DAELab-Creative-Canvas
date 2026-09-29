@@ -6,3 +6,5 @@
 - Reuse `web/creative_button.mjs`, `web/creative_field.mjs`, `web/creative_theme.css` and `web/creative_panel_state.mjs`. Owned panels must collapse and restore in inactive/active modes. Business packages retain their own App Mode handling.
 - Every frontend change needs actual ComfyUI inspection of two instances, overflow/focus, mode switching, save/reload, and relevant zoom/viewports. A gallery build or pure test is not product acceptance.
 - Test both standalone and optional combined installation when changing integrations. Never submit paid generation merely to validate the canvas.
+
+- Use the shared Slot interaction and visual baseline in [Interfaces and wires](docs/architecture/FRONTEND_INTERACTION.md#接口与连线); adapters declare capabilities, not separate port gestures or styling.

@@ -86,7 +86,8 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
                 if(side==='input'&&p.widget&&p.link==null)continue;
                 const b=button(unified?'+':'',()=>{});if(unified)b.classList.add('dae-material-slot');
                 b.disabled=material&&!uploadKind(c.node);
-                const startWire=e=>{if(e.button!==0)return;e.stopPropagation();e.preventDefault();
+                // A magnetic hit may originate on the port wrapper; do not also start a group drag.
+                const startWire=e=>{if(e.button!==0)return;e.stopImmediatePropagation();e.preventDefault();
                     if(side==='output'&&!canConnectOutput(c.node))return;
                     const links=graphLinks(graph).filter(link=>side==='input'?link.target_id===c.node.id&&(i===MATERIAL_SLOT||link.target_slot===i):link.origin_id===c.node.id&&(i===MATERIAL_SLOT||link.origin_slot===i));
                     if(side==='input'&&links.length){const link=links.find(link=>link.id===selectedLink)||(links.length===1?links[0]:nearestIncoming(links,e.clientX,e.clientY));if(!link){message('请沿要断开的连线靠近接收端，再拖动圆点');return;}closePicker();selectWire(link.id);setMagnet(null);root.focus();drag={kind:'detach',id:link.id,x:e.clientX,y:e.clientY,point:{x:e.clientX,y:e.clientY}};setMagnet(b);root.setPointerCapture(e.pointerId);drawWires();return;}
@@ -431,7 +432,8 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
                         targetChoices(c.node,MATERIAL_SLOT,context.node).some(choice=>context.index===MATERIAL_SLOT||choice.index===context.index);
                     if(!compatible)continue;
                 }
-                const r=port.getBoundingClientRect(),d=Math.hypot(x-r.left-r.width/2,y-r.top-r.height/2);
+                const r=port.getBoundingClientRect();if(!r.width||!r.height||getComputedStyle(port).visibility==='hidden')continue;
+                const d=Math.hypot(x-r.left-r.width/2,y-r.top-r.height/2);
                 if(d<distance){best=port;distance=d;}
             }
         }

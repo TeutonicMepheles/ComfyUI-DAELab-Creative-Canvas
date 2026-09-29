@@ -57,3 +57,7 @@ register();
 可选 `materialTargets(node)` 返回 `{element, key, dropElements?, clipElement?}[]`。element 为可见 Slot，key 为业务稳定字段 ID；dropElements 为同一目标的附加落点，clipElement 限制滚动可见区域。`acceptMaterials(node,key,collection)` 同步、原子地消费 `{version:1,assets:[{filename,subfolder,kind,nodeId,...}]}`，失败抛出可读错误。
 
 画布只负责素材组有序快照、命中检测和历史边界；业务适配器负责数据验证、行数和单元格规则。该入口是显式一次填充，不创建虚假的原生输入或持久连接，不随源组变化覆盖手工编辑。字段删除、隐藏、重排后重新读取目标；使用 `.dae-material-slot` 复用素材卡片 Slot 外观。拖动素材组本体完成填充时恢复原位置。
+
+## Slot 基准
+
+所有适配器遵循[接口与连线基准](architecture/FRONTEND_INTERACTION.md#接口与连线)。宿主统一拥有端口外观、磁吸、端点跟随及断线撤销；消费者仅声明类型、用途和能力限制。`materialTargets` 的列接口是一次素材快照接收目标，不创建持久图连接。表格缩放与完整高度不得覆盖宿主 Slot 的交互。
