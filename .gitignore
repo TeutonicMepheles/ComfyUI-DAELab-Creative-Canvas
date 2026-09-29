@@ -6,3 +6,4 @@ dist/
 artifacts/
 *.log
 .env
+.idea/

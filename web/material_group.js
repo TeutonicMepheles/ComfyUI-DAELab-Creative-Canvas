@@ -5,6 +5,7 @@ import {GROUP_TYPE,collectionFor,migrateGroups} from './material_group_model.mjs
 registerAdapter('daelab.material-group',{
     matches:n=>n.type===GROUP_TYPE,width:730,expanded:false,
     summary:n=>`${n.properties.members?.length||0} 项 · 整组输出`,menu:[],
+    assets:collectionFor,
 });
 app.registerExtension({
     name:'DAELAB.MaterialGroups',

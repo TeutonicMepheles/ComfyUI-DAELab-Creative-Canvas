@@ -57,14 +57,14 @@ export function installMaterialGroups(app){
         panel.append(arrange,el('span','gr-divider'),numbers,el('span','gr-divider'),colors,el('span','gr-divider'),options,el('span','gr-divider'),remove);
     }
     const decorated=new Map();
-    function restoreMedia(){for(const [upload,bar] of decorated){const info=upload.querySelector('.dae-upload-info');if(info)bar.prepend(info);upload.querySelector('.gr-metadata-clip')?.remove();for(const action of bar.querySelectorAll('.gr-media-action')){action.textContent=action.getAttribute('aria-label');action.classList.remove('gr-media-action');action.style.removeProperty('right');}}decorated.clear();}
+    function restoreMedia(){for(const bar of decorated.values()){for(const action of bar.querySelectorAll('.gr-media-action')){action.textContent=action.getAttribute('aria-label');action.classList.remove('gr-media-action');action.style.removeProperty('right');}}decorated.clear();}
     function onHide(){if(drag){const current=drag;drag=null;restoreDrag(current);}if(colorEditing){colorEditing=false;history.end();}restoreMedia();}
     root.addEventListener('dae-canvas-hide',onHide);
     function decorateMedia(){
         for(const upload of decorated.keys())if(!upload.isConnected)decorated.delete(upload);
         for(const c of world.querySelectorAll('.dae-creative-card[data-upload=true]')){
             const bar=c.querySelector('.dae-upload-toolbar');if(!bar)continue;
-            const upload=c.querySelector('.dae-upload'),info=bar.querySelector('.dae-upload-info');decorated.set(upload,bar);if(info){let overlay=upload.querySelector('.gr-metadata-clip');if(!overlay){overlay=el('div','gr-metadata-clip');upload.append(overlay);}overlay.append(info);}
+            const upload=c.querySelector('.dae-upload');decorated.set(upload,bar);
             c.dataset.reviewCompactActions=String((c.querySelector('.dae-upload-stage')?.getBoundingClientRect().width||0)<160);
             const visibleActions=[...bar.querySelectorAll('button,a')].filter(action=>!action.hidden);
             visibleActions.forEach((action,index)=>action.style.right=((6+(visibleActions.length-1-index)*42)/(canvasState(app.graph).viewport.zoom||1))+'px');
@@ -75,7 +75,7 @@ export function installMaterialGroups(app){
         for(const c of world.querySelectorAll('.dae-creative-card')){delete c.dataset.reviewMember;delete c.dataset.reviewNumbers;c.querySelector('.dae-upload-stage')?.removeAttribute('data-review-index');c.style.display='';}
         const owned=new Set();
         for(const g of groups()){
-            const gc=card(g.id),p=cards()[g.id];if(!gc||!p)continue;gc.dataset.reviewGroup='true';gc.dataset.wireAnchor='border';gc.style.setProperty('--gr-group-color',g.properties.reviewColor||'var(--dae-border-control)');gc.dataset.reviewSelected=String(selectionActive&&g.id===selected);gc.dataset.reviewCollapsed=String(g.properties.collapsed);
+            const gc=card(g.id),p=cards()[g.id];if(!gc||!p)continue;gc.dataset.reviewGroup='true';gc.style.setProperty('--gr-group-color',g.properties.reviewColor||'var(--dae-border-control)');gc.dataset.reviewSelected=String(selectionActive&&g.id===selected);gc.dataset.reviewCollapsed=String(g.properties.collapsed);
             const ids=(g.properties.members||[]).filter(id=>{if(node(id)?.type!==UPLOAD_TYPE||owned.has(id))return false;owned.add(id);return true;});g.properties.members=ids;
             const count=g.properties.layout==='vertical'?1:g.properties.layout==='horizontal'?Math.max(1,ids.length):Math.min(2,Math.max(1,ids.length));
             const gap=6,padding=12;
@@ -112,22 +112,24 @@ export function installMaterialGroups(app){
         const active=new Set([...world.querySelectorAll('.dae-creative-card[data-selected=true]')].map(c=>String(c.dataset.nodeId)));
         if(selectionActive&&selected!=null)active.add(String(selected));
         const links=new Map(graphLinks(app.graph).map(l=>[String(l.id),l]));
+        const pulses=new Map([...svg.querySelectorAll('.gr-wire-pulse')].map(pulse=>[pulse.dataset.pulseLink,pulse]));
         const wanted=new Set();
         for(const path of [...svg.querySelectorAll('path[data-link-id]:not(.gr-wire-pulse)')]){
             const id=path.dataset.linkId,link=links.get(id);if(!link||(!active.has(String(link.origin_id))&&!active.has(String(link.target_id))))continue;
-            wanted.add(id);let pulse=svg.querySelector(`.gr-wire-pulse[data-pulse-link="${id}"]`);
+            wanted.add(id);let pulse=pulses.get(id);
             if(!pulse){pulse=document.createElementNS(svg.namespaceURI,'path');pulse.classList.add('gr-wire-pulse');pulse.dataset.pulseLink=id;pulse.setAttribute('aria-hidden','true');pulse.setAttribute('pathLength','1000');if(!pulseStarts.has(id))pulseStarts.set(id,performance.now());pulse.style.animationDelay=`-${(performance.now()-pulseStarts.get(id))/1000}s`;svg.append(pulse);}
-            pulse.setAttribute('d',path.getAttribute('d'));
+            const d=path.getAttribute('d');if(pulse.getAttribute('d')!==d)pulse.setAttribute('d',d);
         }
-        for(const pulse of svg.querySelectorAll('.gr-wire-pulse'))if(!wanted.has(pulse.dataset.pulseLink))pulse.remove();
+        for(const [id,pulse] of pulses)if(!wanted.has(id))pulse.remove();
         for(const id of pulseStarts.keys())if(!wanted.has(id))pulseStarts.delete(id);
     }
+    root.addEventListener('dae-canvas-wires-changed',updateWirePulse);
     function tick(){
         if(disposed)return;if(!view.active){closeMenu();createButton.hidden=true;restoreMedia();return;}
         if(seenGraph!==app.graph.extra){seenGraph=app.graph.extra;selected=null;selectionActive=false;renderSignature='';closeMenu();}
         const chosen=view.selectedIds.map(node).filter(Boolean);createButton.hidden=chosen.filter(n=>n.type===UPLOAD_TYPE).length<2;const chosenGroup=chosen.find(n=>n.type===TYPE)||groups().find(g=>chosen.some(n=>g.properties.members.includes(n.id)));
         if(!drag){const next=chosenGroup?.id??null;if(next!==selected){selected=next;renderSignature='';}selectionActive=selected!=null;}
-        root.style.setProperty('--gr-inverse-zoom',String(1/(canvasState(app.graph).viewport.zoom||1)));decorateMedia();layoutGroups();positionPanel();
+        decorateMedia();layoutGroups();positionPanel();
         const g=group(),signature=JSON.stringify([selected,g?.title,g?.properties]);
         if(!colorEditing&&signature!==renderSignature){renderSignature=signature;buildPanel();}
         updateWirePulse();
@@ -139,7 +141,7 @@ export function installMaterialGroups(app){
         const c=e.target.closest('.dae-creative-card'),n=c&&node(c.dataset.nodeId);if(!n){if(!e.target.closest('.gr-local-menu'))selectionActive=false;return;}
         if(n.type===TYPE){selected=n.id;selectionActive=true;view.select(n,{toggle:e.shiftKey||e.ctrlKey,preserve:true});renderSignature='';e.stopImmediatePropagation();e.preventDefault();if(n.properties.locked)return say('组已锁定。');history.begin();const ids=[n.id,...n.properties.members];drag={kind:'group',ids,x:e.clientX,y:e.clientY,originals:copy(Object.fromEntries(ids.map(id=>[id,cards()[id]]))),before:copy(app.graph.serialize())};e.target.setPointerCapture(e.pointerId);}
         else if(n.type===UPLOAD_TYPE){
-            const video=e.target.closest('video');if(video&&e.clientY>video.getBoundingClientRect().bottom-44)return;
+            const video=e.target.closest('video');if(video&&e.clientY>video.getBoundingClientRect().bottom-44*video.getBoundingClientRect().height/video.offsetHeight)return;
             view.select(n,{toggle:e.shiftKey||e.ctrlKey,preserve:true});
             const parent=groups().find(g=>g.properties.members.includes(n.id));if(parent?.properties.locked){e.stopImmediatePropagation();return say('所在组已锁定。');}
             e.stopImmediatePropagation();e.preventDefault();root.focus({preventScroll:true});history.begin();drag={kind:'member',parentId:parent?.id,ids:[n.id],x:e.clientX,y:e.clientY,originals:copy({[n.id]:cards()[n.id]}),before:copy(app.graph.serialize())};e.target.setPointerCapture(e.pointerId);if(parent){selected=parent.id;selectionActive=true;}
@@ -162,6 +164,6 @@ export function installMaterialGroups(app){
     function key(e){if(e.target.closest('input,textarea,select,[contenteditable=true]'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='g'){e.preventDefault();e.stopImmediatePropagation();createFromSelection();return;}if(e.key==='Escape'&&drag){const current=drag;drag=null;if(current.kind==='group')e.stopImmediatePropagation();restoreDrag(current);}}
     root.addEventListener('pointerdown',down,true);root.addEventListener('pointermove',move,true);root.addEventListener('pointerup',up);root.addEventListener('pointercancel',up);root.addEventListener('keydown',key,true);
     const timer=setInterval(tick,150);
-    app.daelabMaterialGroups={createFromSelection,tick,destroy(){closeMenu();disposed=true;clearInterval(timer);clearTimeout(noticeTimer);root.removeEventListener('pointerdown',down,true);root.removeEventListener('pointermove',move,true);root.removeEventListener('pointerup',up);root.removeEventListener('pointercancel',up);root.removeEventListener('keydown',key,true);panel.remove();toast.remove();createButton.remove();sheet.remove();restoreMedia();root.removeEventListener('dae-canvas-hide',onHide);}};
+    app.daelabMaterialGroups={createFromSelection,tick,destroy(){closeMenu();disposed=true;clearInterval(timer);clearTimeout(noticeTimer);root.removeEventListener('dae-canvas-wires-changed',updateWirePulse);root.removeEventListener('pointerdown',down,true);root.removeEventListener('pointermove',move,true);root.removeEventListener('pointerup',up);root.removeEventListener('pointercancel',up);root.removeEventListener('keydown',key,true);panel.remove();toast.remove();createButton.remove();sheet.remove();restoreMedia();root.removeEventListener('dae-canvas-hide',onHide);}};
     tick();
 }
