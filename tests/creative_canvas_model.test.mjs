@@ -18,6 +18,15 @@ test('zoom preserves the world point under the cursor and clamps the range',()=>
     assert.equal((p.y-v.y)/v.zoom,(p.y-next.y)/next.zoom);
     assert.equal(zoomAt(v,p,100).zoom,2);assert.equal(normalizeViewport({zoom:-4,x:NaN}).zoom,.15);
 });
+test('resizable workspace cards retain independent saved widths below the default',()=>{
+    const release=registerAdapter('test.resizable',{matches:n=>n.type==='Test.Resizable',width:1060,workspace:()=>true,resizable:()=>true});
+    try{
+        const graph={extra:{}},state=canvasState(graph),a={id:7,type:'Test.Resizable'},b={id:8,type:'Test.Resizable'};
+        cardState(state,a).width=640;cardState(state,b).width=1380;
+        const restored=canvasState(JSON.parse(JSON.stringify(graph)));
+        assert.equal(cardState(restored,a).width,640);assert.equal(cardState(restored,b).width,1380);
+    }finally{release();}
+});
 test('projection supports registered media features and preserves unknown graph nodes',()=>{
     for(const type of ['DAELAB.Table','DAELAB.StoryboardImport','DAELAB.LibTV.VideoGenerate','ComfyTV.VideoExtractFrameStage'])assert.equal(supportedNode({type}),true);
     assert.equal(supportedNode({type:'KSampler'}),false);
