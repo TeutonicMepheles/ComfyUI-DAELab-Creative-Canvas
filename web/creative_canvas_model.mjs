@@ -20,7 +20,8 @@ export function zoomAt(v, point, factor) {
 export const workspaceNode = type => !!adapterFor({type})?.workspace?.({type});
 export const cardWidth = type => { const width=adapterFor({type})?.width; return (typeof width==='function'?width({type}):width)||460; };
 export function cardState(state,node,index=0) {
-    if(workspaceNode(node.type) && state.cards[node.id]) state.cards[node.id].width=Math.max(cardWidth(node.type),state.cards[node.id].width||0);
+    const resize=adapterFor(node)?.resizable;
+    if(workspaceNode(node.type) && !(typeof resize==='function'?resize(node):resize) && state.cards[node.id]) state.cards[node.id].width=Math.max(cardWidth(node.type),state.cards[node.id].width||0);
     return state.cards[node.id] ||= {x:index%3*530,y:Math.floor(index/3)*440,width:cardWidth(node.type),expanded:typeof adapterFor(node)?.expanded==='function'?adapterFor(node).expanded(node):!!adapterFor(node)?.expanded};
 }
 export function socketCompatible(output,input) {

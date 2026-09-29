@@ -145,3 +145,23 @@ body[data-daelab-creative=true] [role="toolbar"]:has(> [data-testid="zoom-contro
 .dae-creative-wires path[data-disconnect-target=true]{stroke:var(--dae-wire-selected);stroke-opacity:1;stroke-width:5}
 
 .dae-creative[data-wire-selected=true] .dae-creative-wires path[data-link-id][data-selected=false]{stroke:var(--dae-wire);stroke-opacity:.85;stroke-width:3}
+/* Adapter-requested compact editors keep a reachable screen-sized entry point. */
+.dae-creative-card[data-compact=true]>.dae-creative-heading,
+.dae-creative-card[data-compact=true]>.dae-creative-summary {zoom:calc(1 / var(--dae-canvas-zoom,1))}
+.dae-creative-card[data-compact=true]>.dae-creative-heading {flex-wrap:wrap;gap:8px}
+.dae-creative-card[data-compact=true]>.dae-creative-heading>strong {min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dae-creative-card[data-compact=true]>.dae-creative-heading>button[aria-expanded] {display:none}
+
+.dae-creative .dae-material-slot{position:relative;display:grid;place-items:center;width:32px;height:32px;min-width:32px;min-height:32px;padding:0;border:2px solid var(--dae-border-control);border-radius:50%;background:var(--dae-bg-canvas);color:var(--dae-text);font-size:23px;line-height:1;font-weight:400;touch-action:none}
+.dae-creative .dae-material-slot:is(:hover,:focus-visible,[data-magnetic=true]){background:var(--dae-secondary-container);border-color:var(--dae-focus);outline:2px solid var(--dae-focus);outline-offset:2px}
+
+.dae-creative-card[data-full-height=true]>.dae-creative-body{max-height:none;overflow:visible}
+.dae-creative .dae-creative-width-handle{position:absolute;right:-6px;top:52px;bottom:0;width:12px;cursor:ew-resize;touch-action:none;z-index:8;outline:none}
+.dae-creative .dae-creative-width-handle::after{content:'';position:absolute;top:0;bottom:0;left:5px;width:2px;background:var(--dae-accent);opacity:0}
+.dae-creative .dae-creative-width-handle:hover::after,.dae-creative .dae-creative-width-handle:focus-visible::after,.dae-creative .dae-creative-width-handle[data-dragging]::after{opacity:1}
+
+/* Keep the frame resize target usable at every canvas zoom. */
+.dae-creative .dae-creative-width-handle{right:calc(-8px / var(--dae-canvas-zoom,1));top:0;width:calc(16px / var(--dae-canvas-zoom,1))}
+.dae-creative .dae-creative-width-handle::after{left:50%;width:calc(2px / var(--dae-canvas-zoom,1))}
+.dae-creative .dae-creative-width-handle::before{content:'';position:absolute;top:calc(12px / var(--dae-canvas-zoom,1));left:50%;transform:translateX(-50%);width:calc(6px / var(--dae-canvas-zoom,1));height:calc(20px / var(--dae-canvas-zoom,1));border-left:calc(2px / var(--dae-canvas-zoom,1)) solid var(--dae-border-control);border-right:calc(2px / var(--dae-canvas-zoom,1)) solid var(--dae-border-control);border-radius:2px;background:var(--dae-surface);opacity:0}
+.dae-creative-card:hover>.dae-creative-width-handle::before,.dae-creative-card[data-selected=true]>.dae-creative-width-handle::before,.dae-creative .dae-creative-width-handle:focus-visible::before{opacity:1}

@@ -152,6 +152,10 @@ export function installMaterialGroups(app){
     }}
     function up(e){if(!drag)return;const current=drag;drag=null;for(const gc of world.querySelectorAll('[data-review-over]'))delete gc.dataset.reviewOver;if(e.type==='pointercancel')return restoreDrag(current);if(Math.hypot(e.clientX-current.x,e.clientY-current.y)<4){history.end();return;}
 
+        if(current.kind==='group'){
+            // Test the destination with the moving group temporarily out of hit testing.
+            if(view.receiveMaterialGroup(node(current.ids[0]),e.clientX,e.clientY)){for(const [id,layout] of Object.entries(current.originals))if(cards()[id])Object.assign(cards()[id],layout);history.end();dirty();renderSignature='';view.sync();tick();return;}
+        }
         if(current.kind==='member'){
             const id=current.ids[0],target=groups().find(g=>{const r=card(g.id)?.getBoundingClientRect();return !g.properties.locked&&r&&e.clientX>r.left&&e.clientX<r.right&&e.clientY>r.top&&e.clientY<r.bottom;});
             for(const g of groups())g.properties.members=g.properties.members.filter(x=>x!==id);

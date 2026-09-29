@@ -30,6 +30,8 @@ register();
 | `width` / `expanded` | 数值／布尔值，或读取节点的函数；仅初始化默认布局 |
 | `floatingHeader` | 可选布尔值；标题悬浮在卡片上方，隐藏重复类型标签，工作区入口使用卡片内右上角的展开图标及圆角提示；默认保持原布局 |
 | `collapsible` | 可选布尔值；`false` 时不创建收起按钮且保持面板展开；不改变节点的停用状态 |
+| `resizable` / `fullHeight` | 可选布尔值或节点函数；启用外框横向调整／取消宿主内容高度上限。宽度保存在既有 cards 布局中，支持取消、撤销及重载；业务负责自身滚动容器。 |
+| `compactWidth` | 可选屏幕像素阈值；卡片窄于此值时显示摘要，打开 workspace 时恢复完整面板，不改变保存的展开状态 |
 | `workspace(node)` | 是否使用独立编辑器弹窗 |
 | `panel(node)` | 返回 `{root, buttons?, fields?, close?, workspaceControls?}`；root 尚未挂载时可以为空，宿主稍后重试。可选 DOM 容器 `workspaceControls` 用于放置宿主的展开按钮，面板负责其布局，宿主释放面板时收回按钮 |
 | `refresh(node)` | 更新自己面板，不得每次重建 DOM 或发送请求 |
@@ -48,3 +50,10 @@ register();
 宿主借用面板时复用 `creative_button.mjs`、`creative_field.mjs` 的绑定，返回原模式时清理并归还；节点删除或工作流重载时释放。面板提供方负责自身请求取消和原生 widget 生命周期。多个实例必须拥有独立状态。
 
 内部节点 ID、`graph.extra.daelabCreativeCanvasV1`、素材 JSON、原生槽位索引以及 `DAELAB.CreativeNode.v1` 剪贴板格式维持原值。端口是视觉投影，不能把所有真实输入改成一个 wildcard 输入。接口发生破坏性变化时增加 API 主版本，不静默改变 v1。
+
+
+## 有序素材快照接收
+
+可选 `materialTargets(node)` 返回 `{element, key, dropElements?, clipElement?}[]`。element 为可见 Slot，key 为业务稳定字段 ID；dropElements 为同一目标的附加落点，clipElement 限制滚动可见区域。`acceptMaterials(node,key,collection)` 同步、原子地消费 `{version:1,assets:[{filename,subfolder,kind,nodeId,...}]}`，失败抛出可读错误。
+
+画布只负责素材组有序快照、命中检测和历史边界；业务适配器负责数据验证、行数和单元格规则。该入口是显式一次填充，不创建虚假的原生输入或持久连接，不随源组变化覆盖手工编辑。字段删除、隐藏、重排后重新读取目标；使用 `.dae-material-slot` 复用素材卡片 Slot 外观。拖动素材组本体完成填充时恢复原位置。
