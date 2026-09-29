@@ -44,6 +44,54 @@
   color:var(--dae-text);font:400 var(--dae-font-body)/1.6 var(--dae-font-family);
   font-synthesis:none;color-scheme:dark;
 }
+:is(.dae-creative,.dae-ui) [data-dae-tooltip]{position:relative}
+:is(.dae-creative,.dae-ui) [data-dae-tooltip]::after{content:attr(data-dae-tooltip);position:absolute;z-index:30;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);width:max-content;max-width:240px;padding:6px 10px;border:1px solid var(--dae-border);border-radius:8px;background:var(--dae-surface-high);color:var(--dae-text);box-shadow:var(--dae-elevation-overlay);font:400 var(--dae-font-caption)/1.5 var(--dae-font-family);white-space:normal;text-align:center;pointer-events:none;opacity:0;visibility:hidden;transition:opacity var(--dae-duration-fast) var(--dae-easing)}
+:is(.dae-creative,.dae-ui) [data-dae-tooltip]:is(:hover,:focus-visible,:has(:focus-visible))::after{opacity:1;visibility:visible;transition-delay:250ms}
+:is(.dae-creative,.dae-ui) [data-dae-tooltip]:active::after{opacity:0;visibility:hidden;transition-delay:0ms}
+:is(.dae-creative,.dae-ui) [data-tooltip-align=end]::after{left:auto;right:0;transform:none}
+:is(.dae-creative,.dae-ui) [data-tooltip-align=start]::after{left:0;transform:none}
+@supports (appearance:base-select) {
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size]),
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size])::picker(select) {
+    appearance:base-select;
+  }
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size]) {
+    align-items:center;gap:8px;cursor:pointer;
+  }
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size]):open {
+    border-color:var(--dae-accent)!important;
+  }
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size])::picker-icon {
+    content:'';width:14px;height:14px;flex:none;margin-inline-start:auto;
+    background:var(--dae-text-muted);mask:url('./vendor/remixicon/arrow-down-line.svg') center/contain no-repeat;
+    transition:rotate var(--dae-duration-fast) var(--dae-easing);
+  }
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size]):open::picker-icon {rotate:180deg}
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size])::picker(select) {
+    box-sizing:border-box;min-inline-size:anchor-size(self-inline);inline-size:max-content;
+    max-inline-size:calc(100vw - 24px);max-block-size:min(320px,calc(100dvh - 24px));
+    margin-block-start:6px;padding:6px;overflow:auto;overscroll-behavior:contain;
+    background:var(--dae-surface-high);color:var(--dae-text);border:1px solid var(--dae-border);
+    border-radius:var(--dae-radius-control);box-shadow:var(--dae-elevation-overlay);
+    font:400 var(--dae-font-body)/1.5 var(--dae-font-family);
+    scrollbar-width:thin;scrollbar-color:var(--dae-border-control) transparent;
+  }
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size]) option {
+    display:flex;align-items:center;gap:12px;box-sizing:border-box;min-height:34px;
+    padding:6px 10px;border:0;border-radius:6px;white-space:normal;overflow-wrap:anywhere;
+    background:transparent;color:var(--dae-text);font:400 var(--dae-font-body)/1.5 var(--dae-font-family);cursor:pointer;
+  }
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size]) option:checked {
+    background:var(--dae-primary-container);color:var(--dae-on-primary-container);font-weight:500;
+  }
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size]) option:is(:hover,:focus-visible):not(:disabled) {
+    background:var(--dae-surface-hover);outline:1px solid var(--dae-accent);outline-offset:-1px;
+  }
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size]) option:checked:is(:hover,:focus-visible):not(:disabled) {background:var(--dae-primary-container)}
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size]) option::checkmark {order:1;margin-inline-start:auto;color:var(--dae-accent)}
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size]) option:disabled {opacity:.38;cursor:default}
+  :is(.dae-creative,.dae-ui) select:not([multiple]):not([size]) option[hidden] {display:none}
+}
 @media(prefers-reduced-motion:reduce) {
   :is(.dae-creative,.dae-ui){--dae-duration-fast:0ms}
 }

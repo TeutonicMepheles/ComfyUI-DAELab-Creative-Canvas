@@ -9,7 +9,7 @@ export function installComfyTVAdapter(app) {
         workspace: node => node.type === 'ComfyTV.StoryboardEditorStage',
         panel: node => ({root:node.widgets?.map(w=>w.element||w.inputEl).find(e=>e?.classList?.contains('comfytv-root'))}),
         preview: node => node.properties?.daelabCreativePreview || {url:node.widgets?.find(w=>w.name==='asset_url')?.value},
-        menu:[{label:'剪辑',type:'ComfyTV.VideoClipStage',icon:'scissors-cut-line'}, {label:'故事板',type:'ComfyTV.StoryboardEditorStage',icon:'layout-grid-line'}],
+        menu:[{label:'故事板',type:'ComfyTV.StoryboardEditorStage',icon:'layout-grid-line'}],
     });
     app.registerExtension({name:'DAELAB.CreativeCanvas.ComfyTVAdapter', beforeRegisterNodeDef(type,data){
         if(!data.name.startsWith('ComfyTV.'))return;

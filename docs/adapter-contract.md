@@ -28,13 +28,20 @@ register();
 | --- | --- |
 | `matches(node)` | 必填，声明支持的稳定节点 ID |
 | `width` / `expanded` | 数值／布尔值，或读取节点的函数；仅初始化默认布局 |
+| `floatingHeader` | 可选布尔值；标题悬浮在卡片上方，隐藏重复类型标签，工作区入口使用卡片内右上角的展开图标及圆角提示；默认保持原布局 |
+| `collapsible` | 可选布尔值；`false` 时不创建收起按钮且保持面板展开；不改变节点的停用状态 |
 | `workspace(node)` | 是否使用独立编辑器弹窗 |
-| `panel(node)` | 返回 `{root, buttons?, fields?, close?}`；root 尚未挂载时可以为空，宿主稍后重试 |
+| `panel(node)` | 返回 `{root, buttons?, fields?, close?, workspaceControls?}`；root 尚未挂载时可以为空，宿主稍后重试。可选 DOM 容器 `workspaceControls` 用于放置宿主的展开按钮，面板负责其布局，宿主释放面板时收回按钮 |
 | `refresh(node)` | 更新自己面板，不得每次重建 DOM 或发送请求 |
 | `summary(node)` / `preview(node)` | 摘要或 `{url, kind}`；提供业务所有者认可的预览 |
 | `action(node)` | 可选 `{label, run(node, app)}`，Promise 交给共享按钮管理忙碌态 |
 | `inputLabels` | 将原生输入名称映射到用户可读用途；类型兼容仍使用原生图输入／输出声明 |
+| `inputSelection` | 可选值 `first-free`；拖到合并输入时自动连接第一个未占用的兼容输入，不显示用途菜单、不替换已连接输入；未指定时保留原选择逻辑 |
+| `outputLabel` | 可选文字，显示在合并输出的提示与可访问名称中；不改变真实输出类型和槽位 |
+| `canConnectOutput(node)` | 可选同步回调；用户尝试从此节点建立连接时调用，返回 `false` 阻止拉线、用途选择及实际连接，业务所有者负责说明原因。未提供时保持原行为；原生节点连接限制由节点自身的 `onConnectOutput` 实现 |
 | `onCreate(node)` | 用户从画布新增节点时初始化业务状态 |
+| `upload(node, file)` | 可选，接收本地 File 并返回 Promise；画布拖入文件时调用上传节点适配器，上传节点负责请求、错误提示和取消生命周期 |
+| `assets(node)` | 可选，返回 `{version:1, assets:[...], ready?}` 本地素材快照；`ready:false` 表示当前结果尚未生成或已过期，消费者应等待结果，不按空集合删除已有片段／连线。素材提供者负责顺序与字段，不由消费者读取私有面板 |
 | `prepareCopy(node, serialized)` | 在配置新节点前修改副本，例如生成新 request_id；不得改源节点 |
 | `menu` | 已安装节点的双击菜单项；未知类型不显示。icon 使用本仓库随附 Remix SVG 名称 |
 

@@ -22,7 +22,10 @@ function install(node){
     toolbar.append(info,choose,download,fullscreen);root.append(toolbar,stage,status,picker);
     function render(){
         if(disposed)return;
+        const previousName=asset?.name;
         asset=readAsset(data.value);const next=JSON.stringify(asset);if(next===signature)return;signature=next;
+        root.dataset.hasAsset=String(!!asset);
+        if(asset&&(!node.title||node.title==='上传'||node.title===UPLOAD_TYPE||node.title===previousName))node.title=asset.name;
         stage.querySelector('video')?.pause();stage.replaceChildren();status.textContent='';
         choose.textContent=asset?'替换素材':'上传图片 / 视频';download.hidden=fullscreen.hidden=!asset;
         info.textContent=asset?.name||'';info.title=info.textContent;
@@ -59,7 +62,7 @@ function install(node){
     for(const event of ['pointerdown','dblclick','keydown','wheel'])root.addEventListener(event,e=>e.stopPropagation());
     const widget=node.addDOMWidget('media_upload','custom',root,{serialize:false,hideOnZoom:false,getValue:()=>'',setValue:()=>render(),getMinHeight:()=>320});widget.serialize=false;
     const releaseAvailability=bindPanelAvailability(node,root);
-    node.__mediaUpload={root,render,kind:()=>readAsset(data.value)?.kind,reload(){++epoch;controller?.abort();choose.disabled=false;root.removeAttribute('aria-busy');signature=null;render();},destroy(){releaseAvailability();disposed=true;++epoch;controller?.abort();stage.querySelector('video')?.pause();root.remove();}};
+    node.__mediaUpload={root,render,upload,kind:()=>readAsset(data.value)?.kind,reload(){++epoch;controller?.abort();choose.disabled=false;root.removeAttribute('aria-busy');signature=null;render();},destroy(){releaseAvailability();disposed=true;++epoch;controller?.abort();stage.querySelector('video')?.pause();root.remove();}};
     node.setSize([520,400]);render();
 }
 app.registerExtension({name:'DAELab.MediaUpload',beforeRegisterNodeDef(type,definition){
