@@ -38,7 +38,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
     root.append(grid,world,status,empty,zoom);document.body.append(root);
     let graph=app.graph,state=canvasState(graph),selected=new Set(),pending=null,picker=null,visible=false,drag=null;
     const portStarts=new WeakMap();let magneticPort=null,wireSource=null;let pointerPoint=null,pasteCount=0;
-    const wireAnchors=new WeakMap(),wirePaths=new Map(),wireGeometry=new WeakMap();
+    const wirePaths=new Map(),wireGeometry=new WeakMap();
     const reducedMotion=matchMedia('(prefers-reduced-motion:reduce)');let wireFrame=0,hoverPoint=null;
     function animateWires(){if(!wireFrame&&visible)wireFrame=requestAnimationFrame(()=>{
         wireFrame=0;
@@ -250,23 +250,14 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         }
         return distance<90?best:null;
     }
-    function wireAnchor(rect,port,side,now){
+    function wireAnchor(rect,port,side){
+        // Floating unified Slots are interaction handles, not persistent wire anchors.
+        if(port.closest('.dae-creative-card')?.dataset.unified==='true')return {x:side==='output'?rect.right:rect.left,y:rect.top+rect.height/2};
         const target=port.getBoundingClientRect();
-        let motion=wireAnchors.get(port);if(!motion){motion={value:0,from:0,to:0,start:now};wireAnchors.set(port,motion);}
-        if(drag?.kind!=='detach'){
-            const style=getComputedStyle(port);
-            const shown=!port.disabled&&style.display!=='none'&&style.visibility==='visible'&&Number(style.opacity)>0&&target.width>0&&target.height>0;
-            const to=shown?1:0;
-            if(to!==motion.to){motion.from=motion.value;motion.to=to;motion.start=now;}
-            const t=reducedMotion.matches?1:Math.min(1,(now-motion.start)/150);
-            motion.value=motion.from+(motion.to-motion.from)*t*t*(3-2*t);
-            if(t<1)animateWires();
-        }
-        const x=side==='output'?rect.right:rect.left,y=rect.top+rect.height/2;
-        return {x:x+(target.left+target.width/2-x)*motion.value,y:y+(target.top+target.height/2-y)*motion.value};
+        return {x:target.left+target.width/2,y:target.top+target.height/2};
     }
     function drawWires(){
-        const segments=[],now=performance.now(),rw=world.getBoundingClientRect(),z=state.viewport.zoom;
+        const segments=[],rw=world.getBoundingClientRect(),z=state.viewport.zoom;
         const bounds=new Map(),anchors=new Map();
         for(const link of graphLinks(graph)){
             const a=cards.get(link.origin_id),b=cards.get(link.target_id);if(!a||!b)continue;
@@ -274,7 +265,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
             if(!bounds.has(a))bounds.set(a,a.element.getBoundingClientRect());if(!bounds.has(b))bounds.set(b,b.element.getBoundingClientRect());
             const ra=bounds.get(a),rb=bounds.get(b);
             if(!ra.width||!ra.height||!rb.width||!rb.height)continue;
-            if(!anchors.has(source))anchors.set(source,wireAnchor(ra,source,'output',now));if(!anchors.has(target))anchors.set(target,wireAnchor(rb,target,'input',now));
+            if(!anchors.has(source))anchors.set(source,wireAnchor(ra,source,'output'));if(!anchors.has(target))anchors.set(target,wireAnchor(rb,target,'input'));
             const start=anchors.get(source),end=anchors.get(target);
             const x1=(start.x-rw.left)/z,y1=(start.y-rw.top)/z;
             let x2=(end.x-rw.left)/z,y2=(end.y-rw.top)/z;
