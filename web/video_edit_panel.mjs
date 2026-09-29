@@ -355,18 +355,21 @@ export function createVideoEditor(host){
         }
         if(Math.abs(target-time)>0.0001)seek(target);
     }
-    function pointerTime(){const rect=timeline.getBoundingClientRect();return (drag.clientX-rect.left)/(rect.width/timeline.offsetWidth)/zoom;}
+    function pointerTime(snap=false){
+        const rect=timeline.getBoundingClientRect(),pixels=rect.width/timeline.offsetWidth,value=(drag.clientX-rect.left)/pixels/zoom;
+        return snap&&Math.abs(value-drag.beforeTime)*zoom*pixels<=10?drag.beforeTime:value;
+    }
     function updateDrag(){
         if(drag.seek){seekAtPointer();return;}
         if(!drag.moved)return;
         const original=drag.span.clip;
         if(drag.edge){
-            const delta=pointerTime()-(drag.edge==='right'?drag.span.end:drag.span.start);
+            const delta=pointerTime(snapEnabled)-(drag.edge==='right'?drag.span.end:drag.span.start);
             const clip=resizeClip(original,drag.edge,delta,fps()),current=edit.clips.find(c=>c.id===clip.id);
             if(clip.start===current.start&&clip.duration===current.duration)return;
             edit={...drag.before,clips:drag.before.clips.map(c=>c.id===clip.id?clip:c)};
-            const previousTime=time;time=Math.min(time,timing().total);renderTrack();
-            if(time!==previousTime||drag.edge==='left')syncMedia(true);
+            const previousTime=time;time=snapEnabled?drag.beforeTime:Math.min(time,timing().total);renderTrack();
+            if(time!==previousTime||drag.edge==='left'||time>=timing().total)syncMedia(true);
         }else{
             const firstMove=!drag.layer;
             if(firstMove){
@@ -394,7 +397,7 @@ export function createVideoEditor(host){
         if(tile){
             if(edge)e.target.closest('[data-edge]').focus({preventScroll:true});
             selected=tile.dataset.id;const beforeSpans=timing().spans,span=beforeSpans.find(s=>s.clip.id===selected),rect=tile.getBoundingClientRect();
-            drag={id:selected,edge,before:structuredClone(edit),beforeStarts:new Map(beforeSpans.map(s=>[s.clip.id,s.start])),span,others:spans(edit.clips.filter(c=>c.id!==selected)),index:edit.clips.findIndex(c=>c.id===selected),grabX:e.clientX-rect.left,grabY:e.clientY-rect.top,minWidth:timeline.offsetWidth,moved:false};
+            drag={id:selected,edge,before:structuredClone(edit),beforeTime:time,beforeStarts:new Map(beforeSpans.map(s=>[s.clip.id,s.start])),span,others:spans(edit.clips.filter(c=>c.id!==selected)),index:edit.clips.findIndex(c=>c.id===selected),grabX:e.clientX-rect.left,grabY:e.clientY-rect.top,minWidth:timeline.offsetWidth,moved:false};
             if(!edge)seek(span.start);render();
         }else drag={seek:true,beforeTime:time};
         Object.assign(drag,{clientX:e.clientX,clientY:e.clientY,initialX:e.clientX,initialY:e.clientY,lastScroll:performance.now(),dirty:true});
@@ -414,7 +417,7 @@ export function createVideoEditor(host){
         const previous=drag;drag=null;
         if(previous.layer){const tile=tiles.get(previous.id);delete tile.dataset.floating;track.append(tile);previous.layer.remove();}
         insertion.hidden=true;delete track.dataset.dragging;
-        if(e.type!=='pointerup'){if(previous.before){edit=previous.before;render();syncMedia(true);}else seek(previous.beforeTime);}
+        if(e.type!=='pointerup'){if(previous.before){edit=previous.before;time=previous.beforeTime;render();syncMedia(true);}else seek(previous.beforeTime);}
         else if(previous.moved&&!previous.seek)commit(edit);
         else render();
     };
