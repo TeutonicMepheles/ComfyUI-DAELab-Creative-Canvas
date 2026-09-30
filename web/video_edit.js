@@ -133,7 +133,8 @@ registerAdapter('daelab.video-edit',{
     menu:[{label:'剪辑',type:EDIT_TYPE,icon:'scissors-cut-line'}],
     panel:node=>node.__videoEdit,preview:node=>({url:resultFor(node),kind:'video'}),
     summary:node=>`${readEdit(node.widgets?.find(w=>w.name==='edit_data')?.value).clips.length} 个片段`,
-    assets:node=>{const url=resultFor(node);return {version:1,ready:!!url,assets:url?[localAsset(url)]:[]};},
+    materialOutput:true,
+    assets:node=>{const url=resultFor(node);return {version:1,ready:!!url,assets:url?[{...localAsset(url),url,kind:'video',name:'剪辑结果.mp4'}]:[]};},
     canConnectOutput,
     inputLabels:{assets:'素材组'},
 });

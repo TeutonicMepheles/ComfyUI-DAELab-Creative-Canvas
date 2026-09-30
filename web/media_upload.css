@@ -20,6 +20,6 @@
 .dae-creative-card[data-upload=true]>.dae-creative-heading button,.dae-creative-card[data-upload=true]>.dae-creative-type{display:none}
 .dae-creative-card[data-upload=true]>.dae-creative-body{padding:0;max-height:none;overflow:visible}
 .dae-creative-card[data-upload=true][data-inactive=true]>.dae-creative-body{display:none}
-.dae-creative .dae-upload-info,.dae-creative .dae-upload[data-has-asset=true]>.dae-upload-toolbar{display:none}
+.dae-creative .dae-upload-info{display:none}
 .dae-upload-stage{position:relative}
 .dae-creative .dae-upload-stage:not(:hover) video:not(:focus-visible)::-webkit-media-controls{opacity:0;pointer-events:none}

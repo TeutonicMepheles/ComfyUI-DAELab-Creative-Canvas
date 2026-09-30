@@ -14,6 +14,7 @@ const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className
 const button=(text,action)=>{const b=el('button','',text);b.type='button';b.onclick=action;return b;};
 const categoryIcon=item=>{const icon=el('i','dae-creative-icon');icon.style.setProperty('--dae-icon',`url("${new URL(`./vendor/remixicon/${item.icon}.svg`,import.meta.url).href}")`);icon.setAttribute('aria-hidden','true');return icon;};
 const value=(n,name)=>n.widgets?.find(w=>w.name===name)?.value;
+const SLOT_MAGNET_RADIUS=32;
 const previewFor=n=>adapterFor(n)?.preview?.(n)||{};
 // Lease the actual panel, not a clone: Vue Teleports, callbacks and editor history stay alive.
 export function leasePanel(panel,target,buttons=[],fields=[]) {
@@ -24,6 +25,22 @@ export function leasePanel(panel,target,buttons=[],fields=[]) {
     const cleanup=()=>unbind.forEach(release=>release());
     const release=()=>{cleanup();panel.querySelectorAll('video,audio').forEach(m=>m.pause());if(marker.parentNode)marker.replaceWith(panel);else if(parent?.isConnected)parent.append(panel);};
     release.abandon=()=>{cleanup();marker.remove();};return release;
+}
+
+// Undo recreates DOM widgets while the native graph renderer may be unmounted.
+// A supplied root is ready to lease even before its first document attachment.
+export function attachCardPanel(c,owner) {
+    const panel=owner?.root;
+    if(!panel||panel.parentNode===c.body||panel.closest('dialog'))return false;
+    if(c.panel===panel)c.release?.abandon?.();else c.release?.();
+    c.body.replaceChildren();c.panel=panel;c.release=leasePanel(panel,c.body,owner?.buttons,owner?.fields);
+    if(c.openEditor&&owner?.workspaceControls){
+        owner.workspaceControls.append(c.openEditor);
+        const release=c.release;
+        c.release=()=>{c.element.append(c.openEditor);release();};
+        c.release.abandon=()=>{c.element.append(c.openEditor);release.abandon();};
+    }
+    return true;
 }
 
 export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
@@ -38,18 +55,18 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
     root.append(grid,world,status,empty,zoom);document.body.append(root);
     let graph=app.graph,state=canvasState(graph),selected=new Set(),pending=null,picker=null,visible=false,drag=null;
     const portStarts=new WeakMap();let magneticPort=null,wireSource=null;let pointerPoint=null,pasteCount=0;
-    const wireAnchors=new WeakMap(),wirePaths=new Map(),wireGeometry=new WeakMap();
+    const wirePaths=new Map(),wireGeometry=new WeakMap();
     const reducedMotion=matchMedia('(prefers-reduced-motion:reduce)');let wireFrame=0,hoverPoint=null;
     function animateWires(){if(!wireFrame&&visible)wireFrame=requestAnimationFrame(()=>{
         wireFrame=0;
-        if(hoverPoint&&!drag){const {x,y}=hoverPoint;setMagnet(nearestPort(x,y));setIncomingWire(selectedLink??nearestIncoming(graphLinks(graph),x,y)?.id??null);}
+        if(hoverPoint&&!drag){const {x,y}=hoverPoint;setMagnet(nearestPort(x,y),hoverPoint);setIncomingWire(selectedLink??nearestIncoming(graphLinks(graph),x,y)?.id??null);}
         hoverPoint=null;drawWires();
     });}
     const cards=new Map();let fieldGallery=null,selectedLink=null,addPoint=null,pickerConnection=null,workspace=null;
     const dirty=()=>{graph.setDirtyCanvas?.(true,true);graph.change?.();};
     const message=text=>{status.textContent=text;};
     const canConnectOutput=node=>adapterFor(node)?.canConnectOutput?.(node)!==false;
-    function viewport(){const v=state.viewport;root.style.setProperty('--dae-canvas-zoom',String(v.zoom));root.style.setProperty('--dae-canvas-inverse-zoom',String(1/v.zoom));world.style.transform=`translate(${v.x}px,${v.y}px) scale(${v.zoom})`;grid.style.backgroundSize=`${24*v.zoom}px ${24*v.zoom}px`;grid.style.backgroundPosition=`${v.x}px ${v.y}px`;zoomLabel.textContent=`${Math.round(v.zoom*100)}%`;for(const c of cards.values())update(c);}
+    function viewport(){setMagnet(null);const v=state.viewport;root.style.setProperty('--dae-canvas-zoom',String(v.zoom));root.style.setProperty('--dae-canvas-inverse-zoom',String(1/v.zoom));world.style.transform=`translate(${v.x}px,${v.y}px) scale(${v.zoom})`;grid.style.backgroundSize=`${24*v.zoom}px ${24*v.zoom}px`;grid.style.backgroundPosition=`${v.x}px ${v.y}px`;zoomLabel.textContent=`${Math.round(v.zoom*100)}%`;for(const c of cards.values())update(c);}
     function setZoom(factor){state.viewport=zoomAt(state.viewport,{x:root.clientWidth/2,y:root.clientHeight/2},factor);viewport();dirty();}
     zoom.append(button('−',()=>setZoom(0.8)),zoomLabel,button('+',()=>setZoom(1.25)),button('适应',fit));
     function fit(){
@@ -59,7 +76,6 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         const z=Math.max(.15,Math.min(1,(root.clientWidth-100)/(maxX-minX),(root.clientHeight-150)/(maxY-minY)));
         state.viewport={x:50-minX*z,y:50-minY*z,zoom:z};viewport();dirty();
     }
-    const panelFor=node=>adapterFor(node)?.panel?.(node)?.root;
     function paintSelection(){for(const c of cards.values()){c.element.dataset.selected=String(selected.has(c.node.id));c.element.dataset.slotsSuppressed=String(suppressGroupSlots(graph,c.node,selected));}}
     function select(node,{toggle=false,preserve=false}={}){selectedLink=null;if(!node)selected.clear();else if(toggle){if(selected.has(node.id))selected.delete(node.id);else selected.add(node.id);}else if(!preserve||!selected.has(node.id)){selected.clear();selected.add(node.id);}paintSelection();}
     function connect(node,index,side){
@@ -102,6 +118,72 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
             }
         }
     }
+    const outputPending=new WeakSet();let suppressSourceClick=false;
+    root.addEventListener('click',e=>{if(suppressSourceClick){suppressSourceClick=false;e.preventDefault();e.stopImmediatePropagation();}},true);
+    function clearMaterialPorts(c){
+        for(const entry of c.materialPorts?.values()||[]){entry.original.classList.remove('dae-projected-source');if(magneticPort===entry.port)setMagnet(null);entry.port.remove();}
+        c.materialPorts?.clear();
+    }
+    function projectMaterialPorts(c){
+        const adapter=adapterFor(c.node),entries=[...(adapter?.materialTargets?.(c.node)||[]).map(target=>({...target,side:'input'})),...(adapter?.materialSources?.(c.node)||[]).map(source=>({...source,side:'output'}))];
+        c.materialPorts??=new Map();const current=new Set(),bounds=c.element.getBoundingClientRect(),zoom=state.viewport.zoom;
+        for(const entry of entries){
+            const original=entry.element,anchor=entry.anchorElement||original.closest('th')||original;
+            if(!c.body.contains(original))continue;
+            current.add(original);let projected=c.materialPorts.get(original);
+            if(!projected){const port=button('+',()=>{});port.className='dae-material-slot dae-column-slot';port.dataset.side=entry.side;port.dataset.materialColumnSlot='true';c.element.append(port);projected={original,port};c.materialPorts.set(original,projected);
+                if(entry.side==='input'){const focus=e=>{if(e.button!==0)return;e.preventDefault();e.stopImmediatePropagation();select(c.node);port.focus({preventScroll:true});};portStarts.set(port,focus);port.addEventListener('pointerdown',focus);}
+            }
+            projected.entry=entry;const {port}=projected;
+            if(entry.side==='output')original.classList.add('dae-projected-source');
+            let clipElement=entry.clipElement;
+            if(!clipElement)for(let parent=anchor.parentElement;parent&&parent!==c.element;parent=parent.parentElement){if(/auto|scroll|hidden|clip/.test(getComputedStyle(parent).overflowX)){clipElement=parent;break;}}
+            const r=anchor.getBoundingClientRect(),clip=clipElement?.getBoundingClientRect();
+            port.hidden=c.body.hidden||c.body.inert||!r.width||!r.height||!!clip&&(r.left+r.width/2<clip.left||r.left+r.width/2>clip.right||r.bottom<=clip.top||r.top>=clip.bottom);
+            port.disabled=!!original.disabled;
+            port.style.left=`${(r.left+r.width/2-bounds.left)/zoom-16}px`;
+            port.style.top=`${(r.top-bounds.top)/zoom-54}px`;
+            port.setAttribute('aria-label',entry.label||`${c.node.title} 列${entry.side==='input'?'输入':'输出'}`);
+            port.title=entry.label||(entry.side==='input'?'拖入素材组，填充此列':'输出为素材组');
+        }
+        for(const [original,entry] of c.materialPorts)if(!current.has(original)){original.classList.remove('dae-projected-source');if(magneticPort===entry.port)setMagnet(null);entry.port.remove();c.materialPorts.delete(original);}
+    }
+    function materialSources(c){
+        for(const projected of c.materialPorts?.values()||[]){
+            const source=projected.entry,b=projected.port;if(source.side!=='output'||portStarts.has(b))continue;
+            b.classList.add('dae-material-slot');b.textContent='+';b.dataset.side='output';b.dataset.materialSource=source.key;
+            b.setAttribute('aria-label',source.label||'输出素材');b.title=source.label||'拖到空白处输出素材组';
+            const start=e=>{if(e.button!==0||!visible||graph.getNodeById(c.node.id)!==c.node)return;e.preventDefault();e.stopImmediatePropagation();
+                closePicker();select(c.node);root.focus();drag={kind:'wire',node:c.node,index:MATERIAL_SLOT,side:'output',materialKey:source.key,element:b,x:e.clientX,y:e.clientY};setWireSource(b);root.setPointerCapture(e.pointerId);};
+            portStarts.set(b,start);b.addEventListener('pointerdown',start);
+            b.onclick=e=>{if(!visible||graph.getNodeById(c.node.id)!==c.node)return;e.preventDefault();e.stopPropagation();const r=root.getBoundingClientRect(),a=b.getBoundingClientRect();choose({x:a.right-r.left+40,y:a.bottom-r.top+40},{node:c.node,side:'output',materialKey:source.key,element:b,index:MATERIAL_SLOT});};
+        }
+    }
+    function snapshotFor(context){return context.materialKey!==undefined?adapterFor(context.node)?.outputMaterials?.(context.node,context.materialKey):adapterFor(context.node)?.assets?.(context.node);}
+    async function outputMaterials(context,point){
+        if(outputPending.has(context.node))return;outputPending.add(context.node);
+        const ownerGraph=graph,ownerState=state,created=[];
+        try{
+            const snapshot=snapshotFor(context);
+            if(!snapshot||snapshot.ready===false||!snapshot.assets?.length)throw new Error('当前没有有效的已完成素材');
+            const frozen=JSON.parse(JSON.stringify(snapshot)),stamp=JSON.stringify(snapshot);
+            message('正在导入本地素材…');
+            const response=await fetch('/daelab/creative/material-output',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({assets:frozen.assets})});
+            const data=await response.json();if(!response.ok)throw new Error(data.error||'素材导入失败');
+            if(!visible||graph!==ownerGraph||app.graph!==ownerGraph||state!==ownerState||!validConnection(context)||JSON.stringify(snapshotFor(context))!==stamp)throw new Error('来源或结果已变化，请重新输出');
+            if(!Array.isArray(data.assets)||data.assets.length!==frozen.assets.length)throw new Error('素材导入数量不一致');
+            history.begin();
+            try{
+                for(const [i,asset] of data.assets.entries()){
+                    const node=add(UPLOAD_TYPE,{x:point.x+(i%3)*300*state.viewport.zoom,y:point.y+Math.floor(i/3)*240*state.viewport.zoom});if(!node)throw new Error('素材节点未加载');created.push(node);
+                    const widget=node.widgets?.find(w=>w.name==='asset_data');if(!widget)throw new Error('素材节点格式不兼容');widget.value=JSON.stringify(asset);node.title=asset.name;node.properties.materialOutputSource={nodeId:String(context.node.id),key:context.materialKey??null,...asset.provenance};node.__mediaUpload?.reload?.();
+                }
+                if(context.materialKey!==undefined||frozen.assets.length>1){const group=add(GROUP_TYPE,point);if(!group)throw new Error('素材组节点未加载');created.push(group);group.title=frozen.label||context.node.title+' · 输出';group.properties.members=created.slice(0,-1).map(n=>n.id);group.properties.collapsed=false;const collection=group.widgets?.find(w=>w.name==='collection_data');if(collection)collection.value=JSON.stringify(collectionFor(group));select(group);}
+            }catch(error){for(const node of created){graph.remove(node);delete state.cards[node.id];}throw error;}
+            finally{dirty();sync();app.daelabMaterialGroups?.tick?.();dirty();history.end();}
+            root.focus({preventScroll:true});message(`已输出 ${data.assets.length} 个素材${frozen.skipped?'，跳过 '+frozen.skipped+' 行':''}`);
+        }catch(error){message('输出失败：'+error.message);}finally{outputPending.delete(context.node);}
+    }
     function nativeFields(c){
         // Parameters left outside ComfyTV's rich widget still need editable controls.
         c.fields.replaceChildren();c.fieldBindings=[];
@@ -118,18 +200,8 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         }
     }
     function attach(c){
-        const panel=panelFor(c.node);if(!panel||panel.parentNode===c.body||panel.closest('dialog')||!panel.isConnected)return;
-        // The host's first DOM-widget mount may happen after node creation. Reacquire
-        // only if it returned to the host; never steal a panel from a child dialog.
-        if(c.panel===panel)c.release?.abandon?.();else c.release?.();
         const owner=adapterFor(c.node)?.panel?.(c.node);
-        c.body.replaceChildren();c.panel=panel;c.release=leasePanel(panel,c.body,owner?.buttons,owner?.fields);
-        if(c.openEditor&&owner?.workspaceControls){
-            owner.workspaceControls.append(c.openEditor);
-            const release=c.release;
-            c.release=()=>{c.element.append(c.openEditor);release();};
-            c.release.abandon=()=>{c.element.append(c.openEditor);release.abandon();};
-        }
+        if(!attachCardPanel(c,owner))return;
         nativeFields(c);c.body.append(c.fields);if(c.run)c.body.append(c.run);
     }
     function closeWorkspace(){
@@ -213,7 +285,15 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
             const isVideo=preview.kind==='video'||/\.(mp4|webm|mov)(?:[?&]|$)/i.test(file);const m=el(isVideo?'video':'img');m.src=url;if(isVideo){m.controls=true;m.preload='metadata';}else m.alt=node.title||'素材';c.media.append(m);
         }}
         c.media.hidden=layout.expanded&&!!c.panel?.querySelector('video[src],img[src]');
+        if(c.widthHandle){
+            // The resize boundary belongs to the panel, not its heading or summary.
+            c.widthHandle.hidden=c.body.hidden;
+            c.widthHandle.style.top=c.body.offsetTop+'px';
+            c.widthHandle.style.height=c.body.offsetHeight+'px';
+            c.widthHandle.style.bottom='auto';
+        }
         ports(c);
+        projectMaterialPorts(c);materialSources(c);
     }
     function removeWire(id){history.begin();try{graph.removeLink(id);selectedLink=null;}finally{history.end();}dirty();sync();}
     function selectWire(id){if(selectedLink===id)return;select(null);selectedLink=id;drawWires();}
@@ -250,23 +330,14 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         }
         return distance<90?best:null;
     }
-    function wireAnchor(rect,port,side,now){
+    function wireAnchor(rect,port,side){
+        // Floating unified Slots are interaction handles, not persistent wire anchors.
+        if(port.closest('.dae-creative-card')?.dataset.unified==='true')return {x:side==='output'?rect.right:rect.left,y:rect.top+rect.height/2};
         const target=port.getBoundingClientRect();
-        let motion=wireAnchors.get(port);if(!motion){motion={value:0,from:0,to:0,start:now};wireAnchors.set(port,motion);}
-        if(drag?.kind!=='detach'){
-            const style=getComputedStyle(port);
-            const shown=!port.disabled&&style.display!=='none'&&style.visibility==='visible'&&Number(style.opacity)>0&&target.width>0&&target.height>0;
-            const to=shown?1:0;
-            if(to!==motion.to){motion.from=motion.value;motion.to=to;motion.start=now;}
-            const t=reducedMotion.matches?1:Math.min(1,(now-motion.start)/150);
-            motion.value=motion.from+(motion.to-motion.from)*t*t*(3-2*t);
-            if(t<1)animateWires();
-        }
-        const x=side==='output'?rect.right:rect.left,y=rect.top+rect.height/2;
-        return {x:x+(target.left+target.width/2-x)*motion.value,y:y+(target.top+target.height/2-y)*motion.value};
+        return {x:target.left+target.width/2,y:target.top+target.height/2};
     }
     function drawWires(){
-        const segments=[],now=performance.now(),rw=world.getBoundingClientRect(),z=state.viewport.zoom;
+        const segments=[],rw=world.getBoundingClientRect(),z=state.viewport.zoom;
         const bounds=new Map(),anchors=new Map();
         for(const link of graphLinks(graph)){
             const a=cards.get(link.origin_id),b=cards.get(link.target_id);if(!a||!b)continue;
@@ -274,7 +345,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
             if(!bounds.has(a))bounds.set(a,a.element.getBoundingClientRect());if(!bounds.has(b))bounds.set(b,b.element.getBoundingClientRect());
             const ra=bounds.get(a),rb=bounds.get(b);
             if(!ra.width||!ra.height||!rb.width||!rb.height)continue;
-            if(!anchors.has(source))anchors.set(source,wireAnchor(ra,source,'output',now));if(!anchors.has(target))anchors.set(target,wireAnchor(rb,target,'input',now));
+            if(!anchors.has(source))anchors.set(source,wireAnchor(ra,source,'output'));if(!anchors.has(target))anchors.set(target,wireAnchor(rb,target,'input'));
             const start=anchors.get(source),end=anchors.get(target);
             const x1=(start.x-rw.left)/z,y1=(start.y-rw.top)/z;
             let x2=(end.x-rw.left)/z,y2=(end.y-rw.top)/z;
@@ -301,14 +372,14 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         else if(drag?.kind==='wire'&&drag.point)previewConnection(drag,drag.point);
         if(changed)root.dispatchEvent(new Event('dae-canvas-wires-changed'));
     }
-    function clear(){cancelAnimationFrame(wireFrame);wireFrame=0;hoverPoint=null;incomingWire=null;wirePaths.clear();setMagnet(null);closeWorkspace();closePicker();fieldGallery?.release();fieldGallery=null;for(const c of cards.values()){c.cancelWidthResize?.();resizeObserver.unobserve(c.element);adapterFor(c.node)?.panel?.(c.node)?.close?.();c.release?.();c.element.remove();}cards.clear();wires.replaceChildren();selected.clear();marquee.hidden=true;delete root.dataset.panning;selectedLink=null;pending=null;drag=null;}
+    function clear(){cancelAnimationFrame(wireFrame);wireFrame=0;hoverPoint=null;incomingWire=null;wirePaths.clear();setMagnet(null);closeWorkspace();closePicker();fieldGallery?.release();fieldGallery=null;for(const c of cards.values()){c.cancelWidthResize?.();resizeObserver.unobserve(c.element);clearMaterialPorts(c);adapterFor(c.node)?.panel?.(c.node)?.close?.();c.release?.();c.element.remove();}cards.clear();wires.replaceChildren();selected.clear();marquee.hidden=true;delete root.dataset.panning;selectedLink=null;pending=null;drag=null;}
     function sync(){
         if(!visible)return;
         for(const id of selected)if(!graph.getNodeById(id))selected.delete(id);
         if(graph!==app.graph||state!==app.graph.extra?.daelabCreativeCanvasV1){clear();graph=app.graph;state=canvasState(graph);if(!state.active){hide(false);onExit();return;}viewport();}
         if(pickerConnection&&!validConnection(pickerConnection))closePicker();
         const nodes=graph._nodes.filter(supportedNode),current=new Set(nodes);
-        for(const [id,c] of cards)if(!current.has(c.node)){if(workspace?.c===c)closeWorkspace();c.cancelWidthResize?.();resizeObserver.unobserve(c.element);c.release?.();c.element.remove();cards.delete(id);}
+        for(const [id,c] of cards)if(!current.has(c.node)){if(workspace?.c===c)closeWorkspace();c.cancelWidthResize?.();resizeObserver.unobserve(c.element);clearMaterialPorts(c);c.release?.();c.element.remove();cards.delete(id);}
         nodes.forEach((node,i)=>{const c=cards.get(node.id)||makeCard(node,i);attach(c);update(c);});empty.hidden=nodes.length>0;drawWires();
     }
     function add(type,point=addPoint){
@@ -320,9 +391,9 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
     }
     function setWireSource(port){if(wireSource===port)return;if(wireSource)delete wireSource.dataset.wireSource;wireSource=port;if(port)port.dataset.wireSource='true';}
     function closePicker(){setWireSource(null);picker?.remove();picker=null;pickerConnection=null;addPoint=null;wires.querySelector('[data-preview]')?.remove();}
-    function validConnection(context){return graph===app.graph&&graph.getNodeById(context.node.id)===context.node&&(context.index===MATERIAL_SLOT?(context.node.type!==UPLOAD_TYPE||uploadKind(context.node)===context.mediaKind):context.node[context.side==='output'?'outputs':'inputs']?.[context.index]===context.slot);}
+    function validConnection(context){if(context.materialKey!==undefined)return graph===app.graph&&graph.getNodeById(context.node.id)===context.node&&(adapterFor(context.node)?.materialSources?.(context.node)||[]).some(s=>s.key===context.materialKey&&s.element.isConnected);return graph===app.graph&&graph.getNodeById(context.node.id)===context.node&&(context.index===MATERIAL_SLOT?(context.node.type!==UPLOAD_TYPE||uploadKind(context.node)===context.mediaKind):context.node[context.side==='output'?'outputs':'inputs']?.[context.index]===context.slot);}
     function previewConnection(context,point){
-        const c=cards.get(context.node.id),port=c?.ports.querySelector(`[data-side=${context.side}][data-slot="${context.index}"]`);if(!port)return;setWireSource(port);
+        const c=cards.get(context.node.id),port=context.element||c?.ports.querySelector(`[data-side=${context.side}][data-slot="${context.index}"]`);if(!port)return;setWireSource(port);
         let path=wires.querySelector('[data-preview]');if(!path){path=document.createElementNS(wires.namespaceURI,'path');path.dataset.preview='true';wires.append(path);}
         const a=port.getBoundingClientRect(),r=root.getBoundingClientRect(),v=state.viewport,target=magneticPort?.getBoundingClientRect();
         const origin={x:(a.left+a.width/2-r.left-v.x)/v.zoom,y:(a.top+a.height/2-r.top-v.y)/v.zoom};
@@ -367,6 +438,11 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         picker=el('section','dae-creative-picker');picker.setAttribute('aria-label','添加节点');
         picker.append(el('h2','',context?(context.side==='output'?'引用此节点新建':'新建来源节点'):'添加节点'));
         const list=el('div');picker.append(list);root.append(picker);
+        if(context?.side==='output'&&(context.materialKey!==undefined||adapterFor(context.node)?.materialOutput===true)){
+            const snap=snapshotFor(context);const label=context.materialKey!==undefined?'输出为素材组':'输出为视频素材';
+            const output=button(label+(snap?.skipped?'（跳过 '+snap.skipped+' 行）':''),()=>{closePicker();return outputMaterials(context,point);});output.disabled=!snap?.assets?.length||snap.ready===false;list.append(output);
+            if(context.materialKey!==undefined){positionPicker();output.focus();return;}
+        }
         for(const item of menuItems()){
             const definition=globalThis.LiteGraph.registered_node_types[item.type];if(!definition)continue;
             const compatible=!context||(context.side==='output'?sourceSlots(context.node,context.index).some(i=>canConnectDefinition(definition?.nodeData,context.side,context.node.outputs[i].type)):(context.index===MATERIAL_SLOT?inputSlots(context.node):[context.index]).some(i=>canConnectDefinition(definition?.nodeData,context.side,context.node.inputs[i].type)));
@@ -388,21 +464,39 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         positionPicker();
         picker.tabIndex=-1;(picker.querySelector('button:not(:disabled)')||picker).focus();
     }
-    function setMagnet(port){
-        if(magneticPort===port)return;
-        if(magneticPort)delete magneticPort.dataset.magnetic;
+    const portOffsets=new WeakMap();
+    function portCenter(port){
+        const r=port.getBoundingClientRect(),offset=portOffsets.get(port)||{x:0,y:0};
+        return {x:r.left+r.width/2-offset.x*state.viewport.zoom,y:r.top+r.height/2-offset.y*state.viewport.zoom};
+    }
+    function setMagnet(port,point=null){
+        if(magneticPort&&magneticPort!==port){delete magneticPort.dataset.magnetic;magneticPort.style.removeProperty('translate');portOffsets.delete(magneticPort);}
         magneticPort=port;
-        if(port)port.dataset.magnetic='true';
+        if(port){
+            port.dataset.magnetic='true';
+            if(port.matches('button[data-slot],button[data-material-column-slot]')){
+                const center=portCenter(port),dx=point&&!reducedMotion.matches?point.x-center.x:0,dy=point&&!reducedMotion.matches?point.y-center.y:0;
+                const factor=Math.min(.22,6/(Math.hypot(dx,dy)||1))/state.viewport.zoom,offset={x:dx*factor,y:dy*factor};
+                portOffsets.set(port,offset);port.style.translate=`${offset.x}px ${offset.y}px`;
+            }
+        }
         root.classList.toggle('dae-port-magnet',!!port);
     }
     function materialTargetAt(x,y,source=null){
         const ignored=new Set([source?.id,...(source?.type===GROUP_TYPE?source.properties.members||[]:[])].map(String));
+        let nearest=null,distance=SLOT_MAGNET_RADIUS;
+        for(const c of cards.values())if(!ignored.has(String(c.node.id)))for(const projected of c.materialPorts?.values()||[]){
+            const {port,entry}=projected;if(entry.side!=='input'||port.hidden||port.disabled)continue;
+            const center=portCenter(port),d=Math.hypot(x-center.x,y-center.y);if(d<distance){nearest={...entry,element:port,node:c.node};distance=d;}
+        }
+        if(nearest)return nearest;
         const topCard=document.elementsFromPoint(x,y).map(e=>e.closest('.dae-creative-card')).find(e=>e&&!ignored.has(e.dataset.nodeId));
         for(const c of cards.values())for(const target of c.element===topCard?adapterFor(c.node)?.materialTargets?.(c.node)||[]:[]){
             const visible=target.element.getBoundingClientRect();if(!visible.width||!visible.height)continue;
             const scroll=target.clipElement?.getBoundingClientRect();
             if(scroll&&(x<scroll.left||x>scroll.right||y<scroll.top||y>scroll.bottom))continue;
-            for(const element of [target.element,...(target.dropElements||[])]){const r=element.getBoundingClientRect();if(r.width&&r.height&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom)return {...target,node:c.node};}
+            const port=c.materialPorts?.get(target.element)?.port;if(port?.hidden||port?.disabled)continue;
+            for(const element of [target.element,...(target.dropElements||[])]){const r=element.getBoundingClientRect();if(r.width&&r.height&&x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom)return {...target,element:port||target.element,node:c.node};}
         }
         return null;
     }
@@ -416,11 +510,14 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         return true;
     }
     function nearestPort(x,y,context=null){
-        if(picker||workspace)return null;
+        if(picker||workspace||context?.materialKey!==undefined)return null;
         if(context?.side==='output'&&context.node.type===GROUP_TYPE){const target=materialTargetAt(x,y,context.node);if(target)return target.element;}
         const hit=document.elementFromPoint(x,y);
-        if(hit?.closest('button:not([data-slot]),input,textarea,select,a,video,.dae-creative-picker'))return null;
-        let best=null,distance=32;
+        if(hit?.closest('button:not([data-slot]):not([data-material-column-slot]),input,textarea,select,a,video,.dae-creative-picker'))return null;
+        let best=null,distance=SLOT_MAGNET_RADIUS;
+        if(!context)for(const c of cards.values())for(const {port} of c.materialPorts?.values()||[]){
+            if(port.hidden||port.disabled)continue;const center=portCenter(port),d=Math.hypot(x-center.x,y-center.y);if(d<distance){best=port;distance=d;}
+        }
         for(const c of cards.values()){
             if(!unifiedNode(c.node)||context?.node===c.node||suppressGroupSlots(graph,c.node,selected))continue;
             const bounds=c.element.getBoundingClientRect();
@@ -433,7 +530,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
                     if(!compatible)continue;
                 }
                 const r=port.getBoundingClientRect();if(!r.width||!r.height||getComputedStyle(port).visibility==='hidden')continue;
-                const d=Math.hypot(x-r.left-r.width/2,y-r.top-r.height/2);
+                const center=portCenter(port),d=Math.hypot(x-center.x,y-center.y);
                 if(d<distance){best=port;distance=d;}
             }
         }
@@ -497,10 +594,11 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
             if(Math.abs(dx)>3||Math.abs(dy)>3)for(const c of cards.values()){const b=c.element.getBoundingClientRect();if(b.right>left&&b.left<right&&b.bottom>top&&b.top<bottom)selected.add(c.node.id);}
             paintSelection();
         }else{for(const item of drag.originals){item.card.layout.x=item.x+dx/state.viewport.zoom;item.card.layout.y=item.y+dy/state.viewport.zoom;update(item.card);}drawWires();}});
-    const endDrag=e=>{const current=drag,dropHit=current?.kind==='wire'?(nearestPort(e.clientX,e.clientY,current)||document.elementFromPoint(e.clientX,e.clientY)):document.elementFromPoint(e.clientX,e.clientY);setMagnet(null);setWireSource(null);drag=null;marquee.hidden=true;delete root.dataset.panning;wires.querySelector('[data-preview]')?.remove();if(!current)return;
+    const endDrag=e=>{if(!drag)return;const current=drag,dropHit=current?.kind==='wire'?(nearestPort(e.clientX,e.clientY,current)||document.elementFromPoint(e.clientX,e.clientY)):document.elementFromPoint(e.clientX,e.clientY);setMagnet(null);setWireSource(null);drag=null;marquee.hidden=true;delete root.dataset.panning;wires.querySelector('[data-preview]')?.remove();if(!current)return;
         if(current.kind==='detach'){if(e.type==='pointerup'&&Math.hypot(e.clientX-current.x,e.clientY-current.y)>=40){removeWire(current.id);message('已断开连线，可撤销');}else drawWires();return;}
         if(current.kind==='wire'&&e.type==='pointerup'){
             if(!validConnection(current)){message('素材或接口已改变，请重新连线');return;}
+            if(current.materialKey!==undefined){const r=root.getBoundingClientRect();suppressSourceClick=true;setTimeout(()=>{suppressSourceClick=false;},250);if(Math.hypot(e.clientX-current.x,e.clientY-current.y)<4){const b=current.element.getBoundingClientRect();choose({x:b.right-r.left+40,y:b.bottom-r.top+40},current);}else if(root.contains(dropHit)&&!dropHit?.closest('.dae-creative-card'))choose({x:e.clientX-r.left,y:e.clientY-r.top},current);else message('请拖到画布空白处输出素材组');return;}
             if(current.side==='output'&&receiveMaterialGroup(current.node,e.clientX,e.clientY))return;
             const hit=dropHit,port=hit?.closest('button[data-slot]'),card=hit?.closest('.dae-creative-card');
             const target=card&&[...cards.values()].find(c=>String(c.node.id)===card.dataset.nodeId)?.node;
@@ -560,6 +658,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         if(e.target.closest('input,textarea,select,[contenteditable=true]')){e.stopPropagation();return;}
         if(e.key==='Escape'){if(drag?.kind==='marquee'){selected=new Set(drag.base);paintSelection();}marquee.hidden=true;delete root.dataset.panning;setMagnet(null);pending=null;drag=null;closePicker();drawWires();message('已取消');}
         if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();if(selectedLink!=null){removeWire(selectedLink);}else{history.begin();for(const id of expandGroupSelection(graph,selected)){const c=cards.get(id);if(c){graph.remove(c.node);delete state.cards[id];}}selected.clear();history.end();dirty();sync();}}
+        if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s')return;
         e.stopPropagation();});
     function show(){graph=app.graph;state=canvasState(graph);state.active=true;visible=true;root.hidden=false;document.body.dataset.daelabCreative='true';viewport();sync();if(graph.extra?.daelabControlGallery&&!fieldGallery){fieldGallery=createFieldGallery(graph.extra.daelabControlGallery);world.append(fieldGallery.root);}dirty();}
     function hide(save=true){root.dispatchEvent(new Event('dae-canvas-hide'));if(save&&state){state.active=false;dirty();}visible=false;root.hidden=true;delete document.body.dataset.daelabCreative;clear();closePicker();app.canvas.setDirty?.(true,true);}

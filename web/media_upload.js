@@ -3,7 +3,7 @@ import {app} from '/scripts/app.js';
 import {createCreativeButton} from './creative_button.mjs';
 import {UPLOAD_TYPE,ACCEPT,mediaKind,readAsset,assetURL,slotAllowed} from './media_upload_model.mjs';
 
-const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./media_upload.css',import.meta.url).href;document.head.append(sheet);
+const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./media_upload.css?v=20260929-toolbar-fix',import.meta.url).href;document.head.append(sheet);
 function install(node){
     if(node.__mediaUpload)return;
     const data=node.widgets.find(w=>w.name==='asset_data');
@@ -41,7 +41,6 @@ function install(node){
         if(!file||disposed||node.mode)return;
         const kind=mediaKind(file.name);if(!kind){status.textContent='请选择 PNG、JPG、WebP、MP4、WebM 或 MOV 文件';return;}
         if(asset&&kind!==asset.kind&&node.outputs.some(o=>o.links?.length)){status.textContent='切换素材类型前，请先断开现有输出连线';return;}
-        if(asset&&!window.confirm('替换当前素材？已有引用会使用新素材。'))return;
         controller?.abort();controller=new AbortController();const token=++epoch,previous=data.value;
         choose.disabled=true;root.setAttribute('aria-busy','true');status.textContent='正在上传…';
         try{
