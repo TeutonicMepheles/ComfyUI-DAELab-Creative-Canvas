@@ -33,7 +33,7 @@ register();
 | `resizable` / `fullHeight` | 可选布尔值或节点函数；启用外框横向调整／取消宿主内容高度上限。宽度保存在既有 cards 布局中，支持取消、撤销及重载；业务负责自身滚动容器。 |
 | `compactWidth` | 可选屏幕像素阈值；卡片窄于此值时显示摘要，打开 workspace 时恢复完整面板，不改变保存的展开状态 |
 | `workspace(node)` | 是否使用独立编辑器弹窗 |
-| `panel(node)` | 返回 `{root, buttons?, fields?, close?, workspaceControls?}`；root 尚未挂载时可以为空，宿主稍后重试。可选 DOM 容器 `workspaceControls` 用于放置宿主的展开按钮，面板负责其布局，宿主释放面板时收回按钮 |
+| `panel(node)` | 返回 `{root, buttons?, fields?, close?, workspaceControls?}`；root 尚未创建时可以为空，宿主稍后重试；一旦返回 root，宿主即可借用，无需先连接 document（撤销重建时原生 DOM widget 可能尚未挂载）。可选 DOM 容器 `workspaceControls` 用于放置宿主的展开按钮，面板负责其布局，宿主释放面板时收回按钮 |
 | `refresh(node)` | 更新自己面板，不得每次重建 DOM 或发送请求 |
 | `summary(node)` / `preview(node)` | 摘要或 `{url, kind}`；提供业务所有者认可的预览 |
 | `action(node)` | 可选 `{label, run(node, app)}`，Promise 交给共享按钮管理忙碌态 |
@@ -59,6 +59,8 @@ register();
 画布只负责素材组有序快照、命中检测和历史边界；业务适配器负责数据验证、行数和单元格规则。该入口是显式一次填充，不创建虚假的原生输入或持久连接，不随源组变化覆盖手工编辑。字段删除、隐藏、重排后重新读取目标；使用 `.dae-material-slot` 复用素材卡片 Slot 外观。拖动素材组本体完成填充时恢复原位置。
 
 ## Slot 基准
+
+宿主将 `materialTargets`／`materialSources` 投影为表头上方、列宽中心的外置 Slot，共享邻近磁吸和微动。可选 `anchorElement` 声明列定位区域；默认使用 element 所属的语义 `th`，否则使用 element。源控件在画布借用期间隐藏，退出时恢复；业务仍持有原 DOM 和稳定 key。列区域落点与 clipElement 契约保持有效。
 
 所有适配器遵循[接口与连线基准](architecture/FRONTEND_INTERACTION.md#接口与连线)。宿主统一拥有端口外观、磁吸、端点跟随及断线撤销；消费者仅声明类型、用途和能力限制。`materialTargets` 的列接口是一次素材快照接收目标，不创建持久图连接。表格缩放与完整高度不得覆盖宿主 Slot 的交互。
 
