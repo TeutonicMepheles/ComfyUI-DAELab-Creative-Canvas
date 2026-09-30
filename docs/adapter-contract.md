@@ -69,3 +69,9 @@ register();
 可选 `materialSources(node)` 返回 `{element,key,label?}[]`，使用稳定列 ID 和 `.dae-material-slot`。宿主拥有点击、拖线及空白处创建菜单。`outputMaterials(node,key)` 返回 `{version:1,ready,assets,label?,skipped?}`；assets 使用本地 `/view` URL、kind、id、name 和可选 provenance，按业务顺序提供。已有图像或视频素材即可输出，包括过期结果或重新生成期间保留的结果；业务只跳过没有可用素材的行。
 
 输出为一次独立素材快照：宿主校验并导入本地文件，创建现有素材节点及有序素材组，统一撤销；异步期间来源发生变化时放弃创建。不增加原生端口、持久图连线或业务生成依赖。适配器显式声明 `materialOutput:true` 后，`assets(node)` 提供的当前剪辑结果也可输出为单个视频素材。
+
+## 面板呈现与视口上下文
+
+适配器可选 `presentation: 'content'`（或节点函数）让宿主负责无外框卡片、标题对齐及正文内边距。`selectionSurface(node)` 返回自己 root 内的 DOM 区域，宿主为其绘制选中轮廓；重绘替换该区域后宿主重新读取。业务样式不得修改宿主卡片、标题或选择状态。
+
+`api.getPanelContext(element)` 返回当前借用面板的上下文，独立安装或归还后返回 null。上下文提供 `presentation`、`fullHeight`、`selected`、`contains(element)`、`getBounds()`、`getViewport()` 与 `panBy(dx,dy)`；位移为屏幕像素，正数将内容向左／上平移。隐藏、停用或释放后平移返回 false。无需查找宿主 DOM 或派发模拟滚轮事件。宿主在借用 root 上管理公开 `data-canvas-panel=true` 和 `data-canvas-full-height` 标记，归还时清理。业务自身的滚动、末行和末列布局留在业务包，不由宿主识别其 CSS 类名。

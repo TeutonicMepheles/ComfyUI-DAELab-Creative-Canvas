@@ -29,7 +29,7 @@
 .dae-creative-summary{padding:0 16px 16px;color:var(--dae-text-muted);white-space:pre-wrap;max-height:130px;overflow:hidden;line-height:1.7}
 .dae-creative-body{padding:0 12px 12px;max-height:720px;overflow:auto;cursor:auto;user-select:text;touch-action:auto;scrollbar-width:thin;scrollbar-color:var(--dae-border) transparent}
 .dae-creative-body[hidden]{display:none}
-.dae-creative-body>.dae-table-host{width:100%!important}
+.dae-creative-body>[data-canvas-panel=true]{width:100%!important}
 .dae-creative-body>.comfytv-root{position:relative!important;transform:none!important;min-height:260px!important;max-height:650px;height:auto!important;overflow:auto!important}
 .dae-creative-body>.dae-libtv{height:auto;max-height:650px}
 .dae-creative-body .workbench-expand{display:none}
@@ -163,12 +163,6 @@ body[data-daelab-creative=true] [role="toolbar"]:has(> [data-testid="zoom-contro
 @media(prefers-reduced-motion:reduce){.dae-creative .dae-column-slot{transition:none}}
 
 .dae-creative-card[data-full-height=true]>.dae-creative-body{max-height:none;overflow:visible}
-/* Full-height panels move as a whole. Also suppress the adapter's inline viewport
-   translation, which can otherwise pin a static footer above its natural row. */
-.dae-creative .dae-creative-card[data-full-height=true] .dae-table[data-structure] .table-add-row-cell{position:static!important;bottom:auto;z-index:auto;transform:none!important}
-/* Reserve the complete terminal column while data columns scroll underneath. */
-.dae-creative-card[data-full-height=true] .dae-table[data-structure] .table-trailing-cell{position:sticky!important;right:0;z-index:3;width:48px!important;min-width:48px;padding:0!important;background:var(--table-control-surface,var(--dae-surface-low,#222))!important;box-shadow:-1px 0 var(--dae-border,#404040)}
-.dae-creative-card[data-full-height=true] .dae-table[data-structure] .table-add-column{min-width:48px;box-sizing:border-box}
 .dae-creative .dae-creative-width-handle{position:absolute;right:-6px;top:52px;bottom:0;width:12px;cursor:ew-resize;touch-action:none;z-index:8;outline:none}
 .dae-creative .dae-creative-width-handle::after{content:'';position:absolute;top:0;bottom:0;left:5px;width:2px;background:var(--dae-accent);opacity:0}
 .dae-creative .dae-creative-width-handle:hover::after,.dae-creative .dae-creative-width-handle:focus-visible::after,.dae-creative .dae-creative-width-handle[data-dragging]::after{opacity:1}
@@ -181,3 +175,12 @@ body[data-daelab-creative=true] [role="toolbar"]:has(> [data-testid="zoom-contro
 
 .dae-creative .dae-creative-width-handle[hidden]{display:none}
 .dae-creative .dae-creative-width-handle::after{transform:translateX(-100%)}
+
+/* Adapter-declared presentation; the host owns its frame and selection. */
+.dae-creative-card[data-presentation=content],.dae-creative-card[data-presentation=content][data-selected=true]{background:transparent;border:0;border-radius:0;box-shadow:none}
+.dae-creative-card[data-presentation=content]>.dae-creative-heading{background:transparent;border:0;padding:8px 0}
+.dae-creative-card[data-presentation=content]>.dae-creative-heading>button,.dae-creative-card[data-presentation=content]>.dae-creative-type{display:none}
+.dae-creative-card[data-presentation=content]:has(>.dae-creative-body[hidden])>.dae-creative-heading>button{display:block}
+.dae-creative-card[data-presentation=content]>.dae-creative-heading strong{font-size:calc(16px / var(--dae-canvas-zoom,1));font-weight:500}
+.dae-creative-card[data-presentation=content]>.dae-creative-body{padding:0;border:0;background:transparent}
+.dae-creative .dae-creative-selection-active{outline:1px solid var(--dae-focus);outline-offset:0}
