@@ -1,7 +1,7 @@
 @import './creative_theme.css';
 
 /* Canvas shell. Its host ComfyUI navigation keeps the native theme. */
-.dae-creative{position:fixed;inset:96px 12px 62px 58px;z-index:25;overflow:hidden;background:var(--dae-bg-canvas);border:1px solid var(--dae-border);border-radius:var(--dae-radius-overlay);touch-action:none;user-select:none;isolation:isolate;outline:none}
+.dae-creative{position:fixed;inset:96px 12px 0 58px;z-index:25;overflow:hidden;background:var(--dae-bg-canvas);border:1px solid var(--dae-border);border-radius:var(--dae-radius-overlay);touch-action:none;user-select:none;isolation:isolate;outline:none}
 .dae-creative[hidden]{display:none}
 .dae-creative *,.dae-creative *::before,.dae-creative *::after{box-sizing:border-box}
 .dae-creative :is(button,input,select,textarea){font:inherit;color:inherit}
