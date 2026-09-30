@@ -64,6 +64,6 @@ register();
 
 ## 生成结果输出
 
-可选 `materialSources(node)` 返回 `{element,key,label?}[]`，使用稳定列 ID 和 `.dae-material-slot`。宿主拥有点击、拖线及空白处创建菜单。`outputMaterials(node,key)` 返回 `{version:1,ready,assets,label?,skipped?}`；assets 使用本地 `/view` URL、kind、id、name 和可选 provenance，按业务顺序提供。业务负责排除未完成、失败和输入变化后的旧结果。
+可选 `materialSources(node)` 返回 `{element,key,label?}[]`，使用稳定列 ID 和 `.dae-material-slot`。宿主拥有点击、拖线及空白处创建菜单。`outputMaterials(node,key)` 返回 `{version:1,ready,assets,label?,skipped?}`；assets 使用本地 `/view` URL、kind、id、name 和可选 provenance，按业务顺序提供。已有图像或视频素材即可输出，包括过期结果或重新生成期间保留的结果；业务只跳过没有可用素材的行。
 
 输出为一次独立素材快照：宿主校验并导入本地文件，创建现有素材节点及有序素材组，统一撤销；异步期间来源发生变化时放弃创建。不增加原生端口、持久图连线或业务生成依赖。适配器显式声明 `materialOutput:true` 后，`assets(node)` 提供的当前剪辑结果也可输出为单个视频素材。
