@@ -1,7 +1,7 @@
 @import './creative_theme.css';
 
 /* Canvas shell. Its host ComfyUI navigation keeps the native theme. */
-.dae-creative{position:fixed;inset:96px 12px 62px 58px;z-index:25;overflow:hidden;background:var(--dae-bg-canvas);border:1px solid var(--dae-border);border-radius:var(--dae-radius-overlay);touch-action:none;user-select:none;isolation:isolate;outline:none}
+.dae-creative{position:fixed;inset:96px 12px 0 58px;z-index:25;overflow:hidden;background:var(--dae-bg-canvas);border:1px solid var(--dae-border);border-radius:var(--dae-radius-overlay);touch-action:none;user-select:none;isolation:isolate;outline:none}
 .dae-creative[hidden]{display:none}
 .dae-creative *,.dae-creative *::before,.dae-creative *::after{box-sizing:border-box}
 .dae-creative :is(button,input,select,textarea){font:inherit;color:inherit}
@@ -163,8 +163,9 @@ body[data-daelab-creative=true] [role="toolbar"]:has(> [data-testid="zoom-contro
 @media(prefers-reduced-motion:reduce){.dae-creative .dae-column-slot{transition:none}}
 
 .dae-creative-card[data-full-height=true]>.dae-creative-body{max-height:none;overflow:visible}
-/* Full-height panels move as a whole; their footer must not stick to the canvas viewport. */
-.dae-creative .dae-creative-card[data-full-height=true] .dae-table[data-structure] .table-add-row-cell{position:static!important;bottom:auto;z-index:auto}
+/* Full-height panels move as a whole. Also suppress the adapter's inline viewport
+   translation, which can otherwise pin a static footer above its natural row. */
+.dae-creative .dae-creative-card[data-full-height=true] .dae-table[data-structure] .table-add-row-cell{position:static!important;bottom:auto;z-index:auto;transform:none!important}
 /* Reserve the complete terminal column while data columns scroll underneath. */
 .dae-creative-card[data-full-height=true] .dae-table[data-structure] .table-trailing-cell{position:sticky!important;right:0;z-index:3;width:48px!important;min-width:48px;padding:0!important;background:var(--table-control-surface,var(--dae-surface-low,#222))!important;box-shadow:-1px 0 var(--dae-border,#404040)}
 .dae-creative-card[data-full-height=true] .dae-table[data-structure] .table-add-column{min-width:48px;box-sizing:border-box}
