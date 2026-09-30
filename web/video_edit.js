@@ -4,10 +4,11 @@ import {registerAdapter,adapterFor} from './creative_contract.mjs';
 import {canvasHistory} from './creative_history.mjs';
 import {bindPanelAvailability} from './creative_panel_state.mjs';
 import {EDIT_TYPE,readEdit,localAsset} from './video_edit_model.mjs';
-import {createVideoEditor} from './video_edit_panel.mjs';
+import {createVideoEditor} from './video_edit_panel.mjs?v=20261001-group-members';
 
-const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./video_edit.css',import.meta.url).href;document.head.append(sheet);
+const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./video_edit.css?v=20261001-timeline-background2',import.meta.url).href;document.head.append(sheet);
 const resultFor=node=>node.properties?.daelabEditResultData===node.widgets?.find(w=>w.name==='edit_data')?.value?node.properties?.daelabEditResult:null;
+const workflowPlayheads=new WeakMap();
 function canConnectOutput(node){
     if(resultFor(node))return true;
     app.extensionManager.toast.add({severity:'warn',summary:'暂不能连接',detail:'请先成功导出当前剪辑，再连接下游节点。',life:3500});
@@ -18,10 +19,22 @@ function install(node){
     if(node.__videoEdit)return;
     const widget=node.widgets.find(w=>w.name==='edit_data'),history=canvasHistory(app);
     widget.hidden=true;widget.options={...widget.options,hidden:true};widget.computeSize=()=>[0,-4];if(widget.inputEl)widget.inputEl.style.display='none';
-    let disposed=false,job=null,sourceSignature=null,sourceSync=null,syncTimer=null;
+    let disposed=false,job=null,sourceSignature=null,sourceSync=null,syncTimer=null,playhead=null,playheadWorkflow=null;
+    function bindPlayhead(){
+        const workflow=app.extensionManager?.workflow?.activeWorkflow;
+        if(!workflow||!node.graph)return;
+        let positions=workflowPlayheads.get(workflow);
+        if(!positions){positions=new Map();workflowPlayheads.set(workflow,positions);}
+        const key=JSON.stringify([node.graph.id,node.id]);
+        if(!positions.has(key))positions.set(key,{time:0});
+        playhead=positions.get(key);
+        playheadWorkflow=workflow;
+    }
     const dirty=()=>{node.graph?.change?.();node.graph?.setDirtyCanvas?.(true,true);};
     const panel=createVideoEditor({
         read:()=>readEdit(widget.value),view:()=>node.properties.daelabEditView||{},
+        isSelected:()=>app.canvas?.selected_nodes?.[node.id]===node,
+        savePlayhead(time){if(disposed||app.configuringGraph)return;if(!playhead)bindPlayhead();if(playhead&&playheadWorkflow===app.extensionManager?.workflow?.activeWorkflow)playhead.time=time;},
         write(data){
             const previous=readEdit(widget.value),used=new Set(data.clips.map(c=>c.source.slot).filter(Boolean));
             const removed=new Set(previous.clips.map(c=>c.source.slot).filter(slot=>slot&&!used.has(slot)));
@@ -102,6 +115,7 @@ function install(node){
     }
     function syncConnections(){
         if(disposed||!node.graph||app.configuringGraph)return;
+        if(!playhead||playheadWorkflow!==app.extensionManager?.workflow?.activeWorkflow){bindPlayhead();panel.reload(playhead?.time);}
         try{
             const collection=connected(),signature=JSON.stringify(collection);
             if(signature===(sourceSync?.signature??sourceSignature))return;
@@ -124,7 +138,7 @@ function install(node){
             if(data!==widget.value){panel.error('剪辑已更新，请重新导出成片');return;}
             node.properties.daelabEditResult=url;node.properties.daelabEditResultData=data;panel.output(url);dirty();
         },
-        reload(){sourceSync=null;sourceSignature=null;panel.reload();panel.output(resultFor(node));},
+        reload(){sourceSync=null;sourceSignature=null;bindPlayhead();panel.reload(playhead?.time);panel.output(resultFor(node));},
         destroy(){disposed=true;sourceSync=null;clearInterval(syncTimer);if(job?.id)void request('/api/jobs/'+encodeURIComponent(job.id)+'/cancel',{}).catch(()=>{});job=null;api.removeEventListener('progress',progress);availability();panel.destroy();}};
     node.setSize([820,760]);if(resultFor(node))panel.output(resultFor(node));
 }

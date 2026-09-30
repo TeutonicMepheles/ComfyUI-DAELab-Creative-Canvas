@@ -1,9 +1,10 @@
 import {bindPanelAvailability} from './creative_panel_state.mjs';
 import {app} from '/scripts/app.js';
 import {createCreativeButton} from './creative_button.mjs';
+import {createUploadVideoControls} from './upload_video_controls.mjs?v=20261001-player1';
 import {UPLOAD_TYPE,ACCEPT,mediaKind,readAsset,assetURL,slotAllowed} from './media_upload_model.mjs';
 
-const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./media_upload.css?v=20260929-toolbar-fix',import.meta.url).href;document.head.append(sheet);
+const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./media_upload.css?v=20261001-video-gradient',import.meta.url).href;document.head.append(sheet);
 function install(node){
     if(node.__mediaUpload)return;
     const data=node.widgets.find(w=>w.name==='asset_data');
@@ -15,7 +16,7 @@ function install(node){
     const stage=document.createElement('div');stage.className='dae-upload-stage';
     const status=document.createElement('p');status.className='dae-upload-status';status.setAttribute('role','status');
     const picker=document.createElement('input');picker.type='file';picker.accept=ACCEPT;picker.hidden=true;picker.setAttribute('aria-label','上传图片或视频');
-    let epoch=0,controller=null,disposed=false,signature=null,asset=null;
+    let epoch=0,controller=null,disposed=false,signature=null,asset=null,releasePlayer=null;
     const choose=createCreativeButton('上传图片 / 视频',()=>{picker.value='';picker.click();});
     const fullscreen=createCreativeButton('全屏',async()=>{try{await stage.requestFullscreen();}catch{status.textContent='当前浏览器无法进入全屏';}});
     const download=document.createElement('a');download.textContent='下载';download.className='dae-upload-download';
@@ -26,16 +27,17 @@ function install(node){
         asset=readAsset(data.value);const next=JSON.stringify(asset);if(next===signature)return;signature=next;
         root.dataset.hasAsset=String(!!asset);
         if(asset&&(!node.title||node.title==='上传'||node.title===UPLOAD_TYPE||node.title===previousName))node.title=asset.name;
-        stage.querySelector('video')?.pause();stage.replaceChildren();status.textContent='';
+        releasePlayer?.();releasePlayer=null;stage.querySelector('video')?.pause();stage.replaceChildren();status.textContent='';
         choose.textContent=asset?'替换素材':'上传图片 / 视频';download.hidden=fullscreen.hidden=!asset;
         info.textContent=asset?.name||'';info.title=info.textContent;
         if(!asset){const hint=document.createElement('div');hint.className='dae-upload-empty';hint.textContent='拖入图片或视频\nPNG · JPG · WebP · MP4 · WebM · MOV';stage.append(hint);return;}
         const media=document.createElement(asset.kind==='video'?'video':'img');media.src=assetURL(asset);
-        if(asset.kind==='video'){media.controls=true;media.preload='metadata';media.playsInline=true;}else{media.alt=asset.name;media.draggable=false;}
+        if(asset.kind==='video'){media.preload='metadata';media.playsInline=true;}else{media.alt=asset.name;media.draggable=false;}
         const dimensions=()=>{if(!media.isConnected)return;const w=media.videoWidth||media.naturalWidth,h=media.videoHeight||media.naturalHeight;info.textContent=`${asset.name} · ${w} × ${h}`;};
         media.addEventListener(asset.kind==='video'?'loadedmetadata':'load',dimensions);
         media.addEventListener('error',()=>{status.textContent='无法预览：文件缺失或浏览器不支持此编码，请替换素材。';});
         stage.append(media);download.href=media.src;download.download=asset.name;
+        if(asset.kind==='video')releasePlayer=createUploadVideoControls(media,stage,text=>{status.textContent=text;});
     }
     async function upload(file){
         if(!file||disposed||node.mode)return;
@@ -61,7 +63,7 @@ function install(node){
     for(const event of ['pointerdown','dblclick','keydown','wheel'])root.addEventListener(event,e=>e.stopPropagation());
     const widget=node.addDOMWidget('media_upload','custom',root,{serialize:false,hideOnZoom:false,getValue:()=>'',setValue:()=>render(),getMinHeight:()=>320});widget.serialize=false;
     const releaseAvailability=bindPanelAvailability(node,root);
-    node.__mediaUpload={root,render,upload,kind:()=>readAsset(data.value)?.kind,reload(){++epoch;controller?.abort();choose.disabled=false;root.removeAttribute('aria-busy');signature=null;render();},destroy(){releaseAvailability();disposed=true;++epoch;controller?.abort();stage.querySelector('video')?.pause();root.remove();}};
+    node.__mediaUpload={root,render,upload,kind:()=>readAsset(data.value)?.kind,reload(){++epoch;controller?.abort();choose.disabled=false;root.removeAttribute('aria-busy');signature=null;render();},destroy(){releasePlayer?.();releasePlayer=null;releaseAvailability();disposed=true;++epoch;controller?.abort();stage.querySelector('video')?.pause();root.remove();}};
     node.setSize([520,400]);render();
 }
 app.registerExtension({name:'DAELab.MediaUpload',beforeRegisterNodeDef(type,definition){

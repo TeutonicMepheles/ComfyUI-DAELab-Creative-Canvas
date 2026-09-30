@@ -56,7 +56,7 @@ register();
 
 可选 `materialTargets(node)` 返回 `{element, key, dropElements?, clipElement?}[]`。element 为可见 Slot，key 为业务稳定字段 ID；dropElements 为同一目标的附加落点，clipElement 限制滚动可见区域。`acceptMaterials(node,key,collection)` 同步、原子地消费 `{version:1,assets:[{filename,subfolder,kind,nodeId,...}]}`，失败抛出可读错误。
 
-画布只负责素材组有序快照、命中检测和历史边界；业务适配器负责数据验证、行数和单元格规则。该入口是显式一次填充，不创建虚假的原生输入或持久连接，不随源组变化覆盖手工编辑。字段删除、隐藏、重排后重新读取目标；使用 `.dae-material-slot` 复用素材卡片 Slot 外观。拖动素材组本体完成填充时恢复原位置。
+画布只负责素材组有序快照或单个上传素材快照、命中检测、落点提示和历史边界；业务适配器负责数据验证、行数和单元格规则。该入口是显式一次填充，不创建虚假的原生输入或持久连接，不随源组变化覆盖手工编辑。字段删除、隐藏、重排后重新读取目标；使用 `.dae-material-slot` 复用素材卡片 Slot 外观。拖动素材组或上传素材本体时，宿主高亮目标接口及声明的落点并提示松开填入；结束或取消时清除提示，完成填充时恢复源节点原位置及组关系。
 
 ## Slot 基准
 
@@ -72,6 +72,8 @@ register();
 
 ## 面板呈现与视口上下文
 
-适配器可选 `presentation: 'content'`（或节点函数）让宿主负责无外框卡片、标题对齐及正文内边距。`selectionSurface(node)` 返回自己 root 内的 DOM 区域，宿主为其绘制选中轮廓；重绘替换该区域后宿主重新读取。业务样式不得修改宿主卡片、标题或选择状态。
+适配器可选 `presentation: 'content'`（或节点函数）让宿主负责无外框卡片、通用外置标题及正文内边距。标题与 `floatingHeader` 和上传素材共用 [通用视觉基线](architecture/FRONTEND_INTERACTION.md#通用视觉基线)，不由业务包单独设置字号、字重、颜色或间距。`selectionSurface(node)` 返回自己 root 内的 DOM 区域，宿主为其绘制选中轮廓；重绘替换该区域后宿主重新读取。业务样式不得修改宿主卡片、标题或选择状态。
 
 `api.getPanelContext(element)` 返回当前借用面板的上下文，独立安装或归还后返回 null。上下文提供 `presentation`、`fullHeight`、`selected`、`contains(element)`、`getBounds()`、`getViewport()` 与 `panBy(dx,dy)`；位移为屏幕像素，正数将内容向左／上平移。隐藏、停用或释放后平移返回 false。无需查找宿主 DOM 或派发模拟滚轮事件。宿主在借用 root 上管理公开 `data-canvas-panel=true` 和 `data-canvas-full-height` 标记，归还时清理。业务自身的滚动、末行和末列布局留在业务包，不由宿主识别其 CSS 类名。
+
+宿主在视角、卡片位置／尺寸、选择或内部滚动变化后，按动画帧合并派发冒泡事件 `dae-canvas-layout`。业务可在 `globalThis` 监听该通知，通过自己的面板上下文重新定位可见悬浮栏；无需读取宿主 DOM，也不应在每帧重建业务面板。独立安装时没有此事件，原有编辑逻辑照常工作；销毁时移除监听。

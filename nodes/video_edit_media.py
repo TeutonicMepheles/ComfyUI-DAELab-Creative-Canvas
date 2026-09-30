@@ -63,14 +63,15 @@ def edit_clips(data, assets=None, videos=None, images=None):
     slots = {**{f'videos.{k.split(".")[-1]}': v for k, v in (videos or {}).items()},
              **{f'images.{k.split(".")[-1]}': v for k, v in (images or {}).items()}}
     group = {a['id']: a for a in (assets or {}).get('assets', [])}
+    members = {str(a['nodeId']): a for a in (assets or {}).get('assets', []) if a.get('nodeId') is not None}
     clips, inspected = [], {}
     for clip in edit['clips']:
         source = clip.get('source', {})
         slot = source.get('slot')
         if slot == 'assets':
-            if source.get('assetId') not in group:
+            asset = members.get(str(source['nodeId'])) if source.get('nodeId') is not None else group.get(source.get('assetId'))
+            if asset is None:
                 raise ValueError('已连接素材组中的片段来源缺失，请重新添加')
-            asset = group[source['assetId']]
         elif slot:
             if not slots.get(slot):
                 raise ValueError('片段来源连接已断开，请重新添加')

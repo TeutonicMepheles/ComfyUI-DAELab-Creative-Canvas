@@ -23,7 +23,7 @@ export function newClip(asset,source={asset},id=crypto.randomUUID()){
     if(source.asset)source={asset:{filename:source.asset.filename,subfolder:source.asset.subfolder||'',type:source.asset.type||'input'}};
     return {id,source,asset,start:0,duration:asset.kind==='image'?3:asset.duration,mute:false};
 }
-export const sourceKey=(asset,source)=>JSON.stringify([source.slot,source.assetId,asset.type||'input',asset.subfolder||'',asset.filename]);
+export const sourceKey=(asset,source)=>JSON.stringify([source.slot,source.assetId,asset.type||'input',asset.subfolder||'',asset.filename,...(source.slot==='assets'&&source.nodeId!=null?[String(source.nodeId)]:[])]);
 export function connectedEdit(edit,assets){
     if(!assets.length&&!edit.sources?.length&&!edit.clips.some(c=>c.source.slot))return edit;
     const members=new Map(assets.filter(item=>item.source.slot==='assets'&&item.source.nodeId).map(item=>[item.source.nodeId,item]));
@@ -34,11 +34,15 @@ export function connectedEdit(edit,assets){
         if(member&&sourceKey(item.asset,{})===sourceKey(member.asset,{}))replacements.set(sourceKey(item.asset,item.source),member);
     }
     const incoming=new Map(assets.filter(item=>!replacements.has(sourceKey(item.asset,item.source))).map(item=>[sourceKey(item.asset,item.source),item]));
+    // Saved source keys used only the asset ID; keep existing edits and deletions when upgrading.
+    const savedKeys=new Map();
+    for(const {asset,source} of [...assets,...edit.clips])if(source.slot==='assets'&&source.nodeId!=null)savedKeys.set(sourceKey(asset,{...source,nodeId:undefined}),sourceKey(asset,source));
     const previous=new Set((edit.sources||edit.clips.filter(c=>c.source.slot).map(c=>sourceKey(c.asset,c.source))).map(key=>{
+        key=savedKeys.get(key)??key;
         const member=replacements.get(key);return member?sourceKey(member.asset,member.source):key;
     }));
     const clips=edit.clips.map(clip=>{
-        const member=replacements.get(sourceKey(clip.asset,clip.source));
+        const key=sourceKey(clip.asset,clip.source),member=replacements.get(key)||incoming.get(savedKeys.get(key));
         return member?{...clip,asset:member.asset,source:member.source}:clip;
     }).filter(c=>!c.source.slot||incoming.has(sourceKey(c.asset,c.source)));
     for(const [key,{asset,source}] of incoming)if(!previous.has(key))clips.push(newClip(asset,source));

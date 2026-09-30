@@ -1,6 +1,6 @@
 @import './creative_theme.css';
-.dae-ui.dae-edit{padding:var(--dae-space-3);display:flex;flex-direction:column;gap:var(--dae-space-2);min-width:0;box-sizing:border-box;background:var(--dae-surface);border-radius:var(--dae-radius-card)}
-.dae-creative .dae-ui.dae-edit,.dae-creative-card:has(>.dae-creative-body>.dae-edit){background:var(--dae-bg-canvas)}
+.dae-ui.dae-edit{padding:var(--dae-space-3);display:flex;flex-direction:column;gap:var(--dae-space-2);min-width:0;box-sizing:border-box;background:var(--dae-surface-low);border-radius:var(--dae-radius-card)}
+.dae-creative-card:has(>.dae-creative-body>.dae-edit){background:var(--dae-surface-low)}
 .dae-creative-card>.dae-creative-body:has(>.dae-edit){max-height:none}
 .dae-ui.dae-edit[hidden],.dae-edit [hidden]{display:none!important}
 .dae-edit *{box-sizing:border-box}
@@ -40,7 +40,7 @@
 .dae-edit-resolution-controls{display:flex;align-items:center;gap:2px}
 .dae-ui.dae-edit button.dae-edit-resolution-lock{width:22px;min-width:22px;height:22px;min-height:22px}
 .dae-edit-resolution-lock .dae-edit-icon{width:14px;height:14px}
-.dae-edit-scroll{overflow:auto;max-width:100%;border:1px solid var(--dae-border);border-radius:var(--dae-radius-control);background:var(--dae-surface-low);padding-bottom:8px;touch-action:none;scrollbar-width:thin;scrollbar-color:var(--dae-border) transparent}
+.dae-edit-scroll{overflow-x:auto;overflow-y:hidden;max-width:100%;height:134px;flex-shrink:0;border:1px solid var(--dae-border);border-radius:var(--dae-radius-control);background:color-mix(in srgb,var(--dae-surface-low) 50%,var(--dae-bg-canvas));touch-action:none;scrollbar-width:thin;scrollbar-color:var(--dae-border) transparent}
 .dae-edit-timeline{position:relative;min-width:100%;height:124px;user-select:none}
 .dae-edit-ruler{height:30px;position:relative;cursor:crosshair;border-bottom:1px solid var(--dae-border);overflow:hidden}
 .dae-edit-ruler span{position:absolute;bottom:0;padding-left:4px;font-size:11px;color:var(--dae-text-muted);white-space:nowrap}

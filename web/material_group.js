@@ -3,7 +3,7 @@ import {registerAdapter} from './creative_contract.mjs';
 import {GROUP_TYPE,collectionFor,migrateGroups} from './material_group_model.mjs';
 
 registerAdapter('daelab.material-group',{
-    matches:n=>n.type===GROUP_TYPE,width:730,expanded:false,
+    matches:n=>n.type===GROUP_TYPE,width:730,expanded:false,floatingHeader:true,
     summary:n=>`${n.properties.members?.length||0} 项 · 整组输出`,menu:[],
     assets:collectionFor,
 });

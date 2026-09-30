@@ -22,4 +22,30 @@
 .dae-creative-card[data-upload=true][data-inactive=true]>.dae-creative-body{display:none}
 .dae-creative .dae-upload-info{display:none}
 .dae-upload-stage{position:relative}
-.dae-creative .dae-upload-stage:not(:hover) video:not(:focus-visible)::-webkit-media-controls{opacity:0;pointer-events:none}
+.dae-upload-stage:has(video)::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(#000b,transparent 32%,transparent 62%,#000b);opacity:0;pointer-events:none;transition:opacity .12s}
+.dae-upload-stage:has(video):is(:hover,:focus-within,:has(.dae-upload-player[data-seeking=true]))::after,.dae-creative-card:is(:hover,:focus-within,[data-selected=true]) .dae-upload-stage:has(video)::after{opacity:1}
+.dae-upload-player{position:absolute;inset:auto 0 0;z-index:2;padding:28px 12px 12px;color:#fff;opacity:0;pointer-events:none;transition:opacity .12s;box-sizing:border-box;font:14px/1.2 var(--dae-font-family);user-select:none}
+.dae-upload-stage:hover .dae-upload-player,.dae-upload-stage:has(:focus-visible) .dae-upload-player,.dae-upload-player[data-seeking=true]{opacity:1}
+.dae-upload-player-row{display:flex;align-items:center;gap:8px;height:32px;margin-bottom:4px;pointer-events:none}
+.dae-ui.dae-upload .dae-upload-player button{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;min-width:0;min-height:0;padding:6px;border:0!important;border-radius:50%;background:transparent!important;color:#fff!important;box-shadow:none;pointer-events:none;cursor:pointer}
+.dae-upload-player i,.dae-upload-player svg{width:20px;height:20px;pointer-events:none}
+.dae-upload-player i{background:currentColor;mask:var(--player-icon) center/contain no-repeat}
+.dae-upload-player svg path:not([fill]){fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round}
+.dae-upload-player [data-muted=false] .player-sound-off,.dae-upload-player [data-muted=true] .player-sound-on{display:none}
+.dae-ui.dae-upload .dae-upload-player button:is(:hover,:active):not(:disabled){background:#ffffff24!important}
+.dae-upload-player-time{white-space:nowrap;font-variant-numeric:tabular-nums;pointer-events:none}
+.dae-upload-player-spacer{flex:1;min-width:0;pointer-events:none}
+.dae-upload-player-sound{position:relative;display:flex;align-items:center;pointer-events:none}
+.dae-ui.dae-upload .dae-upload-player input[type=range]{appearance:none;display:block;height:12px;min-height:0;margin:0;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none;cursor:pointer;pointer-events:none;accent-color:#fff}
+.dae-upload-player input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:#ffffff66}
+.dae-upload-player input[type=range]::-webkit-slider-thumb{appearance:none;width:10px;height:10px;border:0;border-radius:50%;background:#fff;margin-top:-3.5px}
+.dae-upload-player input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:#ffffff66}
+.dae-upload-player input[type=range]::-moz-range-thumb{width:10px;height:10px;border:0;border-radius:50%;background:#fff}
+.dae-upload-player input.dae-upload-player-seek{width:100%}
+.dae-upload-player input.dae-upload-player-seek::-webkit-slider-runnable-track{background:linear-gradient(to right,#fff var(--player-progress,0%),#ffffff66 var(--player-progress,0%))}
+.dae-upload-player input.dae-upload-player-volume{position:absolute;right:100%;width:60px;visibility:hidden;background:#0009;border-radius:6px}
+.dae-upload-player-sound:hover .dae-upload-player-volume,.dae-upload-player-sound:focus-within .dae-upload-player-volume{visibility:visible}
+.dae-ui.dae-upload .dae-upload-stage:is(:hover,:has(:focus-visible)) .dae-upload-player :is(button,input),.dae-ui.dae-upload .dae-upload-player[data-seeking=true] :is(button,input){pointer-events:auto}
+.dae-ui.dae-upload .dae-upload-player :is(button,input):focus-visible{outline:2px solid #fff;outline-offset:2px}
+.dae-ui.dae-upload .dae-upload-player :disabled{pointer-events:none;opacity:.4}
+@media(prefers-reduced-motion:reduce){.dae-upload-player,.dae-upload-stage:has(video)::after{transition:none}}

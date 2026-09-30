@@ -33,7 +33,7 @@
   --dae-success:#a2d5ba;--dae-warning:#efca83;--dae-danger:#ffb4ab;--dae-info:#b8c4ff;
   --dae-space-1:4px;--dae-space-2:8px;--dae-space-3:12px;--dae-space-4:16px;--dae-space-6:24px;
   --dae-radius-control:12px;--dae-radius-button:999px;--dae-radius-card:16px;--dae-radius-overlay:24px;
-  --dae-font-caption:12px;--dae-font-body:14px;--dae-font-title:16px;
+  --dae-font-caption:12px;--dae-font-body:14px;--dae-font-title:15px;
   --dae-control-height:36px;--dae-control-height-compact:32px;--dae-icon-size:18px;
   --dae-duration-fast:140ms;--dae-easing:cubic-bezier(.2,0,0,1);
   --dae-focus-width:2px;--dae-focus-offset:3px;
