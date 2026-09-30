@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {registerAdapter,adapterFor,menuItems,publishAPI,API_KEY} from '../web/creative_contract.mjs';
+import {bindPanelContext,getPanelContext,publishPanelContext} from '../web/creative_panel_context.mjs';
 test('optional integrations register, dispose, and reject duplicate ownership',()=>{
     const target=new EventTarget();let ready=0;
     target.addEventListener('daelab:creative-canvas-ready',()=>ready++);
@@ -15,4 +16,23 @@ test('optional integrations register, dispose, and reject duplicate ownership',(
 });
 test('unsupported nodes stay outside the canvas without business packages',()=>{
     assert.equal(adapterFor({type:'DAELAB.LibTV.VideoGenerate'}),undefined);
+});
+
+test('panel context leases isolate instances and old releases cannot remove a replacement',()=>{
+    const a={},b={},child={parentNode:a},ca={presentation:'content'},cb={presentation:'card'};
+    assert.equal(getPanelContext(child),null);
+    const releaseA=bindPanelContext(a,ca),releaseB=bindPanelContext(b,cb);
+    assert.equal(getPanelContext(child),ca);assert.equal(getPanelContext(b),cb);
+    const replacement={presentation:'content',fullHeight:true};
+    const releaseReplacement=bindPanelContext(a,replacement);releaseA();
+    assert.equal(getPanelContext(child),replacement);
+    releaseReplacement();assert.equal(getPanelContext(child),null);
+    assert.equal(getPanelContext(b),cb);releaseB();assert.equal(getPanelContext(b),null);
+});
+
+test('panel API extends the optional v1 registry and announces readiness',()=>{
+    const target=new EventTarget();publishAPI(target);let ready=0;
+    target.addEventListener('daelab:creative-canvas-ready',()=>{ready++;assert.equal(target[API_KEY].getPanelContext,getPanelContext);});
+    publishPanelContext(target);assert.equal(ready,1);assert.equal(target[API_KEY].registerAdapter,registerAdapter);
+    assert.throws(()=>publishPanelContext({}),/published first/);
 });

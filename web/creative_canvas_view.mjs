@@ -1,6 +1,7 @@
 import {canvasHistory} from './creative_history.mjs';
 import {collectionFor,GROUP_TYPE,expandGroupSelection,remapGroupMembers,suppressGroupSlots} from './material_group_model.mjs';
 import {adapterFor} from './creative_contract.mjs';
+import {bindPanelContext} from './creative_panel_context.mjs?v=20260930-public-layout4';
 import {wheelViewport,copySnapshot,readSnapshot} from './creative_navigation.mjs';
 import {UPLOAD_TYPE,mediaKind} from './media_upload_model.mjs';
 import {MATERIAL_SLOT,uploadKind,sourceSlots,resolveOutput,targetChoices,outputSelector,inputSelector,unifiedNode,inputSlots} from './creative_connections.mjs';
@@ -76,7 +77,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         const z=Math.max(.15,Math.min(1,(root.clientWidth-100)/(maxX-minX),(root.clientHeight-150)/(maxY-minY)));
         state.viewport={x:50-minX*z,y:50-minY*z,zoom:z};viewport();dirty();
     }
-    function paintSelection(){for(const c of cards.values()){c.element.dataset.selected=String(selected.has(c.node.id));c.element.dataset.slotsSuppressed=String(suppressGroupSlots(graph,c.node,selected));}}
+    function paintSelection(){for(const c of cards.values()){c.element.dataset.selected=String(selected.has(c.node.id));c.surface?.classList.toggle('dae-creative-selection-active',selected.has(c.node.id));c.element.dataset.slotsSuppressed=String(suppressGroupSlots(graph,c.node,selected));}}
     function select(node,{toggle=false,preserve=false}={}){selectedLink=null;if(!node)selected.clear();else if(toggle){if(selected.has(node.id))selected.delete(node.id);else selected.add(node.id);}else if(!preserve||!selected.has(node.id)){selected.clear();selected.add(node.id);}paintSelection();}
     function connect(node,index,side){
         if(side==='output'){pending={node,index};message(`已选择 ${node.title} 的 ${node.outputs[index].name}，点击目标输入连接；Esc 取消`);return;}
@@ -202,6 +203,22 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
     function attach(c){
         const owner=adapterFor(c.node)?.panel?.(c.node);
         if(!attachCardPanel(c,owner))return;
+        let leased=true;
+        const context=Object.freeze({
+            get presentation(){return c.element.dataset.presentation;},
+            get fullHeight(){return c.element.dataset.fullHeight==='true';},
+            get selected(){return leased&&selected.has(c.node.id);},
+            contains:element=>leased&&c.element.contains(element),
+            getBounds:()=>leased?c.element.getBoundingClientRect():null,
+            getViewport:()=>leased&&visible&&!c.body.hidden&&!c.body.inert?root.getBoundingClientRect():null,
+            panBy(dx,dy){
+                if(!leased||!visible||c.body.hidden||c.body.inert||!Number.isFinite(dx)||!Number.isFinite(dy))return false;
+                state.viewport.x-=dx;state.viewport.y-=dy;viewport();dirty();return true;
+            },
+        });
+        const unbind=bindPanelContext(c.panel,context),release=c.release;
+        const cleanup=()=>{leased=false;unbind();delete c.panel.dataset.canvasPanel;delete c.panel.dataset.canvasFullHeight;delete c.panel.dataset.canvasWorkspace;c.surface?.classList.remove('dae-creative-selection-active');};
+        c.release=()=>{cleanup();release();};c.release.abandon=()=>{cleanup();release.abandon();};
         nativeFields(c);c.body.append(c.fields);if(c.run)c.body.append(c.run);
     }
     function closeWorkspace(){
@@ -271,8 +288,17 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
     }
     function update(c){
         c.element.dataset.slotsSuppressed=String(suppressGroupSlots(graph,c.node,selected));
-        const {node,layout}=c;if(c.widthHandle)layout.width=Math.max(640,layout.width);if(node.type===UPLOAD_TYPE||adapterFor(node)?.collapsible===false)layout.expanded=true;adapterFor(node)?.refresh?.(node);c.element.style.left=`${layout.x}px`;c.element.style.top=`${layout.y}px`;c.element.style.width=`${layout.width}px`;
-        const fullHeight=adapterFor(node)?.fullHeight;c.element.dataset.fullHeight=String(typeof fullHeight==='function'?fullHeight(node):!!fullHeight);
+        const {node,layout}=c;
+        const adapter=adapterFor(node),presentation=adapter?.presentation;
+        c.element.dataset.presentation=(typeof presentation==='function'?presentation(node):presentation)==='content'?'content':'card';
+        const fullHeight=adapter?.fullHeight;c.element.dataset.fullHeight=String(typeof fullHeight==='function'?fullHeight(node):!!fullHeight);
+        if(c.panel){
+            c.panel.dataset.canvasPanel='true';c.panel.dataset.canvasFullHeight=c.element.dataset.fullHeight;c.panel.dataset.canvasWorkspace=String(workspace?.c===c);
+            const surface=adapter?.selectionSurface?.(node);
+            if(surface!==c.surface){c.surface?.classList.remove('dae-creative-selection-active');c.surface=surface&&c.panel.contains(surface)?surface:null;}
+            c.surface?.classList.toggle('dae-creative-selection-active',selected.has(node.id));
+        }
+        if(c.widthHandle)layout.width=Math.max(640,layout.width);if(node.type===UPLOAD_TYPE||adapterFor(node)?.collapsible===false)layout.expanded=true;adapterFor(node)?.refresh?.(node);c.element.style.left=`${layout.x}px`;c.element.style.top=`${layout.y}px`;c.element.style.width=`${layout.width}px`;
         if(c.widthHandle){c.widthHandle.setAttribute('aria-valuenow',String(layout.width));c.widthHandle.setAttribute('aria-valuemin','640');c.widthHandle.setAttribute('aria-valuemax',String(Math.max(3600,layout.width)));c.widthHandle.setAttribute('aria-valuetext',`${layout.width} 像素`);}
         c.element.dataset.inactive=String(node.mode!=null&&node.mode!==0);c.body.inert=node.mode!=null&&node.mode!==0;
         for(const {w,input} of c.fieldBindings||[]){input.disabled=node.inputs?.some(p=>p.name===w.name&&p.link!=null);if(document.activeElement!==input){input.value=w.value??'';input.checked=!!w.value;}}
