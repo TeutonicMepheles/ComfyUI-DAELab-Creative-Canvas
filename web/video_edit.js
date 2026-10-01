@@ -1,10 +1,10 @@
 import {app} from '/scripts/app.js';
 import {api} from '/scripts/api.js';
 import {registerAdapter,adapterFor} from './creative_contract.mjs';
-import {canvasHistory} from './creative_history.mjs';
+import {canvasHistory} from './creative_history.mjs?v=20261002-edit-undo';
 import {bindPanelAvailability} from './creative_panel_state.mjs';
-import {EDIT_TYPE,readEdit,localAsset} from './video_edit_model.mjs';
-import {createVideoEditor} from './video_edit_panel.mjs?v=20261001-group-members';
+import {EDIT_TYPE,readEdit,localAsset,isGroupSlot,sourceSlotKey} from './video_edit_model.mjs?v=20261002-multi-groups';
+import {createVideoEditor} from './video_edit_panel.mjs?v=20261002-edit-undo';
 
 const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./video_edit.css?v=20261001-timeline-background2',import.meta.url).href;document.head.append(sheet);
 const resultFor=node=>node.properties?.daelabEditResultData===node.widgets?.find(w=>w.name==='edit_data')?.value?node.properties?.daelabEditResult:null;
@@ -35,25 +35,28 @@ function install(node){
         read:()=>readEdit(widget.value),view:()=>node.properties.daelabEditView||{},
         isSelected:()=>app.canvas?.selected_nodes?.[node.id]===node,
         savePlayhead(time){if(disposed||app.configuringGraph)return;if(!playhead)bindPlayhead();if(playhead&&playheadWorkflow===app.extensionManager?.workflow?.activeWorkflow)playhead.time=time;},
-        write(data){
-            const previous=readEdit(widget.value),used=new Set(data.clips.map(c=>c.source.slot).filter(Boolean));
-            const removed=new Set(previous.clips.map(c=>c.source.slot).filter(slot=>slot&&!used.has(slot)));
-            const grouped=new Set(data.clips.filter(c=>c.source.slot==='assets').map(c=>c.source.nodeId).filter(Boolean));
-            for(const input of node.inputs){
-                if(input.link==null||input.name==='assets'||used.has(input.name))continue;
+        write(data,sync=false){
+            const previous=readEdit(widget.value),used=new Set(data.clips.map(c=>sourceSlotKey(c.source)).filter(Boolean));
+            const removed=new Set(previous.clips.map(c=>sourceSlotKey(c.source)).filter(slot=>slot&&!used.has(slot)));
+            const grouped=new Set(data.clips.filter(c=>isGroupSlot(c.source.slot)).map(c=>c.source.nodeId).filter(Boolean));
+            const linked=node.inputs.filter(input=>input.link!=null).map(input=>{
                 const link=node.graph.links.get?.(input.link)||node.graph.links[input.link];
-                if(grouped.has(String(link.origin_id)))removed.add(input.name);
+                return {input,originId:String(link.origin_id),key:sourceSlotKey({slot:input.name,groupId:String(link.origin_id)})};
+            });
+            for(const {input,originId,key} of linked){
+                if(isGroupSlot(input.name)||used.has(key))continue;
+                if(grouped.has(originId))removed.add(key);
             }
             if(removed.size&&data.sources)data={...data,sources:data.sources.filter(key=>!removed.has(JSON.parse(key)[0]))};
-            history.begin();
-            try{
+            const save=()=>{
                 const value=JSON.stringify(data);
                 if(value!==widget.value){delete node.properties.daelabEditResult;delete node.properties.daelabEditResultData;panel.output(null);}
                 widget.value=value;widget.callback?.(widget.value);
-                const inputs=node.inputs.filter(input=>input.link!=null&&removed.has(input.name));
-                for(const input of inputs){const index=node.inputs.indexOf(input);if(index>=0)node.disconnectInput(index);}
+                for(const {input,key} of linked)if(removed.has(key)){const index=node.inputs.indexOf(input);if(index>=0)node.disconnectInput(index);}
                 dirty();
-            }finally{history.end();}
+            };
+            if(sync)history.amend(save);
+            else{history.begin();try{save();}finally{history.end();}}
             return data;
         },
         saveView(value){node.properties.daelabEditView=value;dirty();},
@@ -108,19 +111,20 @@ function install(node){
             const link=node.graph.links.get?.(input.link)||node.graph.links[input.link],source=node.graph.getNodeById(link.origin_id),adapter=adapterFor(source);
             const collection=adapter?.assets?.(source);
             if(collection?.ready===false)throw new Error('请先导出上游节点的最新成片');
-            if(collection){for(const asset of collection.assets)assets.push({...asset,editSource:input.name==='assets'?{slot:'assets',assetId:asset.id,nodeId:asset.nodeId}:{slot:input.name,nodeId:String(source.id)}});}
+            if(collection){for(const asset of collection.assets)assets.push({...asset,editSource:isGroupSlot(input.name)?{slot:input.name,groupId:String(source.id),assetId:asset.id,nodeId:asset.nodeId}:{slot:input.name,nodeId:String(source.id)}});}
             else{const preview=adapter?.preview?.(source);assets.push({...localAsset(preview?.url),editSource:{slot:input.name,nodeId:String(source.id)}});}
         }
         return {version:1,assets};
     }
     function syncConnections(){
-        if(disposed||!node.graph||app.configuringGraph)return;
+        const workflow=app.extensionManager?.workflow?.activeWorkflow,tracker=workflow?.changeTracker;
+        if(disposed||!node.graph||app.configuringGraph||tracker?._restoringState||tracker?.changeCount>0)return;
         if(!playhead||playheadWorkflow!==app.extensionManager?.workflow?.activeWorkflow){bindPlayhead();panel.reload(playhead?.time);}
         try{
             const collection=connected(),signature=JSON.stringify(collection);
             if(signature===(sourceSync?.signature??sourceSignature))return;
             const sync=sourceSync={signature};sourceSignature=null;
-            panel.syncSources(collection).then(()=>{
+            panel.syncSources(collection,()=>!disposed&&sourceSync===sync&&!app.configuringGraph&&!tracker?._restoringState&&!(tracker?.changeCount>0)&&app.extensionManager?.workflow?.activeWorkflow===workflow&&signature===JSON.stringify(connected())).then(()=>{
                 if(disposed||sourceSync!==sync)return;
                 sourceSignature=signature;sourceSync=null;
             },error=>{
@@ -155,8 +159,8 @@ registerAdapter('daelab.video-edit',{
 app.registerExtension({name:'DAELAB.VideoEdit',beforeRegisterNodeDef(type,definition){
     if(definition.name!==EDIT_TYPE)return;
     const created=type.prototype.onNodeCreated;type.prototype.onNodeCreated=function(){created?.apply(this,arguments);install(this);};
-    const configured=type.prototype.onConfigure;type.prototype.onConfigure=function(){configured?.apply(this,arguments);install(this);this.__videoEdit.reload();};
-    const connections=type.prototype.onConnectionsChange;type.prototype.onConnectionsChange=function(){connections?.apply(this,arguments);queueMicrotask(()=>this.__videoEdit?.syncConnections());};
+    const configured=type.prototype.onConfigure;type.prototype.onConfigure=function(){configured?.apply(this,arguments);if(!this.inputs.some(input=>input.name.startsWith('groups.')))this.addInput('groups.group0','DAELAB_ASSETS');install(this);this.__videoEdit.reload();};
+    const connections=type.prototype.onConnectionsChange;type.prototype.onConnectionsChange=function(){connections?.apply(this,arguments);requestAnimationFrame(()=>this.__videoEdit?.syncConnections());};
     const connect=type.prototype.onConnectOutput;type.prototype.onConnectOutput=function(){if(!app.configuringGraph&&!canConnectOutput(this))return false;return connect?.apply(this,arguments)??true;};
     const removed=type.prototype.onRemoved;type.prototype.onRemoved=function(){this.__videoEdit?.destroy();removed?.apply(this,arguments);};
     const executed=type.prototype.onExecuted;type.prototype.onExecuted=function(message){executed?.apply(this,arguments);const ref=message?.videos?.[0];if(ref)this.__videoEdit?.output('/view?'+new URLSearchParams(ref),message.edit_data?.[0]);};

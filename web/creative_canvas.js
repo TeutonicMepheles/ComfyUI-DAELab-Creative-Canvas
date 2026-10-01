@@ -1,12 +1,12 @@
 import {app} from '/scripts/app.js';
-import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20261001-material-drop';
+import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20261002-canvas-media-performance';
 import {STATE_KEY} from './creative_canvas_model.mjs';
 import {installLayoutHistory} from './creative_history.mjs?v=20261001-layout-undo';
-import {installMaterialGroups} from './material_groups.mjs?v=20261001-material-drop';
+import {installMaterialGroups} from './material_groups.mjs?v=20261002-title-double-click';
 
 import {publishAPI} from './creative_contract.mjs';
 import {publishPanelContext} from './creative_panel_context.mjs?v=20260930-public-layout4';
-import './adapters/upload.mjs';
+import './adapters/upload.mjs?v=20261001-upload-width';
 import {installComfyTVAdapter} from './adapters/comfytv.mjs';
 publishAPI();
 publishPanelContext();

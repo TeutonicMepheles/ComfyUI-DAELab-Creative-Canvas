@@ -26,7 +26,7 @@
 .dae-creative[data-group-review=true] .dae-upload{position:relative}
 .dae-creative[data-group-review=true] .dae-upload-toolbar{padding:4px 8px;min-height:24px}
 .dae-creative[data-group-review=true] .dae-upload-toolbar .gr-media-action{display:none;position:static;align-items:center;justify-content:center;pointer-events:auto}
-.dae-creative[data-group-review=true] .dae-creative-card[data-selected=true] .gr-media-action:not([hidden]),.dae-creative[data-group-review=true] .dae-creative-card:has(video):is(:hover,:focus-within) .gr-media-action:not([hidden]){display:inline-flex}
+.dae-creative[data-group-review=true] .dae-creative-card[data-selected=true] .gr-media-action:not([hidden]),.dae-creative[data-group-review=true] .dae-creative-card:has(.dae-upload-stage :is(img,video)):is(:hover,:focus-within) .gr-media-action:not([hidden]){display:inline-flex}
 .dae-creative[data-group-review=true] .gr-media-action:hover{background:var(--dae-surface-hover)}
 .dae-creative[data-group-review=true] .gr-media-action:focus-visible{outline:2px solid var(--dae-focus);outline-offset:3px}
 .dae-creative[data-group-review=true] .dae-creative-card[data-review-group=true]{border-color:var(--gr-group-color)!important;background:color-mix(in srgb,var(--gr-group-color) 7%,var(--dae-surface-low))}
@@ -67,11 +67,11 @@
 
 /* Screen-sized labels and controls, with geometry still owned by the canvas. */
 .dae-creative[data-group-review=true] .dae-creative-card[data-review-member]:not([data-selected=true])>.dae-creative-heading{visibility:hidden;pointer-events:none}
-.dae-creative[data-group-review=true] .dae-creative-card[data-review-member]:has(video)>.dae-creative-heading{--gr-title-left:12px;--gr-title-top:16px;--gr-title-right:12px;left:calc(1px + var(--gr-title-left) * var(--dae-canvas-inverse-zoom,1));top:calc(1px + var(--gr-title-top) * var(--dae-canvas-inverse-zoom,1));bottom:auto;width:max(0px,calc(100% / var(--dae-canvas-inverse-zoom,1) - var(--gr-title-left) - var(--gr-title-right)));margin-bottom:0;transform-origin:left top;z-index:4}
-.dae-creative[data-group-review=true] .dae-creative-card[data-review-member][data-review-compact-actions=false]:has(video)>.dae-creative-heading{--gr-title-right:calc(var(--gr-actions-width,8px) * var(--dae-canvas-zoom,1))}
-.dae-creative[data-group-review=true] .dae-creative-card[data-upload=true]:has(video)>.dae-creative-heading strong{color:#fff}
-.dae-creative[data-group-review=true] .dae-creative-card[data-review-member][data-review-numbers=true]:has(video)>.dae-creative-heading{--gr-title-left:52px}
-.dae-creative[data-group-review=true] .dae-creative-card[data-review-member]:has(video):is(:hover,:focus-within,[data-selected=true])>.dae-creative-heading{visibility:visible;pointer-events:auto}
+.dae-creative[data-group-review=true] .dae-creative-card[data-review-member]:has(.dae-upload-stage :is(img,video))>.dae-creative-heading{--gr-title-left:12px;--gr-title-top:16px;--gr-title-right:12px;left:calc(1px + var(--gr-title-left) * var(--dae-canvas-inverse-zoom,1));top:calc(1px + var(--gr-title-top) * var(--dae-canvas-inverse-zoom,1));bottom:auto;width:max(0px,calc(100% / var(--dae-canvas-inverse-zoom,1) - var(--gr-title-left) - var(--gr-title-right)));margin-bottom:0;transform-origin:left top;z-index:4}
+.dae-creative[data-group-review=true] .dae-creative-card[data-review-member][data-review-compact-actions=false]:has(.dae-upload-stage :is(img,video))>.dae-creative-heading{--gr-title-right:calc(var(--gr-actions-width,8px) * var(--dae-canvas-zoom,1))}
+.dae-creative[data-group-review=true] .dae-creative-card[data-upload=true]:has(.dae-upload-stage :is(img,video))>.dae-creative-heading strong{color:#fff}
+.dae-creative[data-group-review=true] .dae-creative-card[data-review-member][data-review-numbers=true]:has(.dae-upload-stage :is(img,video))>.dae-creative-heading{--gr-title-left:52px}
+.dae-creative[data-group-review=true] .dae-creative-card[data-review-member]:has(.dae-upload-stage :is(img,video)):is(:hover,:focus-within,[data-selected=true])>.dae-creative-heading{visibility:visible;pointer-events:auto}
 
 .dae-creative[data-group-review=true] .gr-panel button.gr-delete-group{color:var(--dae-danger)!important;background:color-mix(in srgb,var(--dae-danger) 12%,var(--dae-surface))!important}
 .dae-creative[data-group-review=true] .gr-panel button.gr-delete-group:hover{background:color-mix(in srgb,var(--dae-danger) 22%,var(--dae-surface))!important}
@@ -87,8 +87,8 @@
 .dae-creative[data-group-review=true] .gr-color-row button.gr-swatch{box-sizing:border-box!important;width:30px!important;height:30px!important;min-width:30px!important;max-width:30px!important;min-height:30px!important;max-height:30px!important;flex:0 0 30px!important;padding:0!important;aspect-ratio:1;border-radius:50%!important}
 
 .dae-creative[data-group-review=true] .dae-upload-toolbar :is(button,a).gr-media-action{border-radius:50%!important}
-.dae-creative[data-group-review=true] .dae-upload:has(video) .dae-upload-toolbar :is(button,a).gr-media-action{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;color:#fff!important}
-.dae-creative[data-group-review=true] .dae-upload:has(video) .dae-upload-toolbar .gr-media-action:hover:not(:disabled){background:transparent!important;color:#fff!important;filter:drop-shadow(0 0 3px #ffffff80)}
+.dae-creative[data-group-review=true] .dae-upload:has(.dae-upload-stage :is(img,video)) .dae-upload-toolbar :is(button,a).gr-media-action{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;color:#fff!important}
+.dae-creative[data-group-review=true] .dae-upload:has(.dae-upload-stage :is(img,video)) .dae-upload-toolbar .gr-media-action:hover:not(:disabled){background:transparent!important;color:#fff!important;filter:drop-shadow(0 0 3px #ffffff80)}
 
 .dae-creative[data-group-review=true] .dae-creative-wires path.gr-wire-pulse{fill:none;stroke:var(--dae-accent);stroke-width:3;stroke-linecap:round;stroke-opacity:.95;stroke-dasharray:24 176;pointer-events:none!important;vector-effect:non-scaling-stroke;animation:gr-wire-flow 1s linear infinite}
 @keyframes gr-wire-flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-200}}

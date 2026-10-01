@@ -23,14 +23,15 @@ class VideoEdit(io.ComfyNode):
             inputs=[io.String.Input('edit_data', default='{"version":1,"clips":[],"fit":"contain"}', multiline=True),
                     io.Custom('DAELAB_ASSETS').Input('assets', optional=True),
                     io.Autogrow.Input('videos', template=io.Autogrow.TemplatePrefix(io.Custom('COMFYTV_VIDEO').Input('video'), prefix='video', min=0, max=100), optional=True),
-                    io.Autogrow.Input('images', template=io.Autogrow.TemplatePrefix(io.Custom('COMFYTV_IMAGE').Input('image'), prefix='image', min=0, max=100), optional=True)],
+                    io.Autogrow.Input('images', template=io.Autogrow.TemplatePrefix(io.Custom('COMFYTV_IMAGE').Input('image'), prefix='image', min=0, max=100), optional=True),
+                    io.Autogrow.Input('groups', template=io.Autogrow.TemplatePrefix(io.Custom('DAELAB_ASSETS').Input('group'), prefix='group', min=0, max=100), optional=True)],
             outputs=[io.Video.Output('video', display_name='剪辑成片', tooltip='按时间轴剪辑并拼接后的视频'),
                      io.Custom('COMFYTV_VIDEO').Output('video_ref', display_name='剪辑成片引用', tooltip='同一成片的本地视频引用')], is_output_node=True)
 
     @classmethod
-    def execute(cls, edit_data, assets=None, videos=None, images=None):
+    def execute(cls, edit_data, assets=None, videos=None, images=None, groups=None):
         edit = json.loads(edit_data)
-        clips, fit = edit_clips(edit, assets, videos, images)
+        clips, fit = edit_clips(edit, assets, videos, images, groups)
         directory = Path(folder_paths.get_output_directory()) / 'DAELAB' / 'edits'
         directory.mkdir(parents=True, exist_ok=True)
         output = directory / (uuid.uuid4().hex + '.mp4')

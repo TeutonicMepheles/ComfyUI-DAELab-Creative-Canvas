@@ -1,6 +1,5 @@
 import asyncio
 from aiohttp import web
-from av.error import FFmpegError
 import folder_paths
 from server import PromptServer
 from .material_output_files import import_materials
@@ -18,5 +17,5 @@ async def output_materials(request):
         assets=await asyncio.to_thread(import_materials,body.get('assets'),
             folder_paths.get_input_directory(),folder_paths.get_output_directory())
         return web.json_response({'assets':assets})
-    except (ValueError,TypeError,KeyError,OSError,FFmpegError) as error:
+    except (ValueError,TypeError,KeyError,OSError) as error:
         return web.json_response({'error':str(error)},status=400)

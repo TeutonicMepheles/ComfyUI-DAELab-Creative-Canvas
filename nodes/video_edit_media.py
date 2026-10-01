@@ -56,20 +56,21 @@ def media_info(asset):
                 'fps': float(video.average_rate or 24), 'has_audio': bool(inp.streams.audio)}
 
 
-def edit_clips(data, assets=None, videos=None, images=None):
+def edit_clips(data, assets=None, videos=None, images=None, groups=None):
     edit = json.loads(data) if isinstance(data, str) else data
     if not isinstance(edit, dict) or edit.get('version') != 1 or not isinstance(edit.get('clips'), list):
         raise ValueError('剪辑数据格式无效')
     slots = {**{f'videos.{k.split(".")[-1]}': v for k, v in (videos or {}).items()},
              **{f'images.{k.split(".")[-1]}': v for k, v in (images or {}).items()}}
-    group = {a['id']: a for a in (assets or {}).get('assets', [])}
-    members = {str(a['nodeId']): a for a in (assets or {}).get('assets', []) if a.get('nodeId') is not None}
+    collections = {'assets': assets or {}, **{f'groups.{k.split(".")[-1]}': v for k, v in (groups or {}).items()}}
+    group_assets = {slot: {a['id']: a for a in collection.get('assets', [])} for slot, collection in collections.items()}
+    group_members = {slot: {str(a['nodeId']): a for a in collection.get('assets', []) if a.get('nodeId') is not None} for slot, collection in collections.items()}
     clips, inspected = [], {}
     for clip in edit['clips']:
         source = clip.get('source', {})
         slot = source.get('slot')
-        if slot == 'assets':
-            asset = members.get(str(source['nodeId'])) if source.get('nodeId') is not None else group.get(source.get('assetId'))
+        if slot == 'assets' or (slot and slot.startswith('groups.')):
+            asset = group_members.get(slot, {}).get(str(source['nodeId'])) if source.get('nodeId') is not None else group_assets.get(slot, {}).get(source.get('assetId'))
             if asset is None:
                 raise ValueError('已连接素材组中的片段来源缺失，请重新添加')
         elif slot:

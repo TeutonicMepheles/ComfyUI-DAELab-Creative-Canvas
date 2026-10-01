@@ -22,8 +22,9 @@
 .dae-creative-card[data-upload=true][data-inactive=true]>.dae-creative-body{display:none}
 .dae-creative .dae-upload-info{display:none}
 .dae-upload-stage{position:relative}
-.dae-upload-stage:has(video)::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(#000b,transparent 32%,transparent 62%,#000b);opacity:0;pointer-events:none;transition:opacity .12s}
-.dae-upload-stage:has(video):is(:hover,:focus-within,:has(.dae-upload-player[data-seeking=true]))::after,.dae-creative-card:is(:hover,:focus-within,[data-selected=true]) .dae-upload-stage:has(video)::after{opacity:1}
+.dae-upload-stage:has(img,video)::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(#000b,transparent 32%,transparent 62%,#000b);opacity:0;pointer-events:none;transition:opacity .12s}
+.dae-upload-stage:has(img)::after{background:linear-gradient(#000b,transparent 32%)}
+.dae-upload-stage:has(img,video):is(:hover,:focus-within,:has(.dae-upload-player[data-seeking=true]))::after,.dae-creative-card:is(:hover,:focus-within,[data-selected=true]) .dae-upload-stage:has(img,video)::after{opacity:1}
 .dae-upload-player{position:absolute;inset:auto 0 0;z-index:2;padding:28px 12px 12px;color:#fff;opacity:0;pointer-events:none;transition:opacity .12s;box-sizing:border-box;font:14px/1.2 var(--dae-font-family);user-select:none}
 .dae-upload-stage:hover .dae-upload-player,.dae-upload-stage:has(:focus-visible) .dae-upload-player,.dae-upload-player[data-seeking=true]{opacity:1}
 .dae-upload-player-row{display:flex;align-items:center;gap:8px;height:32px;margin-bottom:4px;pointer-events:none}
@@ -48,4 +49,4 @@
 .dae-ui.dae-upload .dae-upload-stage:is(:hover,:has(:focus-visible)) .dae-upload-player :is(button,input),.dae-ui.dae-upload .dae-upload-player[data-seeking=true] :is(button,input){pointer-events:auto}
 .dae-ui.dae-upload .dae-upload-player :is(button,input):focus-visible{outline:2px solid #fff;outline-offset:2px}
 .dae-ui.dae-upload .dae-upload-player :disabled{pointer-events:none;opacity:.4}
-@media(prefers-reduced-motion:reduce){.dae-upload-player,.dae-upload-stage:has(video)::after{transition:none}}
+@media(prefers-reduced-motion:reduce){.dae-upload-player,.dae-upload-stage:has(img,video)::after{transition:none}}

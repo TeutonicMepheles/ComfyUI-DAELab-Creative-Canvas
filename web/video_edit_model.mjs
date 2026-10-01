@@ -23,13 +23,15 @@ export function newClip(asset,source={asset},id=crypto.randomUUID()){
     if(source.asset)source={asset:{filename:source.asset.filename,subfolder:source.asset.subfolder||'',type:source.asset.type||'input'}};
     return {id,source,asset,start:0,duration:asset.kind==='image'?3:asset.duration,mute:false};
 }
-export const sourceKey=(asset,source)=>JSON.stringify([source.slot,source.assetId,asset.type||'input',asset.subfolder||'',asset.filename,...(source.slot==='assets'&&source.nodeId!=null?[String(source.nodeId)]:[])]);
+export const isGroupSlot=slot=>slot==='assets'||!!slot?.startsWith('groups.');
+export const sourceSlotKey=source=>source.slot?.startsWith('groups.')&&source.groupId!=null?'groups:'+source.groupId:source.slot;
+export const sourceKey=(asset,source)=>JSON.stringify([sourceSlotKey(source),source.assetId,asset.type||'input',asset.subfolder||'',asset.filename,...(isGroupSlot(source.slot)&&source.nodeId!=null?[String(source.nodeId)]:[])]);
 export function connectedEdit(edit,assets){
     if(!assets.length&&!edit.sources?.length&&!edit.clips.some(c=>c.source.slot))return edit;
-    const members=new Map(assets.filter(item=>item.source.slot==='assets'&&item.source.nodeId).map(item=>[item.source.nodeId,item]));
+    const members=new Map(assets.filter(item=>isGroupSlot(item.source.slot)&&item.source.nodeId).map(item=>[item.source.nodeId,item]));
     const replacements=new Map();
     for(const item of assets){
-        if(item.source.slot==='assets')continue;
+        if(isGroupSlot(item.source.slot))continue;
         const member=members.get(item.source.nodeId);
         if(member&&sourceKey(item.asset,{})===sourceKey(member.asset,{}))replacements.set(sourceKey(item.asset,item.source),member);
     }
@@ -42,7 +44,7 @@ export function connectedEdit(edit,assets){
         const member=replacements.get(key);return member?sourceKey(member.asset,member.source):key;
     }));
     const clips=edit.clips.map(clip=>{
-        const key=sourceKey(clip.asset,clip.source),member=replacements.get(key)||incoming.get(savedKeys.get(key));
+        const key=sourceKey(clip.asset,clip.source),member=replacements.get(key)||incoming.get(savedKeys.get(key))||(isGroupSlot(clip.source.slot)&&incoming.get(key));
         return member?{...clip,asset:member.asset,source:member.source}:clip;
     }).filter(c=>!c.source.slot||incoming.has(sourceKey(c.asset,c.source)));
     for(const [key,{asset,source}] of incoming)if(!previous.has(key))clips.push(newClip(asset,source));

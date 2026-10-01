@@ -24,7 +24,7 @@ export function installMaterialGroups(app){
     const history=canvasHistory(app);const view=app.daelabCreativeCanvas;if(!view||app.daelabMaterialGroups)return;
     const root=view.root,world=root.querySelector('.dae-creative-world');
     root.dataset.groupReview='true';
-    const sheet=el('link');sheet.rel='stylesheet';sheet.href=new URL('./material_groups.css?v=20261001-actions-scale',import.meta.url).href;document.head.append(sheet);
+    const sheet=el('link');sheet.rel='stylesheet';sheet.href=new URL('./material_groups.css?v=20261001-media-actions',import.meta.url).href;document.head.append(sheet);
     let selected=null,drag=null,renderSignature='',seenGraph=null,disposed=false,menu=null,menuTrigger=null,selectionActive=true,colorEditing=false;
     const panel=el('aside','dae-creative-toolbar gr-panel'),toast=el('div','gr-notice');
     toast.setAttribute('role','status');panel.setAttribute('aria-label','素材组选项栏');panel.setAttribute('role','toolbar');
@@ -79,20 +79,31 @@ export function installMaterialGroups(app){
     }
     const decorated=new Map();
     function restoreMedia(){for(const bar of decorated.values()){for(const action of bar.querySelectorAll('.gr-media-action')){action.textContent=action.getAttribute('aria-label');action.classList.remove('gr-media-action');}}decorated.clear();}
-    function onHide(){if(drag){const current=drag;drag=null;restoreDrag(current);}if(colorEditing){colorEditing=false;history.end();}restoreMedia();}
+    function onHide(){if(drag){const current=drag;drag=null;restoreDrag(current);}if(colorEditing){colorEditing=false;history.end();}restoreMedia();layoutElements=[];layoutSignature='';}
     root.addEventListener('dae-canvas-hide',onHide);
     function decorateMedia(){
         for(const upload of decorated.keys())if(!upload.isConnected)decorated.delete(upload);
-        for(const c of world.querySelectorAll('.dae-creative-card[data-upload=true]')){
+        const uploads=[...world.querySelectorAll('.dae-creative-card[data-upload=true]')];
+        const widths=uploads.map(c=>c.querySelector('.dae-upload-stage')?.getBoundingClientRect().width||0);
+        for(const [index,c] of uploads.entries()){
             const bar=c.querySelector('.dae-upload-toolbar');if(!bar)continue;
             const upload=c.querySelector('.dae-upload');decorated.set(upload,bar);
-            c.dataset.reviewCompactActions=String((c.querySelector('.dae-upload-stage')?.getBoundingClientRect().width||0)<160);
+            c.dataset.reviewCompactActions=String(widths[index]<160);
             const visibleActions=[...bar.querySelectorAll('button,a')].filter(action=>!action.hidden);
             c.style.setProperty('--gr-actions-width',(visibleActions.length*40+12)+'px');
             [...bar.querySelectorAll('button,a')].forEach((action,index)=>{const label=index===0?(action.textContent.includes('上传')?'上传图片 / 视频':action.textContent||action.getAttribute('aria-label')||'替换素材'):index===1?'下载':'全屏';action.setAttribute('aria-label',label);action.title=label;action.classList.add('gr-media-action');if(!action.querySelector('.dae-creative-icon'))action.replaceChildren(icon(['arrow-left-right-line','download-line','fullscreen-line'][index]));});
         }
     }
+    let layoutSignature='',layoutElements=[];
+    function groupLayoutSignature(elements){
+        const state=canvasState(app.graph);
+        return JSON.stringify([state.viewport.zoom,selected,selectionActive,drag?.moved&&[drag.kind,drag.ids,drag.target],
+            groups().map(g=>[g.id,g.title,g.properties.members,g.properties.layout,g.properties.collapsed,g.properties.showNumbers,g.properties.reviewColor,g.properties.locked]),
+            elements.map(c=>[c.dataset.nodeId,c.dataset.selected,c.offsetHeight,state.cards[c.dataset.nodeId]])]);
+    }
     function layoutGroups(){
+        const elements=[...world.querySelectorAll('.dae-creative-card')],signature=groupLayoutSignature(elements);
+        if(signature===layoutSignature&&elements.length===layoutElements.length&&elements.every((c,i)=>c===layoutElements[i]))return;
         insertion.hidden=true;
         const moving=drag?.kind==='member'&&drag.moved?drag.ids[0]:null;
         for(const c of world.querySelectorAll('.dae-creative-card')){delete c.dataset.reviewMember;delete c.dataset.reviewNumbers;c.style.removeProperty('--gr-number-bg');c.querySelector('.dae-upload-stage')?.removeAttribute('data-review-index');c.style.display='';}
@@ -110,7 +121,7 @@ export function installMaterialGroups(app){
             for(let i=0;i<ids.length;i++){
                 const id=ids[i],c=card(id);if(!c)continue;
                 c.style.setProperty('--gr-number-bg',g.properties.reviewColor||'var(--dae-border-control)');
-                if(i%count===0&&ids.slice(i,i+count).some(mid=>card(mid)?.dataset.selected==='true'&&!card(mid).querySelector('video')))y+=28/(canvasState(app.graph).viewport.zoom||1);c.dataset.reviewMember=String(g.id);c.dataset.reviewIndex=String(i+1);c.dataset.reviewNumbers=String(g.properties.showNumbers!==false);const stage=c.querySelector('.dae-upload-stage');if(stage&&g.properties.showNumbers!==false)stage.dataset.reviewIndex=String(i+1);c.style.display=g.properties.collapsed&&id!==moving?'none':'';
+                if(i%count===0&&ids.slice(i,i+count).some(mid=>card(mid)?.dataset.selected==='true'&&!card(mid).querySelector('.dae-upload-stage :is(img,video)')))y+=28/(canvasState(app.graph).viewport.zoom||1);c.dataset.reviewMember=String(g.id);c.dataset.reviewIndex=String(i+1);c.dataset.reviewNumbers=String(g.properties.showNumbers!==false);const stage=c.querySelector('.dae-upload-stage');if(stage&&g.properties.showNumbers!==false)stage.dataset.reviewIndex=String(i+1);c.style.display=g.properties.collapsed&&id!==moving?'none':'';
                 const cp=cards()[id];if(!cp)continue;
                 if(!drag?.ids?.includes(id))Object.assign(cp,{x:p.x+padding+(i%count)*(350+gap),y:p.y+y,width:350});
                 c.style.left=cp.x+'px';c.style.top=cp.y+'px';c.style.width=cp.width+'px';
@@ -125,6 +136,7 @@ export function installMaterialGroups(app){
             let badge=gc.querySelector('.gr-group-count');if(!badge){badge=el('span','gr-group-count');const heading=gc.querySelector('.dae-creative-heading');heading.prepend(icon('folder-image-line'));heading.append(badge);}badge.style.display=p.width*(canvasState(app.graph).viewport.zoom||1)<300?'none':'';badge.textContent=`${members.length} 项 · 整组输出${g.properties.locked?' · 已锁定':''}`;
             const port=gc.querySelector('[data-side=output][data-slot]');if(port){port.setAttribute('aria-label',`${g.title} 整组素材输出`);port.title=`整组输出 · ${members.length} 项`;}
         }
+        layoutElements=elements;layoutSignature=groupLayoutSignature(elements);
     }
     function positionPanel(){
         const gc=card(group()?.id),r=gc?.getBoundingClientRect(),b=root.getBoundingClientRect();
@@ -174,13 +186,13 @@ export function installMaterialGroups(app){
     // Track native card dragging; only group-title dragging needs collective movement.
     function down(e){
         if(e.button===0&&!e.target.closest('.gr-local-menu,.gr-panel'))closeMenu();
-        if(e.button!==0||e.target.closest('button,input,select,textarea,.gr-panel,.gr-create-selection'))return;
+        if(e.button!==0||e.target.closest('button,a,input,select,textarea,.gr-panel,.gr-create-selection'))return;
         const c=e.target.closest('.dae-creative-card'),n=c&&node(c.dataset.nodeId);if(!n){if(!e.target.closest('.gr-local-menu'))selectionActive=false;return;}
-        if(n.type===TYPE){selected=n.id;selectionActive=true;view.select(n,{toggle:e.shiftKey||e.ctrlKey,preserve:true});renderSignature='';e.stopImmediatePropagation();e.preventDefault();if(n.properties.locked)return say('组已锁定。');history.begin();const ids=[n.id,...n.properties.members];drag={kind:'group',ids,x:e.clientX,y:e.clientY,originals:copy(Object.fromEntries(ids.map(id=>[id,cards()[id]]))),before:copy(app.graph.serialize())};e.target.setPointerCapture(e.pointerId);}
+        if(n.type===TYPE){selected=n.id;selectionActive=true;view.select(n,{toggle:e.shiftKey||e.ctrlKey,preserve:true});renderSignature='';e.stopImmediatePropagation();e.preventDefault();if(n.properties.locked)return say('组已锁定。');history.begin();const ids=[n.id,...n.properties.members];drag={kind:'group',pointerId:e.pointerId,ids,x:e.clientX,y:e.clientY,originals:copy(Object.fromEntries(ids.map(id=>[id,cards()[id]]))),before:copy(app.graph.serialize())};}
         else if(n.type===UPLOAD_TYPE){
             view.select(n,{toggle:e.shiftKey||e.ctrlKey,preserve:true});
             const parent=groups().find(g=>g.properties.members.includes(n.id));if(parent?.properties.locked){e.stopImmediatePropagation();return say('所在组已锁定。');}
-            e.stopImmediatePropagation();e.preventDefault();root.focus({preventScroll:true});history.begin();drag={kind:'member',parentId:parent?.id,ids:[n.id],x:e.clientX,y:e.clientY,originals:copy({[n.id]:cards()[n.id]}),before:copy(app.graph.serialize())};e.target.setPointerCapture(e.pointerId);if(parent){selected=parent.id;selectionActive=true;}
+            e.stopImmediatePropagation();e.preventDefault();root.focus({preventScroll:true});history.begin();drag={kind:'member',pointerId:e.pointerId,parentId:parent?.id,ids:[n.id],x:e.clientX,y:e.clientY,originals:copy({[n.id]:cards()[n.id]}),before:copy(app.graph.serialize())};if(parent){selected=parent.id;selectionActive=true;}
         }
     }
     function updateDrop(e){
@@ -189,6 +201,7 @@ export function installMaterialGroups(app){
         for(const g of groups()){const gc=card(g.id);if(gc)gc.dataset.reviewOver=String(g.id===target?.id);}
     }
     function clearDragPreview(current){
+        if(root.hasPointerCapture(current.pointerId))root.releasePointerCapture(current.pointerId);
         view.previewMaterialDrop(null);
         insertion.hidden=true;
         delete root.dataset.reviewSorting;cancelAnimationFrame(shiftFrame);shiftFrame=0;view.syncPositions([]);
@@ -196,9 +209,10 @@ export function installMaterialGroups(app){
         for(const gc of world.querySelectorAll('[data-review-over]'))delete gc.dataset.reviewOver;
     }
     function move(e){
-        if(!drag)return;e.stopImmediatePropagation();
+        if(!drag||e.pointerId!==drag.pointerId)return;e.stopImmediatePropagation();
         if(!drag.moved){
             if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<4)return;
+            root.setPointerCapture(e.pointerId);
             if(drag.kind==='member'){
                 layoutGroups();
                 // Keep hit regions stable while the preview moves the other cards.
@@ -218,7 +232,7 @@ export function installMaterialGroups(app){
             for(const gc of world.querySelectorAll('[data-review-over]'))delete gc.dataset.reviewOver;
         }
     }
-    function up(e){if(!drag)return;const current=drag;if(current.kind==='member'&&current.moved&&e.type!=='pointercancel')updateDrop(e);drag=null;clearDragPreview(current);if(e.type==='pointercancel')return restoreDrag(current);if(!current.moved){history.end();return;}
+    function up(e){if(!drag||e.pointerId!==drag.pointerId)return;e.stopImmediatePropagation();const current=drag;if(current.kind==='member'&&current.moved&&e.type==='pointerup')updateDrop(e);drag=null;clearDragPreview(current);if(e.type!=='pointerup')return restoreDrag(current);if(!current.moved){history.end();return;}
 
         if(view.receiveMaterialGroup(node(current.ids[0]),e.clientX,e.clientY)){for(const [id,layout] of Object.entries(current.originals))if(cards()[id])Object.assign(cards()[id],layout);history.end();dirty();renderSignature='';view.sync();tick();return;}
         if(current.kind==='member'){
@@ -231,8 +245,8 @@ export function installMaterialGroups(app){
     }
     function restoreDrag(current){clearDragPreview(current);const saved=current.before.extra?.daelabCreativeCanvasV1?.cards||{};for(const [id,layout] of Object.entries(saved))if(cards()[id])Object.assign(cards()[id],layout);history.end();view.sync();renderSignature='';tick();say('已取消拖动并恢复原位置。');}
     function key(e){if(e.target.closest('input,textarea,select,[contenteditable=true]'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='g'){e.preventDefault();e.stopImmediatePropagation();createFromSelection();return;}if(e.key==='Escape'&&drag){const current=drag;drag=null;if(current.kind==='group')e.stopImmediatePropagation();restoreDrag(current);}}
-    root.addEventListener('pointerdown',down,true);root.addEventListener('pointermove',move,true);root.addEventListener('pointerup',up);root.addEventListener('pointercancel',up);root.addEventListener('keydown',key,true);
+    root.addEventListener('pointerdown',down,true);root.addEventListener('pointermove',move,true);root.addEventListener('pointerup',up,true);root.addEventListener('pointercancel',up,true);root.addEventListener('lostpointercapture',up,true);root.addEventListener('keydown',key,true);
     const timer=setInterval(tick,150);
-    app.daelabMaterialGroups={createFromSelection,tick,destroy(){onHide();closeMenu();disposed=true;root.removeEventListener('dae-canvas-layout',syncToolbar);clearInterval(timer);clearTimeout(noticeTimer);cancelAnimationFrame(shiftFrame);root.removeEventListener('transitionrun',onShift);root.removeEventListener('dae-canvas-wires-changed',updateWirePulse);root.removeEventListener('pointerdown',down,true);root.removeEventListener('pointermove',move,true);root.removeEventListener('pointerup',up);root.removeEventListener('pointercancel',up);root.removeEventListener('keydown',key,true);panel.remove();toast.remove();insertion.remove();createButton.remove();sheet.remove();restoreMedia();root.removeEventListener('dae-canvas-hide',onHide);}};
+    app.daelabMaterialGroups={createFromSelection,tick,destroy(){onHide();closeMenu();disposed=true;root.removeEventListener('dae-canvas-layout',syncToolbar);clearInterval(timer);clearTimeout(noticeTimer);cancelAnimationFrame(shiftFrame);root.removeEventListener('transitionrun',onShift);root.removeEventListener('dae-canvas-wires-changed',updateWirePulse);root.removeEventListener('pointerdown',down,true);root.removeEventListener('pointermove',move,true);root.removeEventListener('pointerup',up,true);root.removeEventListener('pointercancel',up,true);root.removeEventListener('lostpointercapture',up,true);root.removeEventListener('keydown',key,true);panel.remove();toast.remove();insertion.remove();createButton.remove();sheet.remove();restoreMedia();root.removeEventListener('dae-canvas-hide',onHide);}};
     tick();
 }

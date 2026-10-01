@@ -38,6 +38,18 @@ export function canvasHistory(app){
     return {
         begin(){const t=tracker();t?.captureCanvasState?.();t?.squashState?.flush?.();t?.beforeChange?.();},
         end(){tracker()?.afterChange?.();},
+        // Fold derived changes into the current state without another undo step or clearing redo.
+        amend(change){
+            const t=tracker();if(!t)return change();
+            t.squashState?.flush?.();t.captureCanvasState();
+            const nested=t.changeCount>0,previous=t.activeState;
+            t.beforeChange();
+            try{
+                const result=change();
+                if(!nested){t.activeState=JSON.parse(JSON.stringify(app.rootGraph.serialize()));t.updateModified(previous);}
+                return result;
+            }finally{t.afterChange();}
+        },
         updateViewport(viewport){
             const t=tracker();if(!t)return;
             // The host compares custom graph.extra data, including our viewport.

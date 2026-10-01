@@ -2,9 +2,9 @@ import {bindPanelAvailability} from './creative_panel_state.mjs';
 import {app} from '/scripts/app.js';
 import {createCreativeButton} from './creative_button.mjs';
 import {createUploadVideoControls} from './upload_video_controls.mjs?v=20261001-player1';
-import {UPLOAD_TYPE,ACCEPT,mediaKind,readAsset,assetURL,slotAllowed} from './media_upload_model.mjs';
+import {UPLOAD_TYPE,ACCEPT,mediaKind,readAsset,assetURL,slotAllowed} from './media_upload_model.mjs?v=20261001-material-references';
 
-const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./media_upload.css?v=20261001-video-gradient',import.meta.url).href;document.head.append(sheet);
+const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./media_upload.css?v=20261001-image-top-gradient',import.meta.url).href;document.head.append(sheet);
 function install(node){
     if(node.__mediaUpload)return;
     const data=node.widgets.find(w=>w.name==='asset_data');

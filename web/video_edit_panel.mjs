@@ -1,7 +1,7 @@
 import {createCreativeButton,bindCreativeButton} from './creative_button.mjs';
 import {bindCreativeField} from './creative_field.mjs';
 import {API_KEY} from './creative_contract.mjs';
-import {PREVIEW_SCALES,spans,createTimelineIndex,connectedEdit,resizeClip,splitClip,moveClip,formatTime,timelineFps,snapFrame,formatFrame} from './video_edit_model.mjs?v=20261001-group-members';
+import {PREVIEW_SCALES,spans,createTimelineIndex,connectedEdit,resizeClip,splitClip,moveClip,formatTime,timelineFps,snapFrame,formatFrame} from './video_edit_model.mjs?v=20261002-multi-groups';
 
 const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e;};
 const getPanelContext=element=>globalThis[API_KEY]?.getPanelContext?.(element);
@@ -141,7 +141,7 @@ export function createVideoEditor(host){
         e.preventDefault();e.stopPropagation();const rect=tile.getBoundingClientRect();openClipMenu(tile,Math.max(rect.left,viewport.getBoundingClientRect().left),rect.bottom);
     });
 
-    function commit(next){closeClipMenu();pause();edit=host.write(next);if(!edit.clips.some(c=>c.id===selected))selected=edit.clips[0]?.id;time=Math.min(time,timing().total);render();syncMedia(true);}
+    function commit(next,sync=false){closeClipMenu();pause();edit=host.write(next,sync);if(!edit.clips.some(c=>c.id===selected))selected=edit.clips[0]?.id;time=Math.min(time,timing().total);render();syncMedia(true);}
     function replace(clip){commit({...edit,clips:edit.clips.map(c=>c.id===clip.id?clip:c)});}
     function outputSize(){const source=edit.resolution||edit.clips[0]?.asset;return source?{width:Math.max(2,Math.floor(source.width/2)*2),height:Math.max(2,Math.floor(source.height/2)*2)}:{width:16,height:9};}
     const clipFit=clip=>clip?.fit||edit.fit||'contain';
@@ -331,7 +331,7 @@ export function createVideoEditor(host){
         }).catch(error=>{if(!disposed&&error.name!=='AbortError'&&previewKey===key)previewStatus.textContent='使用原始预览 · '+error.message;});
     }
     function cancelSourceSync(){importEpoch++;importController?.abort();}
-    async function syncSources(collection){
+    async function syncSources(collection,isCurrent=()=>true){
         importController?.abort();const controller=new AbortController(),epoch=++importEpoch;importController=controller;
         const assets=[];
         for(const item of collection.assets){
@@ -340,9 +340,10 @@ export function createVideoEditor(host){
             if(disposed||epoch!==importEpoch||controller.signal.aborted)return;
             assets.push({asset,source:item.editSource});
         }
+        if(!isCurrent())throw new DOMException('素材连接已变化','AbortError');
         if(drag)finish({type:'pointercancel'});
         const next=connectedEdit(edit,assets);
-        if(JSON.stringify(next)!==JSON.stringify(edit))commit(next);
+        if(JSON.stringify(next)!==JSON.stringify(edit))commit(next,true);
     }
     function seekAtPointer(){
         const rect=viewport.getBoundingClientRect(),pixels=rect.width/viewport.offsetWidth;
