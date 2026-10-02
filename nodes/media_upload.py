@@ -9,14 +9,18 @@ from comfy_api.latest import io, InputImpl
 
 def resolve_asset(raw):
     asset = json.loads(raw)
-    root = Path(folder_paths.get_input_directory()).resolve()
+    roots = {'input': folder_paths.get_input_directory(), 'output': folder_paths.get_output_directory()}
+    source_type = asset.get('type', 'input')
+    if source_type not in roots:
+        raise ValueError('素材目录类型无效')
+    root = Path(roots[source_type]).resolve()
     path = (root / asset.get('subfolder', '') / asset.get('filename', '')).resolve()
     if not path.is_relative_to(root) or not path.is_file():
-        raise ValueError('上传素材不存在，请重新上传')
+        raise ValueError('素材文件不存在或超出允许目录，请重新添加')
     kind = 'image' if path.suffix.lower() in ('.png', '.jpg', '.jpeg', '.webp') else 'video' if path.suffix.lower() in ('.mp4', '.webm', '.mov') else None
     if kind is None or asset.get('kind') != kind:
         raise ValueError('不支持的素材格式')
-    url = '/view?' + urlencode(dict(filename=path.name, subfolder=path.parent.relative_to(root).as_posix(), type='input'))
+    url = '/view?' + urlencode(dict(filename=path.name, subfolder=path.parent.relative_to(root).as_posix(), type=source_type))
     return path, kind, url
 
 

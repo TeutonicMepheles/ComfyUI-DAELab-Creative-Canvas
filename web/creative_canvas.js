@@ -1,11 +1,12 @@
 import {app} from '/scripts/app.js';
-import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20260930-public-layout4';
+import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20261002-canvas-media-performance';
 import {STATE_KEY} from './creative_canvas_model.mjs';
-import {installMaterialGroups} from './material_groups.mjs';
+import {installLayoutHistory} from './creative_history.mjs?v=20261001-layout-undo';
+import {installMaterialGroups} from './material_groups.mjs?v=20261002-title-double-click';
 
 import {publishAPI} from './creative_contract.mjs';
 import {publishPanelContext} from './creative_panel_context.mjs?v=20260930-public-layout4';
-import './adapters/upload.mjs';
+import './adapters/upload.mjs?v=20261001-upload-width';
 import {installComfyTVAdapter} from './adapters/comfytv.mjs';
 publishAPI();
 publishPanelContext();
@@ -55,7 +56,8 @@ app.registerExtension({
     commands:[{id:'DAELAB.CreativeCanvas.Toggle',label:'切换创作画布',function:()=>switchMode(!view.active)}],
     setup(){
         if(document.getElementById('daelab-creative-css'))return;
-        const css=document.createElement('link');css.id='daelab-creative-css';css.rel='stylesheet';css.href=new URL('./creative_canvas.css?v=20260930-public-layout4',import.meta.url).href;document.head.append(css);
+        installLayoutHistory(app);
+        const css=document.createElement('link');css.id='daelab-creative-css';css.rel='stylesheet';css.href=new URL('./creative_canvas.css?v=20261001-material-drop',import.meta.url).href;document.head.append(css);
         view=createCreativeCanvas(app,{onExit:updateLabel});
         observer=new MutationObserver(records=>{if(records.every(r=>r.target instanceof Element&&r.target.closest('.dae-creative')))return;if(!scheduled){scheduled=true;requestAnimationFrame(syncMenu);}});
         observer.observe(document.body,{childList:true,subtree:true});
