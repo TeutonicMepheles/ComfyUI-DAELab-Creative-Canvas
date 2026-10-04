@@ -12,11 +12,14 @@ export function collectionFor(group){
 }
 export function expandGroupSelection(graph,ids){
     const result=new Set(ids);
-    for(const id of ids){const node=graph.getNodeById(id);if(node?.type===GROUP_TYPE)for(const member of node.properties.members||[])result.add(member);}
+    const liveIds=new Map((graph._nodes||[]).map(node=>[String(node.id),node.id]));
+    // Loaded nodes may have string IDs while older member references remain numeric.
+    for(const id of ids){const node=graph.getNodeById(id);if(node?.type===GROUP_TYPE)for(const member of node.properties.members||[])result.add(liveIds.get(String(member))??graph.getNodeById(member)?.id??member);}
     return result;
 }
 export function remapGroupMembers(nodes,mapping){
-    for(const node of nodes)if(node.type===GROUP_TYPE)node.properties.members=(node.properties.members||[]).flatMap(id=>mapping.has(id)?[mapping.get(id).id]:[]);
+    const copied=new Map([...mapping].map(([id,node])=>[String(id),node]));
+    for(const node of nodes)if(node.type===GROUP_TYPE)node.properties.members=(node.properties.members||[]).flatMap(id=>copied.has(String(id))?[copied.get(String(id)).id]:[]);
 }
 // Keep reviewed layouts while replacing the non-executable prototype identity.
 export function migrateGroups(data){

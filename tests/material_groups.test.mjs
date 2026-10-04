@@ -10,9 +10,27 @@ test('ordered whole collection preserves identity, media kind and duplicate asse
 });
 test('group copy/delete includes members and remaps only copied IDs',()=>{
  const g={id:'g',type:GROUP_TYPE,properties:{members:['a','b']}};
- assert.deepEqual([...expandGroupSelection({getNodeById:()=>g},['g','a'])],['g','a','b']);
+ const nodes=new Map([['g',g],['a',{id:'a'}],['b',{id:'b'}]]);
+ assert.deepEqual([...expandGroupSelection({getNodeById:id=>nodes.get(id)},['g','a'])],['g','a','b']);
  const clone=structuredClone(g);remapGroupMembers([clone],new Map([['a',{id:'new-a'}],['b',{id:'new-b'}]]));
  assert.deepEqual(clone.properties.members,['new-a','new-b']);assert.deepEqual(g.properties.members,['a','b']);
+});
+for(const liveStrings of [true,false])test(`group copy resolves mixed member IDs with ${liveStrings?'string':'numeric'} live IDs`,()=>{
+ const live=id=>liveStrings?String(id):id,stored=id=>liveStrings?id:String(id);
+ const group={id:live(3),type:GROUP_TYPE,properties:{members:[stored(2),stored(1),stored(99)]}};
+ const nodes=new Map([group,{id:live(1)},{id:live(2)},{id:live(4)}].map(n=>[String(n.id),n]));
+ const graph={_nodes:[...nodes.values()],getNodeById:id=>[...nodes.values()].find(n=>n.id===id)};
+ const ids=expandGroupSelection(graph,[group.id,live(4),live(1)]);
+ assert.deepEqual([...ids],[group.id,live(4),live(1),live(2),stored(99)]);
+ // Canvas cards are keyed by live IDs; each member must resolve exactly once.
+ const cards=new Map([...nodes.values()].map(n=>[n.id,n]));
+ const copied=[...ids].map(id=>cards.get(id)).filter(Boolean);
+ assert.equal(copied.length,4);
+ const clone=structuredClone(group),mapping=new Map(copied.map(n=>[n.id,{id:`copy-${n.id}`} ]));
+ remapGroupMembers([clone],mapping);
+ assert.deepEqual(clone.properties.members,['copy-2','copy-1']);
+ assert.deepEqual(group.properties.members,[stored(2),stored(1),stored(99)]);
+ assert.equal(mapping.size,4);
 });
 test('prototype migration preserves group presentation and table data but drops review-only socket',()=>{
  const data={nodes:[{id:'g',type:'DAELAB.GroupReviewDemo',properties:{members:['a'],layout:'vertical',reviewColor:'#123456'},outputs:[{type:'DAELAB_REVIEW_ASSETS',links:[7]}]},{id:'t',type:'DAELAB.Table',inputs:[{name:'real',type:'STRING'},{type:'DAELAB_REVIEW_ASSETS'}],widgets_values:['table contents']}],links:[[7,'g',0,'t',1,'DAELAB_REVIEW_ASSETS']],extra:{daelabGroupReviewDemoV1:{}}};
