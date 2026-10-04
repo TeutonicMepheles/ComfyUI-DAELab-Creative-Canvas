@@ -45,6 +45,7 @@ register();
 | `upload(node, file)` | 可选，接收本地 File 并返回 Promise；画布拖入文件时调用上传节点适配器，上传节点负责请求、错误提示和取消生命周期 |
 | `assets(node)` | 可选，返回 `{version:1, assets:[...], ready?}` 本地素材快照；`ready:false` 表示当前结果尚未生成或已过期，消费者应等待结果，不按空集合删除已有片段／连线。素材提供者负责顺序与字段，不由消费者读取私有面板 |
 | `prepareCopy(node, serialized)` | 在配置新节点前修改副本，例如生成新 request_id；不得改源节点 |
+| `remapCopy(node, mapping)` | 可选同步回调；所有副本配置完成、组成员重映射后、内部连线恢复前调用。mapping 为原节点 ID 到新节点的 Map，用于更新副本内部引用和面板缓存；不得修改源节点或 mapping |
 | `menu` | 已安装节点的双击菜单项；未知类型不显示。icon 使用本仓库随附 Remix SVG 名称 |
 
 宿主借用面板时复用 `creative_button.mjs`、`creative_field.mjs` 的绑定，返回原模式时清理并归还；节点删除或工作流重载时释放。面板提供方负责自身请求取消和原生 widget 生命周期。多个实例必须拥有独立状态。

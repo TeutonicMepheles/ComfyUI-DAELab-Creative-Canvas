@@ -1,5 +1,5 @@
 import {app} from '/scripts/app.js';
-import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20261002-canvas-media-performance';
+import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20261004-copy-sources';
 import {STATE_KEY} from './creative_canvas_model.mjs';
 import {installLayoutHistory} from './creative_history.mjs?v=20261001-layout-undo';
 import {installMaterialGroups} from './material_groups.mjs?v=20261002-title-double-click';

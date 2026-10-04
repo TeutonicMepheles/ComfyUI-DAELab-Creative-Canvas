@@ -3,7 +3,7 @@ import {api} from '/scripts/api.js';
 import {registerAdapter,adapterFor} from './creative_contract.mjs';
 import {canvasHistory} from './creative_history.mjs?v=20261002-edit-undo';
 import {bindPanelAvailability} from './creative_panel_state.mjs';
-import {EDIT_TYPE,readEdit,localAsset,isGroupSlot,sourceSlotKey} from './video_edit_model.mjs?v=20261002-multi-groups';
+import {EDIT_TYPE,readEdit,localAsset,isGroupSlot,sourceSlotKey,remapEditSources} from './video_edit_model.mjs?v=20261004-copy-sources';
 import {createVideoEditor} from './video_edit_panel.mjs?v=20261002-edit-undo';
 
 const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./video_edit.css?v=20261001-timeline-background2',import.meta.url).href;document.head.append(sheet);
@@ -155,6 +155,13 @@ registerAdapter('daelab.video-edit',{
     assets:node=>{const url=resultFor(node);return {version:1,ready:!!url,assets:url?[{...localAsset(url),url,kind:'video',name:'剪辑结果.mp4'}]:[]};},
     canConnectOutput,
     inputLabels:{assets:'素材组'},
+    remapCopy(node,mapping){
+        const widget=node.widgets.find(w=>w.name==='edit_data'),previous=widget.value;
+        widget.value=JSON.stringify(remapEditSources(readEdit(previous),mapping));
+        // Identity changes do not alter the rendered movie or invalidate copied output links.
+        if(node.properties.daelabEditResultData===previous)node.properties.daelabEditResultData=widget.value;
+        node.__videoEdit.reload();
+    },
 });
 app.registerExtension({name:'DAELAB.VideoEdit',beforeRegisterNodeDef(type,definition){
     if(definition.name!==EDIT_TYPE)return;

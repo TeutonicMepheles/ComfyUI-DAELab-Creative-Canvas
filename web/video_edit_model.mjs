@@ -26,6 +26,24 @@ export function newClip(asset,source={asset},id=crypto.randomUUID()){
 export const isGroupSlot=slot=>slot==='assets'||!!slot?.startsWith('groups.');
 export const sourceSlotKey=source=>source.slot?.startsWith('groups.')&&source.groupId!=null?'groups:'+source.groupId:source.slot;
 export const sourceKey=(asset,source)=>JSON.stringify([sourceSlotKey(source),source.assetId,asset.type||'input',asset.subfolder||'',asset.filename,...(isGroupSlot(source.slot)&&source.nodeId!=null?[String(source.nodeId)]:[])]);
+export function remapEditSources(edit,mapping){
+    const ids=new Map([...mapping].map(([id,node])=>[String(id),String(node.id)]));
+    const remap=id=>ids.get(String(id))??id;
+    const clips=edit.clips.map(clip=>{
+        const source={...clip.source};
+        if(source.nodeId!=null)source.nodeId=remap(source.nodeId);
+        if(source.groupId!=null)source.groupId=remap(source.groupId);
+        return {...clip,source};
+    });
+    // Include keys for deleted clips so reconnecting copied groups cannot revive them.
+    const sources=edit.sources?.map(key=>{
+        const parts=JSON.parse(key),slot=parts[0];
+        if(slot?.startsWith('groups:'))parts[0]='groups:'+remap(slot.slice(7));
+        if((isGroupSlot(slot)||slot?.startsWith('groups:'))&&parts[5]!=null)parts[5]=remap(parts[5]);
+        return JSON.stringify(parts);
+    });
+    return {...edit,clips,...(sources?{sources}:{})};
+}
 export function connectedEdit(edit,assets){
     if(!assets.length&&!edit.sources?.length&&!edit.clips.some(c=>c.source.slot))return edit;
     const members=new Map(assets.filter(item=>isGroupSlot(item.source.slot)&&item.source.nodeId).map(item=>[item.source.nodeId,item]));

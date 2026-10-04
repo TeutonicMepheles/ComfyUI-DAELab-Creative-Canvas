@@ -714,6 +714,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
                 state.cards[node.id]={x:(point.x-v.x)/v.zoom+offset+(item.offset?.x||0),y:(point.y-v.y)/v.zoom+offset+(item.offset?.y||0),width:Number(item.layout?.width)||cardWidth(node.type),expanded:item.layout?.expanded!==false};
             }
             remapGroupMembers(created,mapping);
+            for(const node of created)adapterFor(node)?.remapCopy?.(node,mapping);
             for(const link of snapshot.links||[]){const source=mapping.get(link.source),target=mapping.get(link.target);if(source&&target&&!source.connect(link.output,target,link.input))throw new Error('内部连线恢复失败');}
             dirty();sync();selected=new Set(created.map(n=>n.id));selectedLink=null;paintSelection();root.focus({preventScroll:true});message(`已粘贴 ${created.length} 个新节点`);
         }catch(error){for(const node of created){if(node.graph===graph){graph.remove(node);delete state.cards[node.id];}else node.onRemoved?.();}message(`粘贴失败：${error.message}`);}finally{history.end();}
