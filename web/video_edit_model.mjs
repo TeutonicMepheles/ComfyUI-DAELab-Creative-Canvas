@@ -23,22 +23,46 @@ export function newClip(asset,source={asset},id=crypto.randomUUID()){
     if(source.asset)source={asset:{filename:source.asset.filename,subfolder:source.asset.subfolder||'',type:source.asset.type||'input'}};
     return {id,source,asset,start:0,duration:asset.kind==='image'?3:asset.duration,mute:false};
 }
-export const sourceKey=(asset,source)=>JSON.stringify([source.slot,source.assetId,asset.type||'input',asset.subfolder||'',asset.filename]);
+export const isGroupSlot=slot=>slot==='assets'||!!slot?.startsWith('groups.');
+export const sourceSlotKey=source=>source.slot?.startsWith('groups.')&&source.groupId!=null?'groups:'+source.groupId:source.slot;
+export const sourceKey=(asset,source)=>JSON.stringify([sourceSlotKey(source),source.assetId,asset.type||'input',asset.subfolder||'',asset.filename,...(isGroupSlot(source.slot)&&source.nodeId!=null?[String(source.nodeId)]:[])]);
+export function remapEditSources(edit,mapping){
+    const ids=new Map([...mapping].map(([id,node])=>[String(id),String(node.id)]));
+    const remap=id=>ids.get(String(id))??id;
+    const clips=edit.clips.map(clip=>{
+        const source={...clip.source};
+        if(source.nodeId!=null)source.nodeId=remap(source.nodeId);
+        if(source.groupId!=null)source.groupId=remap(source.groupId);
+        return {...clip,source};
+    });
+    // Include keys for deleted clips so reconnecting copied groups cannot revive them.
+    const sources=edit.sources?.map(key=>{
+        const parts=JSON.parse(key),slot=parts[0];
+        if(slot?.startsWith('groups:'))parts[0]='groups:'+remap(slot.slice(7));
+        if((isGroupSlot(slot)||slot?.startsWith('groups:'))&&parts[5]!=null)parts[5]=remap(parts[5]);
+        return JSON.stringify(parts);
+    });
+    return {...edit,clips,...(sources?{sources}:{})};
+}
 export function connectedEdit(edit,assets){
     if(!assets.length&&!edit.sources?.length&&!edit.clips.some(c=>c.source.slot))return edit;
-    const members=new Map(assets.filter(item=>item.source.slot==='assets'&&item.source.nodeId).map(item=>[item.source.nodeId,item]));
+    const members=new Map(assets.filter(item=>isGroupSlot(item.source.slot)&&item.source.nodeId).map(item=>[item.source.nodeId,item]));
     const replacements=new Map();
     for(const item of assets){
-        if(item.source.slot==='assets')continue;
+        if(isGroupSlot(item.source.slot))continue;
         const member=members.get(item.source.nodeId);
         if(member&&sourceKey(item.asset,{})===sourceKey(member.asset,{}))replacements.set(sourceKey(item.asset,item.source),member);
     }
     const incoming=new Map(assets.filter(item=>!replacements.has(sourceKey(item.asset,item.source))).map(item=>[sourceKey(item.asset,item.source),item]));
+    // Saved source keys used only the asset ID; keep existing edits and deletions when upgrading.
+    const savedKeys=new Map();
+    for(const {asset,source} of [...assets,...edit.clips])if(source.slot==='assets'&&source.nodeId!=null)savedKeys.set(sourceKey(asset,{...source,nodeId:undefined}),sourceKey(asset,source));
     const previous=new Set((edit.sources||edit.clips.filter(c=>c.source.slot).map(c=>sourceKey(c.asset,c.source))).map(key=>{
+        key=savedKeys.get(key)??key;
         const member=replacements.get(key);return member?sourceKey(member.asset,member.source):key;
     }));
     const clips=edit.clips.map(clip=>{
-        const member=replacements.get(sourceKey(clip.asset,clip.source));
+        const key=sourceKey(clip.asset,clip.source),member=replacements.get(key)||incoming.get(savedKeys.get(key))||(isGroupSlot(clip.source.slot)&&incoming.get(key));
         return member?{...clip,asset:member.asset,source:member.source}:clip;
     }).filter(c=>!c.source.slot||incoming.has(sourceKey(c.asset,c.source)));
     for(const [key,{asset,source}] of incoming)if(!previous.has(key))clips.push(newClip(asset,source));
