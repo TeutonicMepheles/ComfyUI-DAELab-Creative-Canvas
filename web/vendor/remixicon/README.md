@@ -23,3 +23,5 @@ The bundled Remix Icon license applies.
 2026-09-28: Added official System/lock-line.svg, System/lock-unlock-line.svg, Design/edit-line.svg and Design/palette-line.svg for group controls; bundled license applies.
 
 2026-09-28: Added official Editor/list-ordered.svg for the numbering toggle. The bundled Remix Icon license applies.
+
+2026-10-09: Reused original System/check-line.svg and System/error-warning-line.svg from the sibling DAELab business library for task capsules. The bundled Remix Icon license applies.

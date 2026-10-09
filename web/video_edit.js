@@ -19,7 +19,13 @@ function install(node){
     if(node.__videoEdit)return;
     const widget=node.widgets.find(w=>w.name==='edit_data'),history=canvasHistory(app);
     widget.hidden=true;widget.options={...widget.options,hidden:true};widget.computeSize=()=>[0,-4];if(widget.inputEl)widget.inputEl.style.display='none';
+    let exportTask=null;const operations=new Map();
     let disposed=false,job=null,sourceSignature=null,sourceSync=null,syncTimer=null,playhead=null,playheadWorkflow=null;
+    async function mediaTask(id,label,detail,path,data,signal){
+        const task={id,label,detail,state:'running',startedAt:Date.now(),elapsed:true,order:id==='edit-preview'?60:50};operations.set(id,task);
+        try{const result=await request(path,data,signal);if(!disposed&&operations.get(id)===task){if(signal?.aborted)operations.delete(id);else operations.set(id,{...task,state:'success',detail:'准备完成',finishedAt:Date.now()});}return result;}
+        catch(error){if(!disposed&&operations.get(id)===task){if(signal?.aborted)operations.delete(id);else operations.set(id,{...task,state:'error',detail:error.message});}throw error;}
+    }
     function bindPlayhead(){
         const workflow=app.extensionManager?.workflow?.activeWorkflow;
         if(!workflow||!node.graph)return;
@@ -60,11 +66,11 @@ function install(node){
             return data;
         },
         saveView(value){node.properties.daelabEditView=value;dirty();},
-        inspect:(asset,signal)=>request('/daelab/edit/media',{asset},signal),
-        proxy:(asset,scale,signal)=>request('/daelab/edit/preview',{asset,scale},signal),
+        inspect:(asset,signal)=>mediaTask('edit-sources','素材读取','读取连接素材','/daelab/edit/media',{asset},signal),
+        proxy:(asset,scale,signal)=>mediaTask('edit-preview','预览准备',`准备 ${scale}× 预览`,'/daelab/edit/preview',{asset,scale},signal),
         async exportVideo(){
             if(job||disposed)return;
-            const task=job={id:null,cancelled:false,cancelling:false};
+            const task=job={id:null,cancelled:false,cancelling:false};exportTask={id:'edit-export',label:'成片导出',state:'running',detail:'准备导出',order:40};
             try{
                 const prompt=await app.graphToPrompt(),output={},target=String(node.id);
                 if(disposed||task.cancelled)return;
@@ -74,7 +80,7 @@ function install(node){
                 const result=await api.queuePrompt(0,{output,workflow:prompt.workflow});
                 task.id=result.prompt_id;
                 if(disposed||task.cancelled){await request('/api/jobs/'+encodeURIComponent(task.id)+'/cancel',{});return;}
-                panel.running(true,'等待导出…');
+                panel.running(true,'等待导出…');exportTask={...exportTask,state:'queued',detail:'等待导出'};
                 while(job===task&&!disposed&&!task.cancelled){
                     const response=await api.fetchApi('/history/'+encodeURIComponent(task.id));
                     if(job!==task||disposed||task.cancelled)return;
@@ -84,22 +90,22 @@ function install(node){
                     const item=history[task.id];
                     if(item){
                         if(item.status?.status_str==='error'){const failure=item.status.messages?.find(([type])=>type==='execution_error');throw new Error(failure?.[1]?.exception_message||'导出已取消');}
-                        const ref=item.outputs?.[target]?.videos?.[0];if(ref)node.__videoEdit.output('/view?'+new URLSearchParams(ref),submittedEdit);else panel.error('导出已取消');
+                        const ref=item.outputs?.[target]?.videos?.[0];if(ref)node.__videoEdit.output('/view?'+new URLSearchParams(ref),submittedEdit);else {panel.error('导出已取消');exportTask={...exportTask,state:'cancelled',detail:'导出已取消',finishedAt:Date.now()};}
                         break;
                     }
                     await new Promise(resolve=>setTimeout(resolve,600));
                 }
-            }catch(error){if(job===task&&!disposed)throw error;}
+            }catch(error){if(job===task&&!disposed){exportTask={...exportTask,state:'error',detail:error.message};throw error;}}
             finally{if(job===task){job=null;if(!disposed)panel.running(false,task.cancelled?'导出已取消':'');}}
         },
         async cancelExport(){
             const task=job;if(!task||task.cancelling||task.cancelled)return;
-            if(!task.id){task.cancelled=true;panel.running(true,'正在取消导出…');return;}
+            if(!task.id){exportTask={...exportTask,state:'cancelled',detail:'导出已取消',finishedAt:Date.now()};task.cancelled=true;panel.running(true,'正在取消导出…');return;}
             task.cancelling=true;
             try{
                 await request('/api/jobs/'+encodeURIComponent(task.id)+'/cancel',{});
                 if(job!==task||disposed)return;
-                task.cancelled=true;job=null;panel.running(false,'导出已取消');
+                exportTask={...exportTask,state:'cancelled',detail:'导出已取消',finishedAt:Date.now()};task.cancelled=true;job=null;panel.running(false,'导出已取消');
             }catch(error){if(job===task&&!disposed)throw error;}
             finally{task.cancelling=false;}
         },
@@ -136,11 +142,11 @@ function install(node){
     syncTimer=setInterval(syncConnections,400);
     const availability=bindPanelAvailability(node,panel.root);
     const dom=node.addDOMWidget('video_edit','custom',panel.root,{serialize:false,hideOnZoom:false,getValue:()=>'',setValue:()=>{},getMinHeight:()=>660});dom.serialize=false;
-    const progress=e=>{if(job?.id&&!job.cancelled&&e.detail.prompt_id===job.id&&String(e.detail.node)===String(node.id))panel.running(true,`正在导出 ${Math.round(e.detail.value/e.detail.max*100)}%`);};api.addEventListener('progress',progress);
-    node.__videoEdit={...panel,syncConnections,
+    const progress=e=>{if(job?.id&&!job.cancelled&&e.detail.prompt_id===job.id&&String(e.detail.node)===String(node.id)){const percent=e.detail.max>0?e.detail.value/e.detail.max*100:undefined;exportTask={...exportTask,state:'running',detail:'正在导出',progress:percent};panel.running(true,percent===undefined?'正在导出':`正在导出 ${Math.round(percent)}%`);}};api.addEventListener('progress',progress);
+    node.__videoEdit={...panel,tasks:()=>disposed?[]:[...(exportTask?[{...exportTask}]:[]),...[...operations.values()].map(t=>({...t}))],syncConnections,
         output(url,data){
-            if(data!==widget.value){panel.error('剪辑已更新，请重新导出成片');return;}
-            node.properties.daelabEditResult=url;node.properties.daelabEditResultData=data;panel.output(url);dirty();
+            if(data!==widget.value){panel.error('剪辑已更新，请重新导出成片');if(exportTask)exportTask={...exportTask,state:'recovery',detail:'剪辑已变化，请重新导出',progress:undefined};return;}
+            if(exportTask)exportTask={...exportTask,state:'success',detail:'导出完成',progress:undefined,finishedAt:Date.now()};node.properties.daelabEditResult=url;node.properties.daelabEditResultData=data;panel.output(url);dirty();
         },
         reload(){sourceSync=null;sourceSignature=null;bindPlayhead();panel.reload(playhead?.time);panel.output(resultFor(node));},
         destroy(){disposed=true;sourceSync=null;clearInterval(syncTimer);if(job?.id)void request('/api/jobs/'+encodeURIComponent(job.id)+'/cancel',{}).catch(()=>{});job=null;api.removeEventListener('progress',progress);availability();panel.destroy();}};
@@ -149,6 +155,7 @@ function install(node){
 registerAdapter('daelab.video-edit',{
     matches:node=>node.type===EDIT_TYPE,width:840,expanded:true,floatingHeader:true,collapsible:false,inputSelection:'first-free',outputLabel:'剪辑成片',
     menu:[{label:'剪辑',type:EDIT_TYPE,icon:'scissors-cut-line'}],
+    tasks:node=>node.__videoEdit?.tasks()||[],
     panel:node=>node.__videoEdit,preview:node=>({url:resultFor(node),kind:'video'}),
     summary:node=>`${readEdit(node.widgets?.find(w=>w.name==='edit_data')?.value).clips.length} 个片段`,
     materialOutput:true,

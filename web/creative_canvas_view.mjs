@@ -1,6 +1,7 @@
 import {canvasHistory} from './creative_history.mjs?v=20261001-navigation';
 import {collectionFor,GROUP_TYPE,expandGroupSelection,remapGroupMembers,suppressGroupSlots} from './material_group_model.mjs';
 import {adapterFor} from './creative_contract.mjs';
+import {createTaskCapsules} from './creative_tasks.mjs';
 import {bindPanelContext} from './creative_panel_context.mjs?v=20260930-public-layout4';
 import {wheelViewport,copySnapshot,readSnapshot} from './creative_navigation.mjs';
 import {UPLOAD_TYPE,mediaKind,readAsset} from './media_upload_model.mjs';
@@ -82,8 +83,10 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         const list=[...cards.values(),...(fieldGallery?[{layout:{x:graph.extra.daelabControlGallery.x,y:graph.extra.daelabControlGallery.y,width:480},element:fieldGallery.root}]:[])];if(!list.length){state.viewport={x:60,y:60,zoom:.8};navigate();return;}
         const minX=Math.min(...list.map(c=>c.layout.x-(unifiedNode(c.node||{})?60:0))),minY=Math.min(...list.map(c=>c.layout.y));
         const maxX=Math.max(...list.map(c=>c.layout.x+c.layout.width+(unifiedNode(c.node||{})?60:0))),maxY=Math.max(...list.map(c=>c.layout.y+c.element.offsetHeight));
-        const z=Math.max(.15,Math.min(1,(root.clientWidth-100)/(maxX-minX),(root.clientHeight-150)/(maxY-minY)));
-        state.viewport={x:50-minX*z,y:50-minY*z,zoom:z};navigate();
+        // Reserve restored single-line capsules even when the current zoom hides them.
+        const headroom=Math.max(50,...list.map(c=>c.tasks&&!c.tasks.root.hidden?Math.max(c.tasks.root.offsetHeight,c.tasks.root.childElementCount*41+3)+40:50));
+        const z=Math.max(.15,Math.min(1,(root.clientWidth-100)/(maxX-minX),(root.clientHeight-headroom-100)/(maxY-minY)));
+        state.viewport={x:50-minX*z,y:headroom-minY*z,zoom:z};navigate();
     }
     function paintSelection(){for(const c of cards.values()){c.element.dataset.selected=String(selected.has(c.node.id));c.surface?.classList.toggle('dae-creative-selection-active',selected.has(c.node.id));c.element.dataset.slotsSuppressed=String(suppressGroupSlots(graph,c.node,selected));}queueLayout();}
     function raise(node){
@@ -264,6 +267,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         const category=menuItems().find(item=>item.type===node.type);
         if(category&&node.type!==UPLOAD_TYPE)heading.append(categoryIcon(category));
         heading.append(title);
+        c.tasks=createTaskCapsules();heading.append(c.tasks.root);
         if(adapter?.collapsible!==false){
             c.toggle=createCreativeButton('设置',()=>{layout.expanded=!layout.expanded;select(node);update(c);dirty();});
             c.toggle.setAttribute('aria-label',`${node.title} 设置`);heading.append(c.toggle);
@@ -308,6 +312,8 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         c.element.dataset.slotsSuppressed=String(suppressGroupSlots(graph,c.node,selected));
         const {node,layout}=c;
         const adapter=adapterFor(node),presentation=adapter?.presentation;
+        // Optional read-only interface. A broken provider must not break the canvas.
+        try{c.tasks.update(adapter?.tasks?.(node)||[]);}catch{c.tasks.update([]);}
         c.element.dataset.presentation=(typeof presentation==='function'?presentation(node):presentation)==='content'?'content':'card';
         const fullHeight=adapter?.fullHeight;c.element.dataset.fullHeight=String(typeof fullHeight==='function'?fullHeight(node):!!fullHeight);
         if(c.panel){
@@ -419,7 +425,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         else if(drag?.kind==='wire'&&drag.point)previewConnection(drag,drag.point);
         if(changed)root.dispatchEvent(new Event('dae-canvas-wires-changed'));
     }
-    function clear(){cancelAnimationFrame(viewportFrame);viewportFrame=0;previewMaterialDrop(null);cancelAnimationFrame(layoutFrame);layoutFrame=0;cancelAnimationFrame(wireFrame);wireFrame=0;hoverPoint=null;incomingWire=null;wirePaths.clear();setMagnet(null);closeWorkspace();closePicker();fieldGallery?.release();fieldGallery=null;for(const c of cards.values()){c.cancelWidthResize?.();resizeObserver.unobserve(c.element);clearMaterialPorts(c);adapterFor(c.node)?.panel?.(c.node)?.close?.();c.release?.();c.element.remove();}cards.clear();wires.replaceChildren();selected.clear();marquee.hidden=true;delete root.dataset.panning;selectedLink=null;pending=null;drag=null;}
+    function clear(){cancelAnimationFrame(viewportFrame);viewportFrame=0;previewMaterialDrop(null);cancelAnimationFrame(layoutFrame);layoutFrame=0;cancelAnimationFrame(wireFrame);wireFrame=0;hoverPoint=null;incomingWire=null;wirePaths.clear();setMagnet(null);closeWorkspace();closePicker();fieldGallery?.release();fieldGallery=null;for(const c of cards.values()){c.cancelWidthResize?.();resizeObserver.unobserve(c.element);clearMaterialPorts(c);adapterFor(c.node)?.panel?.(c.node)?.close?.();c.release?.();c.tasks?.destroy();c.element.remove();}cards.clear();wires.replaceChildren();selected.clear();marquee.hidden=true;delete root.dataset.panning;selectedLink=null;pending=null;drag=null;}
     function syncPositions(ids){
         for(const id of ids){const c=cards.get(id);if(c){c.element.style.left=`${c.layout.x}px`;c.element.style.top=`${c.layout.y}px`;}}
         animateWires();queueLayout();
@@ -430,7 +436,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         if(graph!==app.graph||state!==app.graph.extra?.daelabCreativeCanvasV1){clear();graph=app.graph;state=canvasState(graph);if(!state.active){hide(false);onExit();return;}viewport();}
         if(pickerConnection&&!validConnection(pickerConnection))closePicker();
         const nodes=graph._nodes.filter(supportedNode),current=new Set(nodes);
-        for(const [id,c] of cards)if(!current.has(c.node)){if(workspace?.c===c)closeWorkspace();c.cancelWidthResize?.();resizeObserver.unobserve(c.element);clearMaterialPorts(c);c.release?.();c.element.remove();cards.delete(id);}
+        for(const [id,c] of cards)if(!current.has(c.node)){if(workspace?.c===c)closeWorkspace();c.cancelWidthResize?.();resizeObserver.unobserve(c.element);clearMaterialPorts(c);c.release?.();c.tasks?.destroy();c.element.remove();cards.delete(id);}
         nodes.forEach((node,i)=>{const c=cards.get(node.id)||makeCard(node,i);attach(c);update(c);});empty.hidden=nodes.length>0;drawWires();
     }
     function createNode(type,point){

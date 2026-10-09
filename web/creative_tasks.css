@@ -1,0 +1,15 @@
+.dae-creative-heading{position:relative;container-type:inline-size;container-name:dae-task-heading}
+.dae-creative .dae-task-capsules{position:absolute;left:0;bottom:100%;padding-bottom:10px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;width:max-content;max-width:min(520px,100%);pointer-events:none;cursor:default}
+.dae-creative .dae-task-capsules[hidden]{display:none}
+.dae-creative .dae-task-capsule{display:flex;align-items:center;gap:8px;width:fit-content;max-width:100%;min-height:34px;padding:7px 13px;border-radius:var(--dae-radius-button);background:var(--dae-secondary-container);color:var(--dae-on-secondary-container);font:400 var(--dae-font-caption)/1.5 var(--dae-font-family);font-variant-numeric:tabular-nums;box-shadow:var(--dae-elevation-card)}
+.dae-creative .dae-task-label{flex:none;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.dae-creative .dae-task-detail{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@container dae-task-heading (max-width:240px){.dae-creative .dae-task-detail{display:none}.dae-creative .dae-task-capsule{gap:6px;padding:7px 10px}}
+@container dae-task-heading (max-width:110px){.dae-creative .dae-task-capsules{display:none}}
+.dae-creative .dae-task-marker{display:block;flex:none;width:14px;height:14px;border:2px solid var(--dae-accent);border-right-color:transparent;border-radius:50%;animation:dae-task-spin 1s linear infinite}
+.dae-creative .dae-task-capsule[data-state=queued] .dae-task-marker{border:2px dotted var(--dae-text-muted);animation:none}
+.dae-creative .dae-task-capsule:is([data-state=paused],[data-state=cancelled]) .dae-task-marker{border:0;border-radius:0;background:var(--dae-warning);mask:url('./vendor/remixicon/pause-fill.svg') center/contain no-repeat;animation:none}
+.dae-creative .dae-task-capsule:is([data-state=error],[data-state=recovery]) .dae-task-marker{border:0;border-radius:0;background:var(--dae-danger);mask:url('./vendor/remixicon/error-warning-line.svg') center/contain no-repeat;animation:none}
+.dae-creative .dae-task-capsule[data-state=success] .dae-task-marker{border:0;border-radius:0;background:var(--dae-success);mask:url('./vendor/remixicon/check-line.svg') center/contain no-repeat;animation:none}
+@keyframes dae-task-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.dae-creative .dae-task-marker{animation:none}}
