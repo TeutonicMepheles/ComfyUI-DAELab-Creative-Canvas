@@ -31,7 +31,7 @@ register();
 | `floatingHeader` | 可选布尔值；标题悬浮在卡片上方，隐藏重复类型标签，工作区入口使用卡片内右上角的展开图标及圆角提示；默认保持原布局 |
 | `collapsible` | 可选布尔值；`false` 时不创建收起按钮且保持面板展开；不改变节点的停用状态 |
 | `resizable` / `fullHeight` | 可选布尔值或节点函数；启用外框横向调整／取消宿主内容高度上限。宽度保存在既有 cards 布局中，支持取消、撤销及重载；业务负责自身滚动容器。 |
-| `compactWidth` | 可选屏幕像素阈值；卡片窄于此值时显示摘要，打开 workspace 时恢复完整面板，不改变保存的展开状态 |
+| `compactWidth` | 可选屏幕像素阈值或节点函数；卡片窄于此值时显示摘要，打开 workspace 时恢复完整面板，不改变保存的展开状态 |
 | `workspace(node)` | 是否使用独立编辑器弹窗 |
 | `panel(node)` | 返回 `{root, buttons?, fields?, close?, workspaceControls?}`；root 尚未创建时可以为空，宿主稍后重试；一旦返回 root，宿主即可借用，无需先连接 document（撤销重建时原生 DOM widget 可能尚未挂载）。可选 DOM 容器 `workspaceControls` 用于放置宿主的展开按钮，面板负责其布局，宿主释放面板时收回按钮 |
 | `refresh(node)` | 更新自己面板，不得每次重建 DOM 或发送请求 |
@@ -56,6 +56,8 @@ register();
 ## 有序素材快照接收
 
 可选 `materialTargets(node)` 返回 `{element, key, dropElements?, previewElements?, clipElement?, project?, label?}[]`。element 为可见目标，key 为业务拥有的稳定目标键；dropElements 为同一目标的附加落点，previewElements 为拖入时一起高亮的元素数组，也可为 `(assetCount) => Element[]`，按本次素材数量返回实际受影响的元素，不扩大命中区域；clipElement 限制滚动可见区域。默认投影外置 Slot；`project:false` 仅保留元素落点，用于行头或单元格，不创建额外接口。label 同时用于接口说明和拖入提示。直接命中的目标优先于附近 Slot 的磁吸。宿主不解析 key，`acceptMaterials(node,key,collection)` 由业务按落点同步、原子地消费 `{version:1,assets:[{filename,subfolder,kind,nodeId,...}]}`，失败抛出可读错误。
+
+以上是宿主允许的能力。业务库 `a65ff67` 的表格消费方仅声明列目标及该列单元格落点，并统一调用整列填充；未声明行目标或单格追加目标。扩展这些业务规则需由消费方提供适配器，不能仅按本契约认定已经支持。当前实际规则见 [表格展示](architecture/FRONTEND_INTERACTION.md#多维表格的创作画布展示)。
 
 画布只负责素材组有序快照或单个上传素材快照、命中检测、落点提示和历史边界；业务适配器负责数据验证、行数和单元格规则。该入口是显式一次填充，不创建虚假的原生输入或持久连接，不随源组变化覆盖手工编辑。字段删除、隐藏、重排后重新读取目标；使用 `.dae-material-slot` 复用素材卡片 Slot 外观。拖动素材组或上传素材本体时，宿主高亮目标接口及声明的落点并提示松开填入；结束或取消时清除提示，完成填充时恢复源节点原位置及组关系。
 
