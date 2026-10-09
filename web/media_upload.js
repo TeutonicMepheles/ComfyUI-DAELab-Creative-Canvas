@@ -16,6 +16,7 @@ function install(node){
     const stage=document.createElement('div');stage.className='dae-upload-stage';
     const status=document.createElement('p');status.className='dae-upload-status';status.setAttribute('role','status');
     const picker=document.createElement('input');picker.type='file';picker.accept=ACCEPT;picker.hidden=true;picker.setAttribute('aria-label','上传图片或视频');
+    let task=null;
     let epoch=0,controller=null,disposed=false,signature=null,asset=null,releasePlayer=null;
     const choose=createCreativeButton('上传图片 / 视频',()=>{picker.value='';picker.click();});
     const fullscreen=createCreativeButton('全屏',async()=>{try{await stage.requestFullscreen();}catch{status.textContent='当前浏览器无法进入全屏';}});
@@ -44,7 +45,7 @@ function install(node){
         const kind=mediaKind(file.name);if(!kind){status.textContent='请选择 PNG、JPG、WebP、MP4、WebM 或 MOV 文件';return;}
         if(asset&&kind!==asset.kind&&node.outputs.some(o=>o.links?.length)){status.textContent='切换素材类型前，请先断开现有输出连线';return;}
         controller?.abort();controller=new AbortController();const token=++epoch,previous=data.value;
-        choose.disabled=true;root.setAttribute('aria-busy','true');status.textContent='正在上传…';
+        choose.disabled=true;root.setAttribute('aria-busy','true');status.textContent='正在上传…';task={id:'upload',label:'素材上传',state:'running',detail:'正在上传',startedAt:Date.now(),elapsed:true};
         try{
             const form=new FormData();form.append('image',file,crypto.randomUUID()+file.name.slice(file.name.lastIndexOf('.')).toLowerCase());form.append('type','input');form.append('subfolder','DAELAB/uploads');form.append('overwrite','false');
             const response=await app.api.fetchApi('/upload/image',{method:'POST',body:form,signal:controller.signal});
@@ -52,9 +53,9 @@ function install(node){
             const result=await response.json();
             if(disposed||token!==epoch||!node.graph||data.value!==previous)return;
             data.value=JSON.stringify({version:1,id:crypto.randomUUID(),kind,name:file.name,filename:result.name,subfolder:result.subfolder||'',size:file.size});
-            data.callback?.(data.value);node.graph.setDirtyCanvas?.(true,true);node.graph.change?.();render();
-        }catch(e){if(token===epoch&&!disposed&&e.name!=='AbortError')status.textContent=e.message;}
-        finally{if(token===epoch&&!disposed){choose.disabled=false;root.removeAttribute('aria-busy');}}
+            data.callback?.(data.value);node.graph.setDirtyCanvas?.(true,true);node.graph.change?.();render();task={...task,state:'success',detail:'上传完成',finishedAt:Date.now()};
+        }catch(e){if(token===epoch&&!disposed&&e.name!=='AbortError'){status.textContent=e.message;task={...task,state:'error',detail:e.message};}}
+        finally{if(token===epoch&&!disposed){if(task?.state==='running')task=null;choose.disabled=false;root.removeAttribute('aria-busy');}}
     }
     picker.onchange=()=>void upload(picker.files[0]);
     root.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();root.dataset.dragging='true';});
@@ -63,7 +64,7 @@ function install(node){
     for(const event of ['pointerdown','dblclick','keydown','wheel'])root.addEventListener(event,e=>e.stopPropagation());
     const widget=node.addDOMWidget('media_upload','custom',root,{serialize:false,hideOnZoom:false,getValue:()=>'',setValue:()=>render(),getMinHeight:()=>320});widget.serialize=false;
     const releaseAvailability=bindPanelAvailability(node,root);
-    node.__mediaUpload={root,render,upload,kind:()=>readAsset(data.value)?.kind,reload(){++epoch;controller?.abort();choose.disabled=false;root.removeAttribute('aria-busy');signature=null;render();},destroy(){releasePlayer?.();releasePlayer=null;releaseAvailability();disposed=true;++epoch;controller?.abort();stage.querySelector('video')?.pause();root.remove();}};
+    node.__mediaUpload={tasks:()=>!disposed&&task?[{...task}]:[],root,render,upload,kind:()=>readAsset(data.value)?.kind,reload(){task=null;++epoch;controller?.abort();choose.disabled=false;root.removeAttribute('aria-busy');signature=null;render();},destroy(){releasePlayer?.();releasePlayer=null;releaseAvailability();disposed=true;++epoch;controller?.abort();stage.querySelector('video')?.pause();root.remove();}};
     node.setSize([520,400]);render();
 }
 app.registerExtension({name:'DAELab.MediaUpload',beforeRegisterNodeDef(type,definition){

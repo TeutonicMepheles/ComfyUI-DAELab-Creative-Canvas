@@ -36,6 +36,7 @@ register();
 | `panel(node)` | 返回 `{root, buttons?, fields?, close?, workspaceControls?}`；root 尚未创建时可以为空，宿主稍后重试；一旦返回 root，宿主即可借用，无需先连接 document（撤销重建时原生 DOM widget 可能尚未挂载）。可选 DOM 容器 `workspaceControls` 用于放置宿主的展开按钮，面板负责其布局，宿主释放面板时收回按钮 |
 | `refresh(node)` | 更新自己面板，不得每次重建 DOM 或发送请求 |
 | `summary(node)` / `preview(node)` | 摘要或 `{url, kind}`；提供业务所有者认可的预览 |
+| `tasks(node)` | 可选同步只读接口，返回任务快照数组；不得请求、执行任务、修改工作流或构造 DOM。详见 [任务接口](task-contract.md)。 |
 | `action(node)` | 可选 `{label, run(node, app)}`，Promise 交给共享按钮管理忙碌态 |
 | `inputLabels` | 将原生输入名称映射到用户可读用途；类型兼容仍使用原生图输入／输出声明 |
 | `inputSelection` | 可选值 `first-free`；拖到合并输入时自动连接第一个未占用的兼容输入，不显示用途菜单、不替换已连接输入；未指定时保留原选择逻辑 |
