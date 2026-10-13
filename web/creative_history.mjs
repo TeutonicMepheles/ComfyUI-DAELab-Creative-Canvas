@@ -17,7 +17,7 @@ export function installLayoutHistory(app){
                 for(const [id,layout] of Object.entries(next.cards)){
                     const target=current.cards[id];
                     for(const key of Object.keys(target))if(!(key in layout))delete target[key];
-                    Object.assign(target,structuredClone(layout));
+                    Object.assign(target,JSON.parse(JSON.stringify(layout)));
                 }
                 for(const saved of snapshot.nodes){
                     const node=graph.getNodeById(saved.id),revision=saved.properties?.daelabLayoutRevision;
@@ -38,6 +38,8 @@ export function canvasHistory(app){
     return {
         begin(){const t=tracker();t?.captureCanvasState?.();t?.squashState?.flush?.();t?.beforeChange?.();},
         end(){tracker()?.afterChange?.();},
+        async undo(){const t=tracker();t?.squashState?.flush?.();await t?.undo?.();},
+        async redo(){const t=tracker();t?.squashState?.flush?.();await t?.redo?.();},
         // Fold derived changes into the current state without another undo step or clearing redo.
         amend(change){
             const t=tracker();if(!t)return change();

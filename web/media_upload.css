@@ -12,6 +12,8 @@
 .dae-upload-stage:fullscreen{background:#000;border:0;border-radius:0}
 .dae-upload-stage:fullscreen :is(img,video){width:100%;height:100%;max-height:none}
 .dae-upload-empty{min-height:240px;display:grid;place-content:center;white-space:pre-line;text-align:center;line-height:1.8;color:var(--dae-text-muted);padding:24px}
+.dae-upload-empty{gap:10px;justify-items:center}
+.dae-upload-empty small{white-space:normal;overflow-wrap:anywhere}
 .dae-upload-status{margin:0;padding:8px 12px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
 .dae-upload-status:empty{display:none}
 .dae-upload[data-dragging=true]{outline:2px solid var(--dae-focus)}

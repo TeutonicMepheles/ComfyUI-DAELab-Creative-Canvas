@@ -76,6 +76,12 @@ register();
 
 ## 面板呈现与视口上下文
 
+### 单素材复制拖出
+
+适配器可选 `materialItem(node,key)` 返回单素材快照 `{version:1,ready,assets:[asset]}`，key 是业务拥有的稳定记录／字段／素材身份。业务在原生 `dragstart` 中调用 `api.getPanelContext(root)?.beginMaterialDrag(key,event.dataTransfer)`。未安装画布、面板停用或来源无效时返回 false；原有表内拖放继续工作。
+
+宿主只在空白画布接收该拖动，读取适配器快照并通过原有本地素材接口验证文件；异步返回时再次核对工作流、节点、模式及素材快照。创建一个现有上传节点，保留来源和原文件，纳入统一撤销。不创建素材组或伪连线，不读取业务私有 DOM。`materialOutput` 也可为节点函数，用于同一适配器内按节点声明结果输出能力。
+
 适配器可选 `presentation: 'content'`（或节点函数）让宿主负责无外框卡片、通用外置标题及正文内边距。标题与 `floatingHeader` 和上传素材共用 [通用视觉基线](architecture/FRONTEND_INTERACTION.md#通用视觉基线)，不由业务包单独设置字号、字重、颜色或间距。`selectionSurface(node)` 返回自己 root 内的 DOM 区域，宿主为其绘制选中轮廓；重绘替换该区域后宿主重新读取。业务样式不得修改宿主卡片、标题或选择状态。
 
 `api.getPanelContext(element)` 返回当前借用面板的上下文，独立安装或归还后返回 null。上下文提供 `presentation`、`fullHeight`、`selected`、`contains(element)`、`getBounds()`、`getViewport()` 与 `panBy(dx,dy)`；位移为屏幕像素，正数将内容向左／上平移。隐藏、停用或释放后平移返回 false。无需查找宿主 DOM 或派发模拟滚轮事件。宿主在借用 root 上管理公开 `data-canvas-panel=true` 和 `data-canvas-full-height` 标记，归还时清理。业务自身的滚动、末行和末列布局留在业务包，不由宿主识别其 CSS 类名。

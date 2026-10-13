@@ -1,4 +1,4 @@
-import {canvasHistory} from './creative_history.mjs?v=20261001-navigation';
+import {canvasHistory} from './creative_history.mjs?v=20261012-client-workflow-r8';
 import {collectionFor,GROUP_TYPE,expandGroupSelection,remapGroupMembers,suppressGroupSlots} from './material_group_model.mjs';
 import {adapterFor} from './creative_contract.mjs';
 import {createTaskCapsules} from './creative_tasks.mjs';
@@ -180,7 +180,9 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
             b.onclick=e=>{if(!visible||graph.getNodeById(c.node.id)!==c.node)return;e.preventDefault();e.stopPropagation();const r=root.getBoundingClientRect(),a=b.getBoundingClientRect();choose({x:a.right-r.left+40,y:a.bottom-r.top+40},{node:c.node,side:'output',materialKey:source.key,element:b,index:MATERIAL_SLOT});};
         }
     }
-    function snapshotFor(context){return context.materialKey!==undefined?adapterFor(context.node)?.outputMaterials?.(context.node,context.materialKey):adapterFor(context.node)?.assets?.(context.node);}
+    const materialDragType='application/x-daelab-canvas-material';
+    let materialDrag=null;
+    function snapshotFor(context){return context.itemKey!==undefined?adapterFor(context.node)?.materialItem?.(context.node,context.itemKey):context.materialKey!==undefined?adapterFor(context.node)?.outputMaterials?.(context.node,context.materialKey):adapterFor(context.node)?.assets?.(context.node);}
     async function outputMaterials(context,point){
         if(outputPending.has(context.node))return;outputPending.add(context.node);
         const ownerGraph=graph,ownerState=state,created=[];
@@ -231,13 +233,20 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
             contains:element=>leased&&c.element.contains(element),
             getBounds:()=>leased?c.element.getBoundingClientRect():null,
             getViewport:()=>leased&&visible&&!c.body.hidden&&!c.body.inert?root.getBoundingClientRect():null,
+            beginMaterialDrag(key,dataTransfer){
+                if(!leased||!visible||c.node.mode||!dataTransfer||!adapterFor(c.node)?.materialItem)return false;
+                const context={node:c.node,itemKey:key,side:'output'},snapshot=snapshotFor(context);
+                if(!snapshot?.assets?.length||snapshot.ready===false)return false;
+                materialDrag={context,graph,stamp:JSON.stringify(snapshot),token:crypto.randomUUID()};
+                dataTransfer.setData(materialDragType,materialDrag.token);dataTransfer.effectAllowed='copyMove';return true;
+            },
             panBy(dx,dy){
                 if(!leased||!visible||c.body.hidden||c.body.inert||!Number.isFinite(dx)||!Number.isFinite(dy))return false;
                 state.viewport.x-=dx;state.viewport.y-=dy;navigate();return true;
             },
         });
         const unbind=bindPanelContext(c.panel,context),release=c.release;
-        const cleanup=()=>{leased=false;unbind();delete c.panel.dataset.canvasPanel;delete c.panel.dataset.canvasFullHeight;delete c.panel.dataset.canvasWorkspace;c.surface?.classList.remove('dae-creative-selection-active');};
+        const cleanup=()=>{if(materialDrag?.context.node===c.node)materialDrag=null;leased=false;unbind();delete c.panel.dataset.canvasPanel;delete c.panel.dataset.canvasFullHeight;delete c.panel.dataset.canvasWorkspace;c.surface?.classList.remove('dae-creative-selection-active');};
         c.release=()=>{cleanup();release();};c.release.abandon=()=>{cleanup();release.abandon();};
         nativeFields(c);c.body.append(c.fields);if(c.run)c.body.append(c.run);
     }
@@ -447,12 +456,14 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         return node;
     }
     function add(type,point=addPoint){
-        const node=createNode(type,point);if(!node)return;
-        dirty();sync();select(node);closePicker();message('已添加，可直接编辑、连接并运行');return node;
+        history.begin();
+        try{const node=createNode(type,point);if(!node)return;
+            dirty();sync();select(node);closePicker();message('已添加，可直接编辑、连接并运行');return node;
+        }finally{history.end();}
     }
     function setWireSource(port){if(wireSource===port)return;if(wireSource)delete wireSource.dataset.wireSource;wireSource=port;if(port)port.dataset.wireSource='true';}
     function closePicker(){setWireSource(null);picker?.remove();picker=null;pickerConnection=null;addPoint=null;wires.querySelector('[data-preview]')?.remove();}
-    function validConnection(context){if(context.materialKey!==undefined)return graph===app.graph&&graph.getNodeById(context.node.id)===context.node&&(adapterFor(context.node)?.materialSources?.(context.node)||[]).some(s=>s.key===context.materialKey&&s.element.isConnected);return graph===app.graph&&graph.getNodeById(context.node.id)===context.node&&(context.index===MATERIAL_SLOT?(context.node.type!==UPLOAD_TYPE||uploadKind(context.node)===context.mediaKind):context.node[context.side==='output'?'outputs':'inputs']?.[context.index]===context.slot);}
+    function validConnection(context){if(context.itemKey!==undefined)return visible&&graph===app.graph&&graph.getNodeById(context.node.id)===context.node&&!context.node.mode&&!!adapterFor(context.node)?.materialItem;if(context.materialKey!==undefined)return graph===app.graph&&graph.getNodeById(context.node.id)===context.node&&(adapterFor(context.node)?.materialSources?.(context.node)||[]).some(s=>s.key===context.materialKey&&s.element.isConnected);return graph===app.graph&&graph.getNodeById(context.node.id)===context.node&&(context.index===MATERIAL_SLOT?(context.node.type!==UPLOAD_TYPE||uploadKind(context.node)===context.mediaKind):context.node[context.side==='output'?'outputs':'inputs']?.[context.index]===context.slot);}
     function previewConnection(context,point){
         const c=cards.get(context.node.id),port=context.element||c?.ports.querySelector(`[data-side=${context.side}][data-slot="${context.index}"]`);if(!port)return;setWireSource(port);
         let path=wires.querySelector('[data-preview]');if(!path){path=document.createElementNS(wires.namespaceURI,'path');path.dataset.preview='true';wires.append(path);}
@@ -500,7 +511,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         picker=el('section','dae-creative-picker');picker.setAttribute('aria-label','添加节点');
         picker.append(el('h2','',context?(context.side==='output'?'引用此节点新建':'新建来源节点'):'添加节点'));
         const list=el('div');picker.append(list);root.append(picker);
-        if(context?.side==='output'&&(context.materialKey!==undefined||adapterFor(context.node)?.materialOutput===true)){
+        if(context?.side==='output'&&(context.materialKey!==undefined||(typeof adapterFor(context.node)?.materialOutput==='function'?adapterFor(context.node).materialOutput(context.node):adapterFor(context.node)?.materialOutput===true))){
             const snap=snapshotFor(context);const label=context.materialKey!==undefined?'输出为素材组':'输出为视频素材';
             const output=button(label+(snap?.skipped?'（跳过 '+snap.skipped+' 行）':''),()=>{closePicker();return outputMaterials(context,point);});output.disabled=!snap?.assets?.length||snap.ready===false;list.append(output);
             if(context.materialKey!==undefined){positionPicker();output.focus();return;}
@@ -625,6 +636,14 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
     },true);
     root.addEventListener('pointerdown',e=>{if(picker&&!picker.contains(e.target))closePicker();},true);
     root.addEventListener('dblclick',e=>{if(e.target.closest('.dae-creative-card,.dae-creative-picker,.dae-creative-zoom,path'))return;const r=root.getBoundingClientRect();choose({x:e.clientX-r.left,y:e.clientY-r.top});});
+    root.addEventListener('contextmenu',e=>{if(e.target.closest('.dae-creative-card,.dae-creative-picker,.dae-creative-zoom,path,input,textarea'))return;e.preventDefault();const r=root.getBoundingClientRect();choose({x:e.clientX-r.left,y:e.clientY-r.top});});
+    root.addEventListener('dragover',e=>{if(!materialDrag||!e.dataTransfer?.types.includes(materialDragType)||e.target.closest('.dae-creative-card,.dae-creative-picker'))return;e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='copy';},true);
+    root.addEventListener('drop',e=>{
+        if(!e.dataTransfer?.types.includes(materialDragType)||e.target.closest('.dae-creative-card,.dae-creative-picker'))return;
+        e.preventDefault();e.stopPropagation();const source=materialDrag;materialDrag=null;
+        if(!source||source.token!==e.dataTransfer.getData(materialDragType)||source.graph!==graph||!validConnection(source.context)||JSON.stringify(snapshotFor(source.context))!==source.stamp){message('素材来源已变化，请重新拖出');return;}
+        const r=root.getBoundingClientRect();void outputMaterials(source.context,{x:e.clientX-r.left,y:e.clientY-r.top});
+    },true);
     root.addEventListener('dragover',e=>{if(!e.dataTransfer?.types.includes('Files'))return;e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='copy';},true);
     root.addEventListener('drop',async e=>{
         const files=[...(e.dataTransfer?.files||[])];if(!files.length)return;
@@ -738,6 +757,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         if(e.target.closest('input,textarea,select,[contenteditable=true]')){e.stopPropagation();return;}
         if(e.key==='Escape'){if(drag?.kind==='marquee'){selected=new Set(drag.base);paintSelection();}marquee.hidden=true;delete root.dataset.panning;previewMaterialDrop(null);setMagnet(null);pending=null;drag=null;closePicker();drawWires();message('已取消');}
         if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();if(selectedLink!=null){removeWire(selectedLink);}else{history.begin();for(const id of expandGroupSelection(graph,selected)){const c=cards.get(id);if(c){graph.remove(c.node);delete state.cards[id];}}selected.clear();history.end();dirty();sync();}}
+        if((e.ctrlKey||e.metaKey)&&['z','y'].includes(e.key.toLowerCase())){e.preventDefault();e.stopPropagation();void history[e.key.toLowerCase()==='y'||e.shiftKey?'redo':'undo']();return;}
         if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s')return;
         e.stopPropagation();});
     function show(){graph=app.graph;state=canvasState(graph);state.active=true;visible=true;root.hidden=false;document.body.dataset.daelabCreative='true';viewport();sync();if(graph.extra?.daelabControlGallery&&!fieldGallery){fieldGallery=createFieldGallery(graph.extra.daelabControlGallery);world.append(fieldGallery.root);}dirty();}
