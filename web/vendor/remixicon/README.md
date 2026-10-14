@@ -25,3 +25,7 @@ The bundled Remix Icon license applies.
 2026-09-28: Added official Editor/list-ordered.svg for the numbering toggle. The bundled Remix Icon license applies.
 
 2026-10-09: Reused original System/check-line.svg and System/error-warning-line.svg from the sibling DAELab business library for task capsules. The bundled Remix Icon license applies.
+
+2026-10-14: Added official Document/file-text-line.svg for the script parser node title and creation menu from
+https://github.com/Remix-Design/RemixIcon/blob/master/icons/Document/file-text-line.svg.
+The bundled Remix Icon license applies.

@@ -3,6 +3,7 @@ import {collectionFor,GROUP_TYPE,expandGroupSelection,remapGroupMembers,suppress
 import {adapterFor} from './creative_contract.mjs';
 import {createTaskCapsules} from './creative_tasks.mjs';
 import {bindPanelContext} from './creative_panel_context.mjs?v=20260930-public-layout4';
+import {isPanelActive} from './creative_panel_state.mjs?v=20261013-active-state';
 import {wheelViewport,copySnapshot,readSnapshot} from './creative_navigation.mjs';
 import {UPLOAD_TYPE,mediaKind,readAsset} from './media_upload_model.mjs';
 import {MATERIAL_SLOT,uploadKind,sourceSlots,resolveOutput,targetChoices,outputSelector,inputSelector,unifiedNode,inputSlots} from './creative_connections.mjs';
@@ -334,18 +335,18 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         if(node.type===UPLOAD_TYPE)layout.width=cardWidth(node.type);
         if(c.widthHandle)layout.width=Math.max(640,layout.width);if(node.type===UPLOAD_TYPE||adapterFor(node)?.collapsible===false)layout.expanded=true;adapterFor(node)?.refresh?.(node);c.element.style.left=`${layout.x}px`;c.element.style.top=`${layout.y}px`;c.element.style.width=`${layout.width}px`;
         if(c.widthHandle){c.widthHandle.setAttribute('aria-valuenow',String(layout.width));c.widthHandle.setAttribute('aria-valuemin','640');c.widthHandle.setAttribute('aria-valuemax',String(Math.max(3600,layout.width)));c.widthHandle.setAttribute('aria-valuetext',`${layout.width} 像素`);}
-        c.element.dataset.inactive=String(node.mode!=null&&node.mode!==0);c.body.inert=node.mode!=null&&node.mode!==0;
+        const inactive=!isPanelActive(node);c.element.dataset.inactive=String(inactive);c.body.inert=inactive;
         for(const {w,input} of c.fieldBindings||[]){input.disabled=node.inputs?.some(p=>p.name===w.name&&p.link!=null);if(document.activeElement!==input){input.value=w.value??'';input.checked=!!w.value;}}
         const compact=compactCard(c);c.element.dataset.compact=String(compact);
-        if(c.title.textContent!==(node.title||node.type))c.title.textContent=node.title||node.type;c.body.hidden=!layout.expanded||compact;if(c.toggle){c.toggle.textContent=layout.expanded?'收起':'设置';c.toggle.setAttribute('aria-expanded',String(layout.expanded));}
+        if(c.title.textContent!==(node.title||node.type))c.title.textContent=node.title||node.type;c.body.hidden=inactive||!layout.expanded||compact;if(c.toggle){c.toggle.hidden=inactive;c.toggle.textContent=layout.expanded?'收起':'设置';c.toggle.setAttribute('aria-expanded',String(!c.body.hidden));}
         const text=adapterFor(node)?.summary?.(node)||value(node,'prompt')||value(node,'text')||'展开设置进行编辑';
-        if(c.summary.textContent!==text)c.summary.textContent=text;c.summary.hidden=layout.expanded&&!compact||node.type===UPLOAD_TYPE;
+        if(c.summary.textContent!==text)c.summary.textContent=text;c.summary.hidden=!inactive&&layout.expanded&&!compact||node.type===UPLOAD_TYPE;
         const panelPreview=layout.expanded&&!compact&&!!c.panel?.querySelector('video[src],img[src]');
         const preview=panelPreview?{}:previewFor(node),url=preview.url;if(url!==c.mediaURL){c.mediaURL=url;const previous=c.media.querySelector('video');if(previous){previous.pause();previous.removeAttribute('src');previous.load();}c.media.replaceChildren();if(typeof url==='string'&&(/^(\/view\?|\/comfytv\/|https?:\/\/)/).test(url)){
             const file=new URL(url,location.href).searchParams.get('filename')||url;
             const isVideo=preview.kind==='video'||/\.(mp4|webm|mov)(?:[?&]|$)/i.test(file);const m=el(isVideo?'video':'img');m.src=url;if(isVideo){m.controls=true;m.preload='metadata';}else m.alt=node.title||'素材';c.media.append(m);
         }}
-        c.media.hidden=panelPreview;
+        c.media.hidden=inactive||panelPreview;
         if(c.widthHandle){
             // The resize boundary belongs to the panel, not its heading or summary.
             c.widthHandle.hidden=c.body.hidden;
