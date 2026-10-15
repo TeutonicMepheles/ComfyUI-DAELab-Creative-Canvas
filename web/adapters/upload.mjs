@@ -2,7 +2,7 @@ import {registerAdapter} from '../creative_contract.mjs';
 import {readAsset} from '../media_upload_model.mjs';
 registerAdapter('daelab.upload', {
     matches: node => node.type === 'DAELAB.MediaUpload', width:350, expanded:true,
-    menu:[{label:'上传',type:'DAELAB.MediaUpload',icon:'upload-2-line'}],
+    menu:[{label:'上传元素',type:'DAELAB.MediaUpload',icon:'upload-2-line'}],
     tasks: node => node.__mediaUpload?.tasks()||[],
     panel: node => node.__mediaUpload,
     refresh: node => node.__mediaUpload?.render(),

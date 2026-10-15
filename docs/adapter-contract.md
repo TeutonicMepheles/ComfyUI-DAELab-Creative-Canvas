@@ -4,6 +4,8 @@
 
 浏览器公共入口：`globalThis[Symbol.for('DAELAB.CreativeCanvas.API.v1')]`。画布发布入口时发出 `daelab:creative-canvas-ready` 事件。消费者先订阅事件再尝试注册；这样无论插件加载顺序如何都可接入。未安装画布时业务库继续独立工作。
 
+素材读取能力由 `creative_input_exchange.mjs` 在基础 API 和面板上下文发布后补全。它复用原有 `adapterFor` 注册表，兼容浏览器仍缓存旧版基础模块的情况；不要单独为注册表模块追加版本参数，以免产生两个互不相通的注册表。消费者缺少 `inputSnapshot` 时应提示接口未加载，而不是将有效图片误报为不支持的输入。
+
 ```js
 let registered = false;
 function register() {
@@ -27,9 +29,9 @@ register();
 | 字段 | 契约 |
 | --- | --- |
 | `matches(node)` | 必填，声明支持的稳定节点 ID |
-| `width` / `expanded` | 数值／布尔值，或读取节点的函数；仅初始化默认布局 |
+| `width` / `expanded` | `width` 为数值或读取节点的函数，初始化默认宽度；`expanded` 为旧版兼容字段，宿主展示时统一恢复为 `true` |
 | `floatingHeader` | 可选布尔值；标题悬浮在卡片上方，隐藏重复类型标签，工作区入口使用卡片内右上角的展开图标及圆角提示；默认保持原布局 |
-| `collapsible` | 可选布尔值；`false` 时不创建收起按钮且保持面板展开；不改变节点的停用状态 |
+| `collapsible` | 旧版兼容字段，宿主不再读取；所有节点均不提供通用收起／设置按钮，活动面板保持展开 |
 | `resizable` / `fullHeight` | 可选布尔值或节点函数；启用外框横向调整／取消宿主内容高度上限。宽度保存在既有 cards 布局中，支持取消、撤销及重载；业务负责自身滚动容器。 |
 | `compactWidth` | 可选屏幕像素阈值或节点函数；卡片窄于此值时显示摘要，打开 workspace 时恢复完整面板，不改变保存的展开状态 |
 | `workspace(node)` | 是否使用独立编辑器弹窗 |
@@ -41,6 +43,7 @@ register();
 | `inputLabels` | 将原生输入名称映射到用户可读用途；类型兼容仍使用原生图输入／输出声明 |
 | `inputSelection` | 可选值 `first-free`；拖到合并输入时自动连接第一个未占用的兼容输入，不显示用途菜单、不替换已连接输入；未指定时保留原选择逻辑 |
 | `outputLabel` | 可选文字，显示在合并输出的提示与可访问名称中；不改变真实输出类型和槽位 |
+| `defaultOutputNode` | 可选 `{type,title}`；从输出 Slot 拖到空白处时创建指定节点并建立真实类型连线。由提供者声明，不在画布内硬编码业务类型；缺少对应节点时保留原菜单。 |
 | `canConnectOutput(node)` | 可选同步回调；用户尝试从此节点建立连接时调用，返回 `false` 阻止拉线、用途选择及实际连接，业务所有者负责说明原因。未提供时保持原行为；原生节点连接限制由节点自身的 `onConnectOutput` 实现 |
 | `onCreate(node)` | 用户从画布新增节点时初始化业务状态 |
 | `upload(node, file)` | 可选，接收本地 File 并返回 Promise；画布拖入文件时调用上传节点适配器，上传节点负责请求、错误提示和取消生命周期 |
@@ -76,8 +79,19 @@ register();
 
 ## 面板呈现与视口上下文
 
+### 单素材复制拖出
+
+适配器可选 `materialItem(node,key)` 返回单素材快照 `{version:1,ready,assets:[asset]}`，key 是业务拥有的稳定记录／字段／素材身份。业务在原生 `dragstart` 中调用 `api.getPanelContext(root)?.beginMaterialDrag(key,event.dataTransfer)`。未安装画布、面板停用或来源无效时返回 false；原有表内拖放继续工作。
+
+宿主只在空白画布接收该拖动，读取适配器快照并通过原有本地素材接口验证文件；异步返回时再次核对工作流、节点、模式及素材快照。创建一个现有上传节点，保留来源和原文件，纳入统一撤销。不创建素材组或伪连线，不读取业务私有 DOM。`materialOutput` 也可为节点函数，用于同一适配器内按节点声明结果输出能力。
+
 适配器可选 `presentation: 'content'`（或节点函数）让宿主负责无外框卡片、通用外置标题及正文内边距。标题与 `floatingHeader` 和上传素材共用 [通用视觉基线](architecture/FRONTEND_INTERACTION.md#通用视觉基线)，不由业务包单独设置字号、字重、颜色或间距。`selectionSurface(node)` 返回自己 root 内的 DOM 区域，宿主为其绘制选中轮廓；重绘替换该区域后宿主重新读取。业务样式不得修改宿主卡片、标题或选择状态。
 
 `api.getPanelContext(element)` 返回当前借用面板的上下文，独立安装或归还后返回 null。上下文提供 `presentation`、`fullHeight`、`selected`、`contains(element)`、`getBounds()`、`getViewport()` 与 `panBy(dx,dy)`；位移为屏幕像素，正数将内容向左／上平移。隐藏、停用或释放后平移返回 false。无需查找宿主 DOM 或派发模拟滚轮事件。宿主在借用 root 上管理公开 `data-canvas-panel=true` 和 `data-canvas-full-height` 标记，归还时清理。业务自身的滚动、末行和末列布局留在业务包，不由宿主识别其 CSS 类名。
 
 宿主在视角、卡片位置／尺寸、选择或内部滚动变化后，按动画帧合并派发冒泡事件 `dae-canvas-layout`。业务可在 `globalThis` 监听该通知，通过自己的面板上下文重新定位可见悬浮栏；无需读取宿主 DOM，也不应在每帧重建业务面板。独立安装时没有此事件，原有编辑逻辑照常工作；销毁时移除监听。
+## LLM 输入输出流程接入（2026-10-15）
+
+- API v1 新增只读 `inputSnapshot(node)`：由节点适配器的 `inputSnapshot(node)` 或已有 `assets(node)` 提供版本化快照，公共入口深拷贝后返回；停用或无提供方返回 null。文本适配器提供 `{version:1,texts:[text]}`，上传及素材组沿用有序 assets 契约。业务消费者不得读取其他节点的私有面板。
+- API v1 新增 `placeNode(node,{x,y,width})`：在已有创作画布状态中设置新节点的布局。仅接受有限数值；调用方负责将创建和定位包含在同一历史边界。
+- 表格交换由业务库 `table_exchange.mjs` 的 `readTableSnapshot` / `createTableSnapshot` 公开服务持有。LLM 不读取表格私有 DOM 或面板状态。

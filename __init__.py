@@ -1,6 +1,10 @@
 from .nodes.media_upload import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
 from .nodes.material_group import MaterialGroup
 from .nodes.video_edit import VideoEdit
+from .nodes.text_input import TextInput
+
+NODE_CLASS_MAPPINGS['DAELAB.TextInput'] = TextInput
+NODE_DISPLAY_NAME_MAPPINGS['DAELAB.TextInput'] = '输入文本'
 
 NODE_CLASS_MAPPINGS['DAELAB.MaterialGroup'] = MaterialGroup
 NODE_DISPLAY_NAME_MAPPINGS['DAELAB.MaterialGroup'] = '素材组'

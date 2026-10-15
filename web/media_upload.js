@@ -4,7 +4,7 @@ import {createCreativeButton} from './creative_button.mjs';
 import {createUploadVideoControls} from './upload_video_controls.mjs?v=20261001-player1';
 import {UPLOAD_TYPE,ACCEPT,mediaKind,readAsset,assetURL,slotAllowed} from './media_upload_model.mjs?v=20261001-material-references';
 
-const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./media_upload.css?v=20261001-image-top-gradient',import.meta.url).href;document.head.append(sheet);
+const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href=new URL('./media_upload.css?v=20261012-client-workflow-r2',import.meta.url).href;document.head.append(sheet);
 function install(node){
     if(node.__mediaUpload)return;
     const data=node.widgets.find(w=>w.name==='asset_data');
@@ -31,7 +31,7 @@ function install(node){
         releasePlayer?.();releasePlayer=null;stage.querySelector('video')?.pause();stage.replaceChildren();status.textContent='';
         choose.textContent=asset?'替换素材':'上传图片 / 视频';download.hidden=fullscreen.hidden=!asset;
         info.textContent=asset?.name||'';info.title=info.textContent;
-        if(!asset){const hint=document.createElement('div');hint.className='dae-upload-empty';hint.textContent='拖入图片或视频\nPNG · JPG · WebP · MP4 · WebM · MOV';stage.append(hint);return;}
+        if(!asset){const hint=document.createElement('div');hint.className='dae-upload-empty';const open=createCreativeButton('选择本地文件',()=>{if(!node.mode){picker.value='';picker.click();}});const formats=document.createElement('small');formats.textContent='PNG · JPG · WebP · MP4 · WebM · MOV';hint.append(open,formats);stage.append(hint);return;}
         const media=document.createElement(asset.kind==='video'?'video':'img');media.src=assetURL(asset);
         if(asset.kind==='video'){media.preload='metadata';media.playsInline=true;}else{media.alt=asset.name;media.draggable=false;}
         const dimensions=()=>{if(!media.isConnected)return;const w=media.videoWidth||media.naturalWidth,h=media.videoHeight||media.naturalHeight;info.textContent=`${asset.name} · ${w} × ${h}`;};

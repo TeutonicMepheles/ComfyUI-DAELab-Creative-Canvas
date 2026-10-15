@@ -4,7 +4,7 @@ import {bindCreativeField} from './creative_field.mjs';
 import {canvasState,graphLinks} from './creative_canvas_model.mjs';
 import {UPLOAD_TYPE} from './media_upload_model.mjs';
 
-import {GROUP_TYPE as TYPE} from './material_group_model.mjs';
+import {GROUP_TYPE as TYPE,isGroupMember} from './material_group_model.mjs?v=20261015-mixed1';
 const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e;};
 const copy=v=>JSON.parse(JSON.stringify(v));
 const widget=(node,name)=>node.widgets?.find(w=>w.name===name);
@@ -52,7 +52,7 @@ export function installMaterialGroups(app){
     for(const event of ['pointerdown','dblclick','wheel','keydown'])panel.addEventListener(event,stopPanel);
     function createNode(type,title){const n=LiteGraph.createNode(type);if(!n)throw new Error(`缺少节点 ${type}`);app.graph.add(n);n.title=title;return n;}
     function newGroup(title,ids,x,y){const n=createNode(TYPE,title);n.properties.members=ids;cards()[n.id]={x,y,width:800,expanded:false};return n;}
-    function createFromSelection(){const ids=[...world.querySelectorAll('.dae-creative-card[data-selected=true]')].map(c=>node(c.dataset.nodeId)?.id).filter(id=>node(id)?.type===UPLOAD_TYPE);if(!ids.length)return say('先选中素材，再使用 Ctrl+G 打组。');if(groups().some(g=>g.properties.locked&&g.properties.members.some(id=>ids.includes(id))))return say('请先解锁素材所在的组。');change(()=>{for(const g of groups())g.properties.members=g.properties.members.filter(id=>!ids.includes(id));const g=newGroup('新素材组',ids,Math.min(...ids.map(id=>cards()[id].x))-24,Math.min(...ids.map(id=>cards()[id].y))-80);selected=g.id;selectionActive=true;view.sync();view.select(g);},'已把选中的真实素材卡片组成新组。');}
+    function createFromSelection(){const ids=[...world.querySelectorAll('.dae-creative-card[data-selected=true]')].map(c=>node(c.dataset.nodeId)?.id).filter(id=>isGroupMember(node(id)));if(!ids.length)return say('先选中素材，再使用 Ctrl+G 打组。');if(groups().some(g=>g.properties.locked&&g.properties.members.some(id=>ids.includes(id))))return say('请先解锁素材所在的组。');change(()=>{for(const g of groups())g.properties.members=g.properties.members.filter(id=>!ids.includes(id));const g=newGroup('新素材组',ids,Math.min(...ids.map(id=>cards()[id].x))-24,Math.min(...ids.map(id=>cards()[id].y))-80);selected=g.id;selectionActive=true;view.sync();view.select(g);},'已把选中的真实素材卡片组成新组。');}
     const layoutNames={grid:'宫格排列',horizontal:'水平排列',vertical:'垂直排列'};
     function icon(name){const i=el('i','dae-creative-icon');i.style.setProperty('--dae-icon',`url("${new URL('./vendor/remixicon/'+name+'.svg',import.meta.url).href}")`);i.setAttribute('aria-hidden','true');return i;}
     function closeMenu(focus=false){menu?.remove();menu=null;if(menuTrigger){menuTrigger.setAttribute('aria-expanded','false');if(focus&&menuTrigger.isConnected)menuTrigger.focus();}menuTrigger=null;}
@@ -111,7 +111,7 @@ export function installMaterialGroups(app){
         for(const g of groups()){
             const gc=card(g.id),p=cards()[g.id];if(!gc||!p)continue;gc.dataset.reviewGroup='true';gc.style.setProperty('--gr-group-color',g.properties.reviewColor||'var(--dae-border-control)');gc.dataset.reviewSelected=String(selectionActive&&g.id===selected);gc.dataset.reviewCollapsed=String(g.properties.collapsed);
             if(g.id===selected)panel.style.setProperty('--gr-number-bg',g.properties.reviewColor||'var(--dae-border-control)');
-            const members=(g.properties.members||[]).filter(id=>{if(node(id)?.type!==UPLOAD_TYPE||owned.has(id))return false;owned.add(id);return true;});g.properties.members=members;
+            const members=(g.properties.members||[]).filter(id=>{if(!isGroupMember(node(id))||owned.has(id))return false;owned.add(id);return true;});g.properties.members=members;
             const ids=members.filter(id=>id!==moving);
             if(moving!==null&&drag.target?.id===g.id)ids.splice(drag.target.index,0,moving);
             const count=g.properties.layout==='vertical'?1:g.properties.layout==='horizontal'?Math.max(1,ids.length):Math.min(2,Math.max(1,ids.length));
@@ -171,7 +171,7 @@ export function installMaterialGroups(app){
     function syncToolbar(){
         if(disposed||!view.active){panel.hidden=true;closeMenu();return;}
         if(seenGraph!==app.graph.extra){seenGraph=app.graph.extra;selected=null;selectionActive=false;renderSignature='';closeMenu();}
-        const chosen=view.selectedIds.map(node).filter(Boolean);createButton.hidden=chosen.filter(n=>n.type===UPLOAD_TYPE).length<2;const chosenGroup=chosen.find(n=>n.type===TYPE)||groups().find(g=>chosen.some(n=>g.properties.members.includes(n.id)));
+        const chosen=view.selectedIds.map(node).filter(Boolean);createButton.hidden=chosen.filter(n=>isGroupMember(n)).length<2;const chosenGroup=chosen.find(n=>n.type===TYPE)||groups().find(g=>chosen.some(n=>g.properties.members.includes(n.id)));
         if(!drag){const next=chosenGroup?.id??null;if(next!==selected){selected=next;renderSignature='';}selectionActive=selected!=null;}
         const g=group(),signature=JSON.stringify([selected,g?.title,g?.properties]);
         if(!colorEditing&&signature!==renderSignature){renderSignature=signature;buildPanel();}
@@ -189,7 +189,7 @@ export function installMaterialGroups(app){
         if(e.button!==0||e.target.closest('button,a,input,select,textarea,.gr-panel,.gr-create-selection'))return;
         const c=e.target.closest('.dae-creative-card'),n=c&&node(c.dataset.nodeId);if(!n){if(!e.target.closest('.gr-local-menu'))selectionActive=false;return;}
         if(n.type===TYPE){selected=n.id;selectionActive=true;view.select(n,{toggle:e.shiftKey||e.ctrlKey,preserve:true});renderSignature='';e.stopImmediatePropagation();e.preventDefault();if(n.properties.locked)return say('组已锁定。');history.begin();const ids=[n.id,...n.properties.members];drag={kind:'group',pointerId:e.pointerId,ids,x:e.clientX,y:e.clientY,originals:copy(Object.fromEntries(ids.map(id=>[id,cards()[id]]))),before:copy(app.graph.serialize())};}
-        else if(n.type===UPLOAD_TYPE){
+        else if(isGroupMember(n)){
             view.select(n,{toggle:e.shiftKey||e.ctrlKey,preserve:true});
             const parent=groups().find(g=>g.properties.members.includes(n.id));if(parent?.properties.locked){e.stopImmediatePropagation();return say('所在组已锁定。');}
             e.stopImmediatePropagation();e.preventDefault();root.focus({preventScroll:true});history.begin();drag={kind:'member',pointerId:e.pointerId,parentId:parent?.id,ids:[n.id],x:e.clientX,y:e.clientY,originals:copy({[n.id]:cards()[n.id]}),before:copy(app.graph.serialize())};if(parent){selected=parent.id;selectionActive=true;}
