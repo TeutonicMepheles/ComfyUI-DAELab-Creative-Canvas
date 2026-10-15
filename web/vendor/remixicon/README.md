@@ -29,3 +29,5 @@ The bundled Remix Icon license applies.
 2026-10-14: Added official Document/file-text-line.svg for the script parser node title and creation menu from
 https://github.com/Remix-Design/RemixIcon/blob/master/icons/Document/file-text-line.svg.
 The bundled Remix Icon license applies.
+
+2026-10-14: Reused sparkling-line.svg from the business library bundled Remix icons for the LLM optimization title and creation menu. The bundled Remix Icon license applies.

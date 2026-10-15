@@ -278,10 +278,6 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         if(category&&node.type!==UPLOAD_TYPE)heading.append(categoryIcon(category));
         heading.append(title);
         c.tasks=createTaskCapsules();heading.append(c.tasks.root);
-        if(adapter?.collapsible!==false){
-            c.toggle=createCreativeButton('设置',()=>{layout.expanded=!layout.expanded;select(node);update(c);dirty();});
-            c.toggle.setAttribute('aria-label',`${node.title} 设置`);heading.append(c.toggle);
-        }
         if(workspaceNode(node.type)){
             element.dataset.workspace="true";c.openEditor=createCreativeButton("展开编辑器",()=>openWorkspace(c));
             if(adapter?.floatingHeader){
@@ -333,13 +329,15 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
             c.surface?.classList.toggle('dae-creative-selection-active',selected.has(node.id));
         }
         if(node.type===UPLOAD_TYPE)layout.width=cardWidth(node.type);
-        if(c.widthHandle)layout.width=Math.max(640,layout.width);if(node.type===UPLOAD_TYPE||adapterFor(node)?.collapsible===false)layout.expanded=true;adapterFor(node)?.refresh?.(node);c.element.style.left=`${layout.x}px`;c.element.style.top=`${layout.y}px`;c.element.style.width=`${layout.width}px`;
+        // Legacy saved collapsed cards must reopen now that manual collapse is removed.
+        layout.expanded=true;
+        if(c.widthHandle)layout.width=Math.max(640,layout.width);adapterFor(node)?.refresh?.(node);c.element.style.left=`${layout.x}px`;c.element.style.top=`${layout.y}px`;c.element.style.width=`${layout.width}px`;
         if(c.widthHandle){c.widthHandle.setAttribute('aria-valuenow',String(layout.width));c.widthHandle.setAttribute('aria-valuemin','640');c.widthHandle.setAttribute('aria-valuemax',String(Math.max(3600,layout.width)));c.widthHandle.setAttribute('aria-valuetext',`${layout.width} 像素`);}
         const inactive=!isPanelActive(node);c.element.dataset.inactive=String(inactive);c.body.inert=inactive;
         for(const {w,input} of c.fieldBindings||[]){input.disabled=node.inputs?.some(p=>p.name===w.name&&p.link!=null);if(document.activeElement!==input){input.value=w.value??'';input.checked=!!w.value;}}
         const compact=compactCard(c);c.element.dataset.compact=String(compact);
-        if(c.title.textContent!==(node.title||node.type))c.title.textContent=node.title||node.type;c.body.hidden=inactive||!layout.expanded||compact;if(c.toggle){c.toggle.hidden=inactive;c.toggle.textContent=layout.expanded?'收起':'设置';c.toggle.setAttribute('aria-expanded',String(!c.body.hidden));}
-        const text=adapterFor(node)?.summary?.(node)||value(node,'prompt')||value(node,'text')||'展开设置进行编辑';
+        if(c.title.textContent!==(node.title||node.type))c.title.textContent=node.title||node.type;c.body.hidden=inactive||compact;
+        const text=adapterFor(node)?.summary?.(node)||value(node,'prompt')||value(node,'text')||'';
         if(c.summary.textContent!==text)c.summary.textContent=text;c.summary.hidden=!inactive&&layout.expanded&&!compact||node.type===UPLOAD_TYPE;
         const panelPreview=layout.expanded&&!compact&&!!c.panel?.querySelector('video[src],img[src]');
         const preview=panelPreview?{}:previewFor(node),url=preview.url;if(url!==c.mediaURL){c.mediaURL=url;const previous=c.media.querySelector('video');if(previous){previous.pause();previous.removeAttribute('src');previous.load();}c.media.replaceChildren();if(typeof url==='string'&&(/^(\/view\?|\/comfytv\/|https?:\/\/)/).test(url)){
@@ -509,6 +507,17 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
     }
     function choose(point,context=null){
         closePicker();if(context&&(!validConnection(context)||(context.side==='output'&&!canConnectOutput(context.node))))return;addPoint=point;pickerConnection=context;
+        const outputNode=context?.side==='output'&&adapterFor(context.node)?.defaultOutputNode;
+        if(outputNode&&globalThis.LiteGraph.registered_node_types[outputNode.type]){
+            history.begin();
+            try{
+                const node=createNode(outputNode.type,point);if(!node)return;
+                node.title=outputNode.title||node.title;
+                if(!targetChoices(context.node,context.index,node).length){graph.remove(node);delete state.cards[node.id];message('目标节点没有兼容输入，请刷新页面后重试');return;}
+                dirty();sync();select(node);connectToCard(context,node,point);
+            }finally{history.end();}
+            return;
+        }
         picker=el('section','dae-creative-picker');picker.setAttribute('aria-label','添加节点');
         picker.append(el('h2','',context?(context.side==='output'?'引用此节点新建':'新建来源节点'):'添加节点'));
         const list=el('div');picker.append(list);root.append(picker);

@@ -1,15 +1,17 @@
 import {app} from '/scripts/app.js';
-import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20261013-local-generation-modes';
+import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20261015-mixed2';
 import {STATE_KEY} from './creative_canvas_model.mjs';
 import {installLayoutHistory} from './creative_history.mjs?v=20261012-client-workflow-r8';
-import {installMaterialGroups} from './material_groups.mjs?v=20261002-title-double-click';
+import {installMaterialGroups} from './material_groups.mjs?v=20261015-mixed1';
 
 import {publishAPI} from './creative_contract.mjs';
+import {publishInputExchange} from './creative_input_exchange.mjs';
 import {publishPanelContext} from './creative_panel_context.mjs?v=20260930-public-layout4';
 import './adapters/upload.mjs?v=20261012-client-workflow-r8';
 import {installComfyTVAdapter} from './adapters/comfytv.mjs';
 publishAPI();
 publishPanelContext();
+publishInputExchange();
 installComfyTVAdapter(app);
 
 const iconURL=new URL('./vendor/remixicon/artboard-line.svg',import.meta.url).href;

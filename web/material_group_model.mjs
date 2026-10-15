@@ -1,9 +1,24 @@
 import {UPLOAD_TYPE,readAsset} from './media_upload_model.mjs';
+import {inputSnapshot} from './creative_input_exchange.mjs';
 
 export const GROUP_TYPE='DAELAB.MaterialGroup';
 export const GROUP_SOCKET='DAELAB_ASSETS';
+export const isGroupMember=node=>[UPLOAD_TYPE,'DAELAB.TextInput'].includes(node?.type);
+export function groupInputSnapshot(group){
+    const collection=collectionFor(group),texts=[];
+    for(const id of group.properties.members||[]){
+        const node=group.graph?.getNodeById(id);
+        if(node?.mode)throw new Error('组内有停用节点，请恢复后重试');
+        if(node?.type==='DAELAB.TextInput'){
+            const snapshot=inputSnapshot(node);
+            if(snapshot?.ready===false)return {version:1,ready:false};
+            texts.push(...(snapshot?.texts||[]));
+        }
+    }
+    return {...collection,texts,inputMode:collection.assets.length&&texts.some(t=>t.trim())?'image-instructions':undefined};
+}
 export function collectionFor(group){
-    return {version:1,assets:(group.properties.members||[]).map(id=>{
+    return {version:1,assets:(group.properties.members||[]).filter(id=>group.graph?.getNodeById(id)?.type!=='DAELAB.TextInput').map(id=>{
         const node=group.graph?.getNodeById(id);
         const asset=node?.type===UPLOAD_TYPE?readAsset(node.widgets?.find(w=>w.name==='asset_data')?.value):null;
         if(!asset)return {nodeId:String(id),missing:true};
