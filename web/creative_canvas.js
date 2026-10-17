@@ -1,5 +1,5 @@
 import {app} from '/scripts/app.js';
-import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20261015-mixed2';
+import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20261017-task-groups';
 import {STATE_KEY} from './creative_canvas_model.mjs';
 import {installLayoutHistory} from './creative_history.mjs?v=20261012-client-workflow-r8';
 import {installMaterialGroups} from './material_groups.mjs?v=20261015-mixed1';
@@ -59,7 +59,7 @@ app.registerExtension({
     setup(){
         if(document.getElementById('daelab-creative-css'))return;
         installLayoutHistory(app);
-        const css=document.createElement('link');css.id='daelab-creative-css';css.rel='stylesheet';css.href=new URL('./creative_canvas.css?v=20261009-task-capsules',import.meta.url).href;document.head.append(css);
+        const css=document.createElement('link');css.id='daelab-creative-css';css.rel='stylesheet';css.href=new URL('./creative_canvas.css?v=20261017-text-input-radius',import.meta.url).href;document.head.append(css);
         view=createCreativeCanvas(app,{onExit:updateLabel});
         observer=new MutationObserver(records=>{if(records.every(r=>r.target instanceof Element&&r.target.closest('.dae-creative')))return;if(!scheduled){scheduled=true;requestAnimationFrame(syncMenu);}});
         observer.observe(document.body,{childList:true,subtree:true});

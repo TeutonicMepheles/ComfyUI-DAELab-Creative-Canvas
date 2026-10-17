@@ -137,6 +137,8 @@ body[data-daelab-creative=true] [role="toolbar"]:has(> [data-testid="zoom-contro
 .dae-creative .dae-creative-card:is([data-floating-header=true],[data-upload=true],[data-presentation=content])>.dae-creative-heading>button{height:24px;min-height:24px;padding:0 8px}
 .dae-creative-card[data-floating-header=true]>.dae-creative-body{padding:0;overflow:visible}
 .dae-creative-card[data-floating-header=true]>.dae-creative-type{display:none}
+.dae-creative .dae-text-input>textarea[data-creative-field]{border:0!important;border-radius:var(--dae-radius-card)!important;background:transparent!important;box-shadow:none;outline:none!important}
+.dae-creative-card:has(>.dae-creative-body>.dae-text-input textarea:focus-visible){border-color:var(--dae-focus);box-shadow:0 0 0 1px var(--dae-focus),var(--dae-elevation-card)}
 .dae-creative button.dae-creative-header-action{display:grid;place-items:center;width:32px;min-width:32px;height:32px;min-height:32px;padding:0!important;border:0!important;border-radius:6px!important;background:transparent!important;color:var(--dae-text)!important}
 .dae-creative .dae-creative-card>button.dae-creative-header-action{position:absolute;top:12px;right:12px;z-index:3}
 .dae-creative button.dae-creative-header-action:is(:hover,:active):not(:disabled){background:transparent!important;color:var(--dae-accent)!important}

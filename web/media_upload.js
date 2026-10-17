@@ -33,7 +33,11 @@ function install(node){
         info.textContent=asset?.name||'';info.title=info.textContent;
         if(!asset){const hint=document.createElement('div');hint.className='dae-upload-empty';const open=createCreativeButton('选择本地文件',()=>{if(!node.mode){picker.value='';picker.click();}});const formats=document.createElement('small');formats.textContent='PNG · JPG · WebP · MP4 · WebM · MOV';hint.append(open,formats);stage.append(hint);return;}
         const media=document.createElement(asset.kind==='video'?'video':'img');media.src=assetURL(asset);
-        if(asset.kind==='video'){media.preload='metadata';media.playsInline=true;}else{media.alt=asset.name;media.draggable=false;}
+        if(asset.kind==='video'){
+            media.preload='metadata';media.playsInline=true;
+            if(asset.thumbnailUrl||asset.poster)media.poster=asset.thumbnailUrl||asset.poster;
+            media.addEventListener('loadedmetadata',()=>{if(media.paused&&media.currentTime===0&&Number.isFinite(media.duration)&&media.duration>0)media.currentTime=Math.min(.1,media.duration/2);},{once:true});
+        }else{media.alt=asset.name;media.draggable=false;}
         const dimensions=()=>{if(!media.isConnected)return;const w=media.videoWidth||media.naturalWidth,h=media.videoHeight||media.naturalHeight;info.textContent=`${asset.name} · ${w} × ${h}`;};
         media.addEventListener(asset.kind==='video'?'loadedmetadata':'load',dimensions);
         media.addEventListener('error',()=>{status.textContent='无法预览：文件缺失或浏览器不支持此编码，请替换素材。';});
