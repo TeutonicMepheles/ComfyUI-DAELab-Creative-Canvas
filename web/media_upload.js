@@ -1,6 +1,7 @@
 import {bindPanelAvailability} from './creative_panel_state.mjs';
 import {app} from '/scripts/app.js';
 import {createCreativeButton} from './creative_button.mjs';
+import {createFavoriteButton} from './asset_favorite.mjs?v=20261015-2';
 import {createUploadVideoControls} from './upload_video_controls.mjs?v=20261001-player1';
 import {UPLOAD_TYPE,ACCEPT,mediaKind,readAsset,assetURL,slotAllowed} from './media_upload_model.mjs?v=20261001-material-references';
 
@@ -21,11 +22,12 @@ function install(node){
     const choose=createCreativeButton('上传图片 / 视频',()=>{picker.value='';picker.click();});
     const fullscreen=createCreativeButton('全屏',async()=>{try{await stage.requestFullscreen();}catch{status.textContent='当前浏览器无法进入全屏';}});
     const download=document.createElement('a');download.textContent='下载';download.className='dae-upload-download';
-    toolbar.append(info,choose,download,fullscreen);root.append(toolbar,stage,status,picker);
+    const favorite=createFavoriteButton(()=>{const a=readAsset(data.value);return a?{...a,name:node.title||a.name}:null;},{available:()=>!disposed&&!node.mode,onError:text=>{status.textContent=text;}});
+    toolbar.append(info,choose,download,fullscreen,favorite.button);root.append(toolbar,stage,status,picker);
     function render(){
         if(disposed)return;
         const previousName=asset?.name;
-        asset=readAsset(data.value);const next=JSON.stringify(asset);if(next===signature)return;signature=next;
+        asset=readAsset(data.value);favorite.sync();const next=JSON.stringify(asset);if(next===signature)return;signature=next;
         root.dataset.hasAsset=String(!!asset);
         if(asset&&(!node.title||node.title==='上传'||node.title===UPLOAD_TYPE||node.title===previousName))node.title=asset.name;
         releasePlayer?.();releasePlayer=null;stage.querySelector('video')?.pause();stage.replaceChildren();status.textContent='';
@@ -68,7 +70,7 @@ function install(node){
     for(const event of ['pointerdown','dblclick','keydown','wheel'])root.addEventListener(event,e=>e.stopPropagation());
     const widget=node.addDOMWidget('media_upload','custom',root,{serialize:false,hideOnZoom:false,getValue:()=>'',setValue:()=>render(),getMinHeight:()=>320});widget.serialize=false;
     const releaseAvailability=bindPanelAvailability(node,root);
-    node.__mediaUpload={tasks:()=>!disposed&&task?[{...task}]:[],root,render,upload,kind:()=>readAsset(data.value)?.kind,reload(){task=null;++epoch;controller?.abort();choose.disabled=false;root.removeAttribute('aria-busy');signature=null;render();},destroy(){releasePlayer?.();releasePlayer=null;releaseAvailability();disposed=true;++epoch;controller?.abort();stage.querySelector('video')?.pause();root.remove();}};
+    node.__mediaUpload={tasks:()=>!disposed&&task?[{...task}]:[],root,render,upload,kind:()=>readAsset(data.value)?.kind,reload(){task=null;++epoch;controller?.abort();choose.disabled=false;root.removeAttribute('aria-busy');signature=null;render();},destroy(){favorite.destroy();releasePlayer?.();releasePlayer=null;releaseAvailability();disposed=true;++epoch;controller?.abort();stage.querySelector('video')?.pause();root.remove();}};
     node.setSize([520,400]);render();
 }
 app.registerExtension({name:'DAELab.MediaUpload',beforeRegisterNodeDef(type,definition){
