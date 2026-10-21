@@ -1,5 +1,9 @@
 # Remix Icon assets
 
+2026-10-15: Added official `System/star-line.svg` and `System/star-fill.svg` from
+https://github.com/Remix-Design/RemixIcon/tree/master/icons/System for asset favorites.
+The bundled Remix Icon license applies.
+
 Project UI icon source: https://remixicon.com/ (user-selected).
 
 These original SVGs were retrieved on 2026-09-07 from the official repository:

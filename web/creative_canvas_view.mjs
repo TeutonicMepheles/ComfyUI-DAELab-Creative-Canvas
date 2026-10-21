@@ -10,6 +10,9 @@ import {MATERIAL_SLOT,uploadKind,sourceSlots,resolveOutput,targetChoices,outputS
 import {menuItems,canConnectDefinition,matchingSlot} from './creative_canvas_catalog.mjs';
 import {createFieldGallery} from './creative_field_gallery.mjs';
 import {bindCreativeField} from './creative_field.mjs';
+import {createAssetLibrary} from './asset_library.mjs?v=20261015-3';
+import {assetURL} from './media_upload_model.mjs';
+import {connectedOutputNode,outputPosition} from './creative_output.mjs';
 import {createCreativeButton,bindCreativeButton} from './creative_button.mjs';
 import {canvasState,cardState,supportedNode,workspaceNode,cardWidth,zoomAt,socketCompatible,graphLinks} from './creative_canvas_model.mjs?v=20260929-layout1';
 
@@ -74,6 +77,28 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
     const cards=new Map(),layers=new WeakMap();let topLayer=1,fieldGallery=null,selectedLink=null,addPoint=null,pickerConnection=null,workspace=null;
     const dirty=()=>{graph.setDirtyCanvas?.(true,true);graph.change?.();};
     const message=text=>{status.textContent=text;};
+    const assetLibrary=createAssetLibrary(root,{
+        onCreate:()=>choose({x:root.clientWidth/2,y:Math.max(32,root.clientHeight-350)}),
+        onAdd:async(entry,signal)=>{
+            const owner=graph;if(!visible||owner!==app.graph)return;
+            if(entry.kind!=='text'){
+                const response=await app.api.fetchApi(assetURL(entry.asset),{method:'HEAD',signal});
+                if(!response.ok)throw new Error('原素材文件已失效，请重新上传后收藏');
+            }
+            if(signal.aborted||!visible||graph!==owner||app.graph!==owner)return;
+            history.begin();let node;
+            try{
+                node=createNode(entry.kind==='text'?'DAELAB.TextInput':UPLOAD_TYPE,{x:root.clientWidth/2-120,y:Math.max(60,root.clientHeight/4)});
+                if(!node)throw new Error('素材节点未加载，请刷新 ComfyUI 后重试');
+                const widget=node.widgets?.find(w=>w.name===(entry.kind==='text'?'text':'asset_data'));
+                if(!widget)throw new Error('素材节点格式不兼容');
+                widget.value=entry.kind==='text'?entry.text:JSON.stringify({...entry.asset,id:crypto.randomUUID()});
+                widget.callback?.(widget.value);node.title=entry.name;adapterFor(node)?.refresh?.(node);
+                dirty();sync();select(node);
+            }catch(error){if(node){graph.remove(node);delete state.cards[node.id];dirty();sync();}throw error;}
+            finally{history.end();}
+        },
+    });
     const canConnectOutput=node=>adapterFor(node)?.canConnectOutput?.(node)!==false;
     function compactCard(c){const limit=adapterFor(c.node)?.compactWidth,width=typeof limit==='function'?limit(c.node):limit;return Boolean(width&&c.layout.width*state.viewport.zoom<width&&workspace?.c!==c);}
     function viewport(){cancelAnimationFrame(viewportFrame);viewportFrame=0;setMagnet(null);const v=state.viewport;root.style.setProperty('--dae-canvas-zoom',String(v.zoom));root.style.setProperty('--dae-canvas-inverse-zoom',String(1/v.zoom));world.style.transform=`translate(${v.x}px,${v.y}px) scale(${v.zoom})`;grid.style.backgroundSize=`${24*v.zoom}px ${24*v.zoom}px`;grid.style.backgroundPosition=`${v.x}px ${v.y}px`;zoomLabel.textContent=`${Math.round(v.zoom*100)}%`;for(const c of cards.values())if(c.element.dataset.compact!==String(compactCard(c)))update(c);queueLayout();}
@@ -245,6 +270,31 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
             contains:element=>leased&&c.element.contains(element),
             getBounds:()=>leased?c.element.getBoundingClientRect():null,
             getViewport:()=>leased&&visible&&!c.body.hidden&&!c.body.inert?root.getBoundingClientRect():null,
+            confirmOutput(confirm){
+                if(!leased||!visible||c.node.mode||graph!==app.graph||graph.getNodeById(c.node.id)!==c.node)return false;
+                const definition=adapterFor(c.node)?.defaultOutputNode;
+                if(!definition||!globalThis.LiteGraph.registered_node_types[definition.type])throw new Error('结果文本节点未加载，请刷新后重试');
+                if(!canConnectOutput(c.node))return false;
+                let target=connectedOutputNode(c.node,definition.type),created=false,confirmed=false;
+                history.begin();
+                try{
+                    if(!target){
+                        const point=outputPosition(c.layout,[...cards.values()].map(card=>({...card.layout,height:card.element.offsetHeight})),cardWidth(definition.type));
+                        const v=state.viewport;
+                        target=createNode(definition.type,{x:point.x*v.zoom+v.x,y:point.y*v.zoom+v.y});
+                        if(!target)throw new Error('无法创建结果文本框');
+                        created=true;target.title=definition.title||target.title;
+                        const choice=targetChoices(c.node,0,target)[0];
+                        if(!choice||!c.node.connect(0,target,choice.index))throw new Error('结果文本框连接失败');
+                    }
+                    confirmed=confirm()===true;
+                    if(confirmed){adapterFor(target)?.refresh?.(target);dirty();sync();select(target);}
+                    return confirmed;
+                }finally{
+                    if(created&&!confirmed){graph.remove(target);delete state.cards[target.id];}
+                    dirty();history.end();sync();
+                }
+            },
             beginMaterialDrag(key,dataTransfer){
                 if(!leased||!visible||c.node.mode||!dataTransfer||!adapterFor(c.node)?.materialItem)return false;
                 const context={node:c.node,itemKey:key,side:'output'},snapshot=snapshotFor(context);
@@ -445,7 +495,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         else if(drag?.kind==='wire'&&drag.point)previewConnection(drag,drag.point);
         if(changed)root.dispatchEvent(new Event('dae-canvas-wires-changed'));
     }
-    function clear(){cancelAnimationFrame(viewportFrame);viewportFrame=0;previewMaterialDrop(null);cancelAnimationFrame(layoutFrame);layoutFrame=0;cancelAnimationFrame(wireFrame);wireFrame=0;hoverPoint=null;incomingWire=null;wirePaths.clear();setMagnet(null);closeWorkspace();closePicker();fieldGallery?.release();fieldGallery=null;for(const c of cards.values()){c.cancelWidthResize?.();resizeObserver.unobserve(c.element);clearMaterialPorts(c);adapterFor(c.node)?.panel?.(c.node)?.close?.();c.release?.();c.tasks?.destroy();c.element.remove();}cards.clear();wires.replaceChildren();selected.clear();marquee.hidden=true;delete root.dataset.panning;selectedLink=null;pending=null;drag=null;}
+    function clear(){assetLibrary.close();cancelAnimationFrame(viewportFrame);viewportFrame=0;previewMaterialDrop(null);cancelAnimationFrame(layoutFrame);layoutFrame=0;cancelAnimationFrame(wireFrame);wireFrame=0;hoverPoint=null;incomingWire=null;wirePaths.clear();setMagnet(null);closeWorkspace();closePicker();fieldGallery?.release();fieldGallery=null;for(const c of cards.values()){c.cancelWidthResize?.();resizeObserver.unobserve(c.element);clearMaterialPorts(c);adapterFor(c.node)?.panel?.(c.node)?.close?.();c.release?.();c.tasks?.destroy();c.element.remove();}cards.clear();wires.replaceChildren();selected.clear();marquee.hidden=true;delete root.dataset.panning;selectedLink=null;pending=null;drag=null;}
     function syncPositions(ids){
         for(const id of ids){const c=cards.get(id);if(c){c.element.style.left=`${c.layout.x}px`;c.element.style.top=`${c.layout.y}px`;}}
         animateWires();queueLayout();
@@ -625,7 +675,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         if(picker||workspace||context?.materialKey!==undefined)return null;
         if(context?.side==='output'&&[GROUP_TYPE,UPLOAD_TYPE].includes(context.node.type)){const target=materialTargetAt(x,y,context.node);if(target)return target.element;}
         const hit=document.elementFromPoint(x,y);
-        if(hit?.closest('button:not([data-slot]):not([data-material-column-slot]),input,textarea,select,a,video,.dae-creative-picker'))return null;
+        if(hit?.closest('button:not([data-slot]):not([data-material-column-slot]),input,textarea,select,a,video,.dae-creative-picker,.dae-library-overlay'))return null;
         let best=null,distance=SLOT_MAGNET_RADIUS;
         if(!context)for(const c of cards.values())for(const {port} of c.materialPorts?.values()||[]){
             if(port.hidden||port.disabled)continue;const center=portCenter(port),d=Math.hypot(x-center.x,y-center.y);if(d<distance){best=port;distance=d;}
@@ -652,23 +702,23 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
     root.addEventListener('pointerleave',()=>{hoverPoint=null;if(!drag){setMagnet(null);setIncomingWire(null);}animateWires();});
     for(const event of ['focusin','focusout','transitionrun','transitionend'])root.addEventListener(event,animateWires);
     root.addEventListener('pointerdown',e=>{
-        if(e.button!==0||drag||e.target.closest('path[data-link-id]'))return;
+        if(e.button!==0||drag||e.target.closest('path[data-link-id],.dae-library-overlay'))return;
         const port=nearestPort(e.clientX,e.clientY);
         if(port){setMagnet(port);portStarts.get(port)?.(e);}
     },true);
     root.addEventListener('pointerdown',e=>{if(picker&&!picker.contains(e.target))closePicker();},true);
     root.addEventListener('dblclick',e=>{if(e.target.closest('.dae-creative-card,.dae-creative-picker,.dae-creative-zoom,path'))return;const r=root.getBoundingClientRect();choose({x:e.clientX-r.left,y:e.clientY-r.top});});
     root.addEventListener('contextmenu',e=>{if(e.target.closest('.dae-creative-card,.dae-creative-picker,.dae-creative-zoom,path,input,textarea'))return;e.preventDefault();const r=root.getBoundingClientRect();choose({x:e.clientX-r.left,y:e.clientY-r.top});});
-    root.addEventListener('dragover',e=>{if(!materialDrag||!e.dataTransfer?.types.includes(materialDragType)||e.target.closest('.dae-creative-card,.dae-creative-picker'))return;e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='copy';},true);
+    root.addEventListener('dragover',e=>{if(!materialDrag||!e.dataTransfer?.types.includes(materialDragType)||e.target.closest('.dae-creative-card,.dae-creative-picker,.dae-library-overlay'))return;e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='copy';},true);
     root.addEventListener('drop',e=>{
-        if(!e.dataTransfer?.types.includes(materialDragType)||e.target.closest('.dae-creative-card,.dae-creative-picker'))return;
+        if(!e.dataTransfer?.types.includes(materialDragType)||e.target.closest('.dae-creative-card,.dae-creative-picker,.dae-library-overlay'))return;
         e.preventDefault();e.stopPropagation();const source=materialDrag;materialDrag=null;
         if(!source||source.token!==e.dataTransfer.getData(materialDragType)||source.graph!==graph||!validConnection(source.context)||JSON.stringify(snapshotFor(source.context))!==source.stamp){message('素材来源已变化，请重新拖出');return;}
         const r=root.getBoundingClientRect();void outputMaterials(source.context,{x:e.clientX-r.left,y:e.clientY-r.top});
     },true);
-    root.addEventListener('dragover',e=>{if(!e.dataTransfer?.types.includes('Files'))return;e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='copy';},true);
+    root.addEventListener('dragover',e=>{if(e.target.closest('.dae-library-overlay')||!e.dataTransfer?.types.includes('Files'))return;e.preventDefault();e.stopPropagation();e.dataTransfer.dropEffect='copy';},true);
     root.addEventListener('drop',async e=>{
-        const files=[...(e.dataTransfer?.files||[])];if(!files.length)return;
+        const files=[...(e.dataTransfer?.files||[])];if(!files.length||e.target.closest('.dae-library-overlay'))return;
         if(files.length===1&&e.target.closest('.dae-upload'))return;
         e.preventDefault();e.stopPropagation();closePicker();
         const supported=files.filter(file=>mediaKind(file.name)),skipped=files.length-supported.length;
@@ -696,7 +746,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         state.viewport=wheelViewport(state.viewport,{x:e.clientX-r.left,y:e.clientY-r.top},e,root.clientHeight);navigate();
     },{passive:false,capture:true});
     root.addEventListener('pointerdown',e=>{
-        if(e.button!==1||e.target.closest('dialog,.dae-creative-picker'))return;
+        if(e.button!==1||e.target.closest('dialog,.dae-creative-picker,.dae-library-overlay'))return;
         e.preventDefault();e.stopPropagation();setMagnet(null);closePicker();root.focus();
         drag={kind:'pan',x:e.clientX,y:e.clientY,original:{...state.viewport}};root.dataset.panning='true';root.setPointerCapture(e.pointerId);
     },true);
@@ -735,7 +785,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         }dirty();};root.addEventListener('pointerup',endDrag);root.addEventListener('pointercancel',endDrag);
     const editable=target=>target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable=false])');
     function copyNode(e){
-        if(!visible||editable(e.target)||e.target.closest('[role=grid]')||workspace||picker)return;
+        if(!visible||editable(e.target)||e.target.closest('[role=grid],.dae-library-overlay')||workspace||picker)return;
         const copyIds=expandGroupSelection(graph,selected);const list=[...copyIds].map(id=>cards.get(id)).filter(Boolean);if(!list.length)return;
         const left=Math.min(...list.map(c=>c.layout.x)),top=Math.min(...list.map(c=>c.layout.y));
         const nodes=list.map(c=>({...copySnapshot(c.node,c.layout),sourceId:c.node.id,offset:{x:c.layout.x-left,y:c.layout.y-top}}));
@@ -744,7 +794,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         e.preventDefault();e.stopPropagation();pasteCount=0;message('已复制节点；Ctrl+V 粘贴为新节点');
     }
     function pasteNode(e){
-        if(!visible||editable(e.target)||e.target.closest('[role=grid]')||workspace||picker)return;
+        if(!visible||editable(e.target)||e.target.closest('[role=grid],.dae-library-overlay')||workspace||picker)return;
         const snapshot=readSnapshot(e.clipboardData.getData('text/plain'));if(!snapshot)return;
         e.preventDefault();e.stopPropagation();
         const entries=snapshot.nodes||[snapshot],created=[],mapping=new Map();
@@ -785,5 +835,5 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
     function show(){graph=app.graph;state=canvasState(graph);state.active=true;visible=true;root.hidden=false;document.body.dataset.daelabCreative='true';viewport();sync();if(graph.extra?.daelabControlGallery&&!fieldGallery){fieldGallery=createFieldGallery(graph.extra.daelabControlGallery);world.append(fieldGallery.root);}dirty();}
     function hide(save=true){root.dispatchEvent(new Event('dae-canvas-hide'));if(save&&state){state.active=false;dirty();}visible=false;root.hidden=true;delete document.body.dataset.daelabCreative;clear();closePicker();app.canvas.setDirty?.(true,true);}
     const timer=setInterval(sync,250);root.hidden=true;
-    return {root,show,hide,sync,syncPositions,add,fit,select,receiveMaterialGroup,previewMaterialDrop,get selectedIds(){return [...selected];},get active(){return visible;},destroy(){hide(false);resizeObserver.disconnect();clearInterval(timer);root.remove();}};
+    return {root,show,hide,sync,syncPositions,add,fit,select,receiveMaterialGroup,previewMaterialDrop,get selectedIds(){return [...selected];},get active(){return visible;},destroy(){hide(false);assetLibrary.destroy();resizeObserver.disconnect();clearInterval(timer);root.remove();}};
 }

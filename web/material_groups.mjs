@@ -91,7 +91,7 @@ export function installMaterialGroups(app){
             c.dataset.reviewCompactActions=String(widths[index]<160);
             const visibleActions=[...bar.querySelectorAll('button,a')].filter(action=>!action.hidden);
             c.style.setProperty('--gr-actions-width',(visibleActions.length*40+12)+'px');
-            [...bar.querySelectorAll('button,a')].forEach((action,index)=>{const label=index===0?(action.textContent.includes('上传')?'上传图片 / 视频':action.textContent||action.getAttribute('aria-label')||'替换素材'):index===1?'下载':'全屏';action.setAttribute('aria-label',label);action.title=label;action.classList.add('gr-media-action');if(!action.querySelector('.dae-creative-icon'))action.replaceChildren(icon(['arrow-left-right-line','download-line','fullscreen-line'][index]));});
+            [...bar.querySelectorAll('button,a')].forEach((action,index)=>{action.classList.add('gr-media-action');if(action.dataset.assetFavorite)return;const label=index===0?(action.textContent.includes('上传')?'上传图片 / 视频':action.textContent||action.getAttribute('aria-label')||'替换素材'):index===1?'下载':'全屏';action.setAttribute('aria-label',label);action.title=label;if(!action.querySelector('.dae-creative-icon'))action.replaceChildren(icon(['arrow-left-right-line','download-line','fullscreen-line'][index]));});
         }
     }
     let layoutSignature='',layoutElements=[];
