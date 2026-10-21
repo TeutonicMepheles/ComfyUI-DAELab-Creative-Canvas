@@ -191,6 +191,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
             const snapshot=snapshotFor(context);
             if(!snapshot||snapshot.ready===false||!snapshot.assets?.length)throw new Error('当前没有有效的已完成素材');
             const frozen=JSON.parse(JSON.stringify(snapshot)),stamp=JSON.stringify(snapshot);
+            if(frozen.groups&&(!Array.isArray(frozen.groups)||frozen.groups.some(g=>!Number.isInteger(g.count)||g.count<1)||frozen.groups.reduce((sum,g)=>sum+g.count,0)!==frozen.assets.length))throw new Error('素材分组数量不一致');
             message('正在引用本地素材…');
             const response=await fetch('/daelab/creative/material-output',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({assets:frozen.assets})});
             const data=await response.json();if(!response.ok)throw new Error(data.error||'素材导入失败');
@@ -198,11 +199,16 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
             if(!Array.isArray(data.assets)||data.assets.length!==frozen.assets.length)throw new Error('素材导入数量不一致');
             history.begin();
             try{
-                for(const [i,asset] of data.assets.entries()){
-                    const node=createNode(UPLOAD_TYPE,{x:point.x+(i%3)*300*state.viewport.zoom,y:point.y+Math.floor(i/3)*240*state.viewport.zoom});if(!node)throw new Error('素材节点未加载');created.push(node);
-                    const widget=node.widgets?.find(w=>w.name==='asset_data');if(!widget)throw new Error('素材节点格式不兼容');widget.value=JSON.stringify(asset);node.title=asset.name;node.properties.materialOutputSource={nodeId:String(context.node.id),key:context.materialKey??null,...asset.provenance};node.__mediaUpload?.reload?.();
+                let offset=0;
+                for(const [index,section] of (frozen.groups||[{label:frozen.label,count:data.assets.length}]).entries()){
+                    const origin={x:point.x+index*800*state.viewport.zoom,y:point.y},members=[];
+                    for(const [i,asset] of data.assets.slice(offset,offset+section.count).entries()){
+                        const node=createNode(UPLOAD_TYPE,{x:origin.x+(i%3)*300*state.viewport.zoom,y:origin.y+Math.floor(i/3)*240*state.viewport.zoom});if(!node)throw new Error('素材节点未加载');created.push(node);members.push(node.id);
+                        const widget=node.widgets?.find(w=>w.name==='asset_data');if(!widget)throw new Error('素材节点格式不兼容');widget.value=JSON.stringify(asset);node.title=asset.name;node.properties.materialOutputSource={nodeId:String(context.node.id),key:context.materialKey??null,...asset.provenance};node.__mediaUpload?.reload?.();
+                    }
+                    offset+=section.count;
+                    if(frozen.groups||context.materialKey!==undefined||frozen.assets.length>1){const group=createNode(GROUP_TYPE,origin);if(!group)throw new Error('素材组节点未加载');created.push(group);group.title=section.label||context.node.title+' · 输出';group.properties.members=members;group.properties.collapsed=false;const collection=group.widgets?.find(w=>w.name==='collection_data');if(collection)collection.value=JSON.stringify(collectionFor(group));}
                 }
-                if(context.materialKey!==undefined||frozen.assets.length>1){const group=createNode(GROUP_TYPE,point);if(!group)throw new Error('素材组节点未加载');created.push(group);group.title=frozen.label||context.node.title+' · 输出';group.properties.members=created.slice(0,-1).map(n=>n.id);group.properties.collapsed=false;const collection=group.widgets?.find(w=>w.name==='collection_data');if(collection)collection.value=JSON.stringify(collectionFor(group));}
             }catch(error){for(const node of created){graph.remove(node);delete state.cards[node.id];}throw error;}
             finally{dirty();sync();if(created.length&&graph.getNodeById(created.at(-1).id))select(created.at(-1));app.daelabMaterialGroups?.tick?.();dirty();history.end();}
             root.focus({preventScroll:true});message(`已输出 ${data.assets.length} 个素材${frozen.skipped?'，跳过 '+frozen.skipped+' 行':''}`);
@@ -230,6 +236,11 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         const context=Object.freeze({
             get presentation(){return c.element.dataset.presentation;},
             get fullHeight(){return c.element.dataset.fullHeight==='true';},
+            get width(){return leased?c.layout.width:null;},
+            resizeWidth(width){
+                if(!leased||!c.widthHandle||!Number.isFinite(width)||width<=0)return false;
+                c.layout.width=width;update(c);drawWires();queueLayout();dirty();return true;
+            },
             get selected(){return leased&&selected.has(c.node.id);},
             contains:element=>leased&&c.element.contains(element),
             getBounds:()=>leased?c.element.getBoundingClientRect():null,
@@ -273,18 +284,18 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         element.style.zIndex=String(layers.get(node)??(node.type===GROUP_TYPE?0:1));
         const heading=el('header','dae-creative-heading'),title=el('strong','',node.title||node.type),media=el('div','dae-creative-media'),summary=el('div','dae-creative-summary'),body=el('div','dae-creative-body'),portBox=el('div','dae-creative-ports');
         const c={node,layout,element,heading,title,media,summary,body,fields:el('div','dae-creative-fields'),ports:portBox,panel:null,release:null,portSignature:null};
-        const adapter=adapterFor(node);element.dataset.floatingHeader=String(!!adapter?.floatingHeader);
+        const adapter=adapterFor(node),floatingHeader=typeof adapter?.floatingHeader==='function'?adapter.floatingHeader(node):!!adapter?.floatingHeader;element.dataset.floatingHeader=String(floatingHeader);
         const category=menuItems().find(item=>item.type===node.type);
         if(category&&node.type!==UPLOAD_TYPE)heading.append(categoryIcon(category));
         heading.append(title);
         c.tasks=createTaskCapsules();heading.append(c.tasks.root);
         if(workspaceNode(node.type)){
             element.dataset.workspace="true";c.openEditor=createCreativeButton("展开编辑器",()=>openWorkspace(c));
-            if(adapter?.floatingHeader){
+            if(floatingHeader){
                 c.openEditor.replaceChildren(categoryIcon({icon:'fullscreen-line'}));
                 c.openEditor.classList.add('dae-creative-header-action');c.openEditor.dataset.daeTooltip='展开编辑器';c.openEditor.dataset.tooltipAlign='end';c.openEditor.setAttribute('aria-label','展开编辑器');
             }
-            (adapter?.floatingHeader?element:heading).append(c.openEditor);
+            (floatingHeader?element:heading).append(c.openEditor);
         }
         title.tabIndex=0;title.title='双击重命名';
         const rename=()=>{if(heading.querySelector('input'))return;const input=el('input');input.value=node.title||node.type;input.setAttribute('aria-label','节点名称');title.hidden=true;heading.prepend(input);let done=false;
@@ -298,9 +309,10 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         element.append(heading,media,summary,body,typeLabel,portBox);world.append(element);cards.set(node.id,c);
         const resizeOption=adapterFor(node)?.resizable;
         if(typeof resizeOption==='function'?resizeOption(node):resizeOption){
-            const handle=el('div','dae-creative-width-handle');handle.tabIndex=0;handle.setAttribute('role','separator');handle.setAttribute('aria-orientation','vertical');handle.setAttribute('aria-label','调整表格整体宽度');handle.title='拖动调整表格宽度（最小 640px）；方向键微调，Esc 取消';c.widthHandle=handle;element.append(handle);
+            const handle=el('div','dae-creative-width-handle');handle.tabIndex=0;handle.setAttribute('role','separator');handle.setAttribute('aria-orientation','vertical');handle.setAttribute('aria-label','调整表格整体宽度');handle.title='拖动调整表格宽度；方向键微调，Esc 取消';c.widthHandle=handle;element.append(handle);
+            const minimum=adapterFor(node)?.minWidth;c.minimumWidth=()=>typeof minimum==='function'?minimum(node):minimum||640;
             let sizing=null;
-            const apply=width=>{layout.width=Math.max(640,Math.round(width));update(c);drawWires();};
+            const apply=width=>{layout.width=Math.max(c.minimumWidth(),width);update(c);drawWires();};
             const finish=cancel=>{if(!sizing)return;const old=sizing;sizing=null;if(cancel)apply(old.width);delete handle.dataset.dragging;if(handle.hasPointerCapture(old.pointer))handle.releasePointerCapture(old.pointer);history.end();dirty();};
             c.cancelWidthResize=()=>finish(true);
             handle.onpointerdown=e=>{if(e.button!==0)return;e.stopPropagation();e.preventDefault();history.begin();sizing={x:e.clientX,width:layout.width,pointer:e.pointerId};handle.dataset.dragging='true';handle.setPointerCapture(e.pointerId);handle.focus({preventScroll:true});};
@@ -331,8 +343,8 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         if(node.type===UPLOAD_TYPE)layout.width=cardWidth(node.type);
         // Legacy saved collapsed cards must reopen now that manual collapse is removed.
         layout.expanded=true;
-        if(c.widthHandle)layout.width=Math.max(640,layout.width);adapterFor(node)?.refresh?.(node);c.element.style.left=`${layout.x}px`;c.element.style.top=`${layout.y}px`;c.element.style.width=`${layout.width}px`;
-        if(c.widthHandle){c.widthHandle.setAttribute('aria-valuenow',String(layout.width));c.widthHandle.setAttribute('aria-valuemin','640');c.widthHandle.setAttribute('aria-valuemax',String(Math.max(3600,layout.width)));c.widthHandle.setAttribute('aria-valuetext',`${layout.width} 像素`);}
+        if(c.widthHandle)layout.width=Math.max(c.minimumWidth(),layout.width);adapterFor(node)?.refresh?.(node);c.element.style.left=`${layout.x}px`;c.element.style.top=`${layout.y}px`;c.element.style.width=`${layout.width}px`;
+        if(c.widthHandle){c.widthHandle.setAttribute('aria-valuenow',String(layout.width));c.widthHandle.setAttribute('aria-valuemin',String(c.minimumWidth()));c.widthHandle.setAttribute('aria-valuemax',String(Math.max(3600,layout.width)));c.widthHandle.setAttribute('aria-valuetext',`${layout.width} 像素`);}
         const inactive=!isPanelActive(node);c.element.dataset.inactive=String(inactive);c.body.inert=inactive;
         for(const {w,input} of c.fieldBindings||[]){input.disabled=node.inputs?.some(p=>p.name===w.name&&p.link!=null);if(document.activeElement!==input){input.value=w.value??'';input.checked=!!w.value;}}
         const compact=compactCard(c);c.element.dataset.compact=String(compact);
@@ -522,7 +534,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         picker.append(el('h2','',context?(context.side==='output'?'引用此节点新建':'新建来源节点'):'添加节点'));
         const list=el('div');picker.append(list);root.append(picker);
         if(context?.side==='output'&&(context.materialKey!==undefined||(typeof adapterFor(context.node)?.materialOutput==='function'?adapterFor(context.node).materialOutput(context.node):adapterFor(context.node)?.materialOutput===true))){
-            const snap=snapshotFor(context);const label=context.materialKey!==undefined?'输出为素材组':'输出为视频素材';
+            const snap=snapshotFor(context);const label=context.materialKey!==undefined||snap?.groups?'输出为素材组':'输出为视频素材';
             const output=button(label+(snap?.skipped?'（跳过 '+snap.skipped+' 行）':''),()=>{closePicker();return outputMaterials(context,point);});output.disabled=!snap?.assets?.length||snap.ready===false;list.append(output);
             if(context.materialKey!==undefined){positionPicker();output.focus();return;}
         }
