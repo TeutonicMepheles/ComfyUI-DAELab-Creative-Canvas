@@ -59,7 +59,7 @@ app.registerExtension({
     setup(){
         if(document.getElementById('daelab-creative-css'))return;
         installLayoutHistory(app);
-        const css=document.createElement('link');css.id='daelab-creative-css';css.rel='stylesheet';css.href=new URL('./creative_canvas.css?v=20261021-integrated1',import.meta.url).href;document.head.append(css);
+        const css=document.createElement('link');css.id='daelab-creative-css';css.rel='stylesheet';css.href=new URL('./creative_canvas.css?v=20261022-edge-fill1',import.meta.url).href;document.head.append(css);
         view=createCreativeCanvas(app,{onExit:updateLabel});
         observer=new MutationObserver(records=>{if(records.every(r=>r.target instanceof Element&&r.target.closest('.dae-creative')))return;if(!scheduled){scheduled=true;requestAnimationFrame(syncMenu);}});
         observer.observe(document.body,{childList:true,subtree:true});
