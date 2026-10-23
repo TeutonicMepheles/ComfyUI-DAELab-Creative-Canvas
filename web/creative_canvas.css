@@ -113,7 +113,7 @@ body[data-daelab-creative=true] [role="toolbar"]:has(> [data-testid="zoom-contro
 .dae-creative [data-creative-field][aria-invalid=true]{outline:2px solid var(--dae-danger)!important;outline-offset:2px;border-color:var(--dae-danger)!important}
 .dae-creative :is([data-creative-field],.dae-studio input,.dae-studio select,.dae-studio textarea):disabled{opacity:.38;cursor:not-allowed}
 .dae-creative :is([data-creative-field],.dae-studio input)[type=checkbox]{min-height:18px;width:18px!important;height:18px!important;padding:0!important}
-@media(max-width:800px){.dae-creative{left:8px;right:8px}.dae-creative-status{font-size:11px;left:12px;bottom:12px;max-width:calc(100% - 24px)}.dae-creative-zoom{right:12px;top:12px}.dae-creative-picker{padding:8px}}
+@media(max-width:800px){.dae-creative-status{font-size:11px;left:12px;bottom:12px;max-width:calc(100% - 24px)}.dae-creative-zoom{right:12px;top:12px}.dae-creative-picker{padding:8px}}
 
 .dae-creative .dae-studio td :is(input,textarea,select){min-height:32px;padding:4px 8px!important}
 .dae-creative .dae-studio .studio-tabs button{min-height:32px;padding:4px 12px}
