@@ -1,5 +1,5 @@
 import {app} from '/scripts/app.js';
-import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20261022-favorite1';
+import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20261023-column-fill';
 import {STATE_KEY} from './creative_canvas_model.mjs';
 import {installLayoutHistory} from './creative_history.mjs?v=20261012-client-workflow-r8';
 import {installMaterialGroups} from './material_groups.mjs?v=20261022-favorite1';
