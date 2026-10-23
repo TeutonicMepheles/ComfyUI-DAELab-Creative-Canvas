@@ -1,14 +1,14 @@
 import {app} from '/scripts/app.js';
-import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20261021-integrated1';
+import {createCreativeCanvas} from './creative_canvas_view.mjs?v=20261022-favorite1';
 import {STATE_KEY} from './creative_canvas_model.mjs';
 import {installLayoutHistory} from './creative_history.mjs?v=20261012-client-workflow-r8';
-import {installMaterialGroups} from './material_groups.mjs?v=20261016-confirm-output1';
+import {installMaterialGroups} from './material_groups.mjs?v=20261022-favorite1';
 
 import {publishAPI} from './creative_contract.mjs';
 import {publishInputExchange} from './creative_input_exchange.mjs';
 import {publishPanelContext} from './creative_panel_context.mjs?v=20260930-public-layout4';
 import './adapters/upload.mjs?v=20261012-client-workflow-r8';
-import {installComfyTVAdapter} from './adapters/comfytv.mjs';
+import {installComfyTVAdapter} from './adapters/comfytv.mjs?v=20261021-parser-menu';
 publishAPI();
 publishPanelContext();
 publishInputExchange();
@@ -59,7 +59,7 @@ app.registerExtension({
     setup(){
         if(document.getElementById('daelab-creative-css'))return;
         installLayoutHistory(app);
-        const css=document.createElement('link');css.id='daelab-creative-css';css.rel='stylesheet';css.href=new URL('./creative_canvas.css?v=20261022-edge-fill1',import.meta.url).href;document.head.append(css);
+        const css=document.createElement('link');css.id='daelab-creative-css';css.rel='stylesheet';css.href=new URL('./creative_canvas.css?v=20261022-favorite1',import.meta.url).href;document.head.append(css);
         view=createCreativeCanvas(app,{onExit:updateLabel});
         observer=new MutationObserver(records=>{if(records.every(r=>r.target instanceof Element&&r.target.closest('.dae-creative')))return;if(!scheduled){scheduled=true;requestAnimationFrame(syncMenu);}});
         observer.observe(document.body,{childList:true,subtree:true});

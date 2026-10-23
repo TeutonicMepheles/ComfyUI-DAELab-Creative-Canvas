@@ -10,7 +10,7 @@ import {MATERIAL_SLOT,uploadKind,sourceSlots,resolveOutput,targetChoices,outputS
 import {menuItems,canConnectDefinition,matchingSlot} from './creative_canvas_catalog.mjs';
 import {createFieldGallery} from './creative_field_gallery.mjs';
 import {bindCreativeField} from './creative_field.mjs';
-import {createAssetLibrary} from './asset_library.mjs?v=20261015-3';
+import {createAssetLibrary} from './asset_library.mjs?v=20261022-favorite1';
 import {assetURL} from './media_upload_model.mjs';
 import {connectedOutputNode,outputPosition} from './creative_output.mjs';
 import {createCreativeButton,bindCreativeButton} from './creative_button.mjs';
