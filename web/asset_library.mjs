@@ -10,14 +10,14 @@ export function createAssetLibrary(root,{onCreate,onAdd}){
     const bindings=[],tilesBindings=[];
     const action=(label,icon,fn,collection=bindings)=>{const b=createCreativeButton(label,fn);collection.push(bindCreativeButton(b));if(icon)b.prepend(libraryIcon(icon));return b;};
     const dock=el('nav','dae-library-dock dae-library-overlay dae-creative-toolbar');dock.setAttribute('aria-label','画布工具');
-    const create=action('新建','edit-line',()=>{onCreate();});
-    const toggle=action('资产库','folder-image-line',()=>setOpen(!open));toggle.setAttribute('aria-expanded','false');
+    const create=action('','add-line',()=>{onCreate();});create.classList.add('dae-library-create');create.setAttribute('aria-label','新建');create.title='新建';
+    const toggle=action('资产库','archive-stack-line',()=>setOpen(!open));toggle.setAttribute('aria-expanded','false');
     dock.append(create,el('span','dae-library-divider'),toggle);
     const drawer=el('section','dae-library-drawer dae-library-overlay dae-creative-toolbar');drawer.setAttribute('aria-label','资产库');drawer.hidden=true;
     const header=el('header','dae-library-header'),title=el('strong','','资产库'),count=el('span','dae-library-muted');
     const close=action('收起资产库','arrow-down-line',()=>{setOpen(false);toggle.focus();});close.classList.add('dae-library-icon-only');close.setAttribute('aria-label','收起资产库');close.title='收起资产库';
     count.title='收藏保存在当前浏览器及服务地址下；媒体引用本地文件';
-    header.append(libraryIcon('folder-image-line'),title,count,el('span','dae-library-spacer'),close);
+    header.append(libraryIcon('archive-stack-line'),title,count,el('span','dae-library-spacer'),close);
     const tools=el('div','dae-library-tools'),filters=el('div','dae-library-filters');filters.setAttribute('aria-label','素材类型');
     for(const [key,label] of [['all','全部'],['image','图片'],['video','视频'],['text','文本']]){const b=action(label,null,()=>{filter=key;render();});b.dataset.filter=key;filters.append(b);}
     const search=el('input','dae-library-search');search.type='search';search.placeholder='搜索收藏';search.setAttribute('aria-label','搜索收藏');bindings.push(bindCreativeField(search));search.oninput=()=>{query=search.value.trim().toLocaleLowerCase();render();};
@@ -56,7 +56,7 @@ export function createAssetLibrary(root,{onCreate,onAdd}){
             const remove=action('取消收藏','star-fill',async()=>{try{await removeFavorite(entry.id);if(alive){say('已取消收藏，原文件和画布素材保留');search.focus();}}catch(e){say(e.message);}},tilesBindings);remove.dataset.removeId=entry.id;remove.setAttribute('aria-label','取消收藏 '+entry.name);remove.title='取消收藏';remove.className='dae-library-remove';
             line.append(label,remove);tile.append(thumb,line);grid.append(tile);
         }
-        if(!list.length){const empty=el('div','dae-library-empty');empty.append(libraryIcon('folder-image-line'),el('strong','',entries.length?'没有匹配的收藏':'把常用素材留在这里'),el('span','',entries.length?'试试其他类型或名称':'点击素材上的收藏按钮，即可跨工作流复用'));grid.append(empty);}
+        if(!list.length){const empty=el('div','dae-library-empty');empty.append(libraryIcon('archive-stack-line'),el('strong','',entries.length?'没有匹配的收藏':'把常用素材留在这里'),el('span','',entries.length?'试试其他类型或名称':'点击素材上的收藏按钮，即可跨工作流复用'));grid.append(empty);}
         count.textContent=`${entries.length} 项`;for(const b of filters.children)b.setAttribute('aria-pressed',String(b.dataset.filter===filter));selection();grid.scrollTop=scroll;
         if(focusId){const candidate=[...grid.querySelectorAll(focusRemove?'[data-remove-id]':'[data-asset-id]')].find(b=>(focusRemove?b.dataset.removeId:b.dataset.assetId)===focusId);candidate?.focus({preventScroll:true});}
     }

@@ -1,6 +1,7 @@
 import {canvasHistory} from './creative_history.mjs?v=20261012-client-workflow-r8';
 import {collectionFor,GROUP_TYPE,expandGroupSelection,remapGroupMembers,suppressGroupSlots} from './material_group_model.mjs';
 import {adapterFor} from './creative_contract.mjs';
+import {materialDropSnapshot,acceptsMaterialDrop,materialDropCount} from './creative_material_drop.mjs';
 import {createTaskCapsules} from './creative_tasks.mjs';
 import {bindPanelContext} from './creative_panel_context.mjs?v=20260930-public-layout4';
 import {isPanelActive} from './creative_panel_state.mjs?v=20261013-active-state';
@@ -10,7 +11,7 @@ import {MATERIAL_SLOT,uploadKind,sourceSlots,resolveOutput,targetChoices,outputS
 import {menuItems,canConnectDefinition,matchingSlot} from './creative_canvas_catalog.mjs';
 import {createFieldGallery} from './creative_field_gallery.mjs';
 import {bindCreativeField} from './creative_field.mjs';
-import {createAssetLibrary} from './asset_library.mjs?v=20261015-3';
+import {createAssetLibrary} from './asset_library.mjs?v=20261022-favorite1';
 import {assetURL} from './media_upload_model.mjs';
 import {connectedOutputNode,outputPosition} from './creative_output.mjs';
 import {createCreativeButton,bindCreativeButton} from './creative_button.mjs';
@@ -267,6 +268,10 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
                 c.layout.width=width;update(c);drawWires();queueLayout();dirty();return true;
             },
             get selected(){return leased&&selected.has(c.node.id);},
+            focus(){
+                if(!leased||!visible||c.node.mode||c.body.hidden||c.body.inert)return false;
+                select(c.node);root.focus({preventScroll:true});return true;
+            },
             contains:element=>leased&&c.element.contains(element),
             getBounds:()=>leased?c.element.getBoundingClientRect():null,
             getViewport:()=>leased&&visible&&!c.body.hidden&&!c.body.inert?root.getBoundingClientRect():null,
@@ -628,14 +633,16 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         root.classList.toggle('dae-port-magnet',!!port);
     }
     function materialTargetAt(x,y,source=null){
+        const snapshot=source?materialDropSnapshot(source):null;
         const ignored=new Set([source?.id,...(source?.type===GROUP_TYPE?source.properties.members||[]:[])].map(String));
         let nearest=null,distance=SLOT_MAGNET_RADIUS;
         for(const c of cards.values())if(!ignored.has(String(c.node.id)))for(const projected of c.materialPorts?.values()||[]){
-            const {port,entry}=projected;if(entry.side!=='input'||port.hidden||port.disabled)continue;
+            const {port,entry}=projected;if(entry.side!=='input'||port.hidden||port.disabled||!acceptsMaterialDrop(entry,snapshot))continue;
             const center=portCenter(port),d=Math.hypot(x-center.x,y-center.y);if(d<distance){nearest={...entry,element:port,node:c.node};distance=d;}
         }
         const topCard=document.elementsFromPoint(x,y).map(e=>e.closest('.dae-creative-card')).find(e=>e&&!ignored.has(e.dataset.nodeId));
         for(const c of cards.values())for(const target of c.element===topCard&&!c.body.hidden&&!c.body.inert?adapterFor(c.node)?.materialTargets?.(c.node)||[]:[]){
+            if(!acceptsMaterialDrop(target,snapshot))continue;
             const visible=target.element.getBoundingClientRect();if(!visible.width||!visible.height)continue;
             const scroll=target.clipElement?.getBoundingClientRect();
             if(scroll&&(x<scroll.left||x>scroll.right||y<scroll.top||y>scroll.bottom))continue;
@@ -647,10 +654,9 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
     function previewMaterialDrop(source,x,y){
         for(const element of materialDropElements)delete element.dataset.materialDrop;
         materialDropElements=[];materialDropHint.hidden=true;hoverPoint=null;setMagnet(null);
-        if(source?.type!==GROUP_TYPE&&source?.type!==UPLOAD_TYPE)return false;
-        if(source.type===UPLOAD_TYPE&&!readAsset(value(source,'asset_data')))return false;
+        const snapshot=materialDropSnapshot(source);if(!snapshot)return false;
         const target=materialTargetAt(x,y,source);if(!target)return false;
-        materialDropElements=typeof target.previewElements==='function'?target.previewElements(source.type===GROUP_TYPE?collectionFor(source).assets.length:1):target.previewElements||[target.anchorElement||target.element,...(target.dropElements||[])];
+        materialDropElements=typeof target.previewElements==='function'?target.previewElements(materialDropCount(snapshot)):target.previewElements||[target.anchorElement||target.element,...(target.dropElements||[])];
         for(const element of materialDropElements)element.dataset.materialDrop='true';
         setMagnet(target.project===false?null:target.element);materialDropHint.textContent=target.label||'松开填入此列';
         const bounds=root.getBoundingClientRect();
@@ -660,11 +666,8 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
         return true;
     }
     function receiveMaterialGroup(source,x,y){
-        if(source?.type!==GROUP_TYPE&&source?.type!==UPLOAD_TYPE)return false;
+        const collection=materialDropSnapshot(source);if(!collection)return false;
         const target=materialTargetAt(x,y,source);if(!target)return false;
-        const asset=source.type===UPLOAD_TYPE?readAsset(value(source,'asset_data')):null;
-        if(source.type===UPLOAD_TYPE&&!asset)return false;
-        const collection=source.type===GROUP_TYPE?collectionFor(source):{version:1,assets:[{...asset,nodeId:String(source.id)}]};
         history.begin();
         try{adapterFor(target.node).acceptMaterials(target.node,target.key,collection);message('已填入素材，可在表格中撤销。');}
         catch(error){message(error.message);}
@@ -673,7 +676,7 @@ export function createCreativeCanvas(app,{onExit=()=>{}}={}) {
     }
     function nearestPort(x,y,context=null){
         if(picker||workspace||context?.materialKey!==undefined)return null;
-        if(context?.side==='output'&&[GROUP_TYPE,UPLOAD_TYPE].includes(context.node.type)){const target=materialTargetAt(x,y,context.node);if(target)return target.element;}
+        if(context?.side==='output'&&materialDropSnapshot(context.node)){const target=materialTargetAt(x,y,context.node);if(target)return target.element;}
         const hit=document.elementFromPoint(x,y);
         if(hit?.closest('button:not([data-slot]):not([data-material-column-slot]),input,textarea,select,a,video,.dae-creative-picker,.dae-library-overlay'))return null;
         let best=null,distance=SLOT_MAGNET_RADIUS;

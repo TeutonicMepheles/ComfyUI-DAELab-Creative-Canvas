@@ -1,5 +1,13 @@
 # Remix Icon assets
 
+2026-10-22: Added official `Business/archive-stack-line.svg` for the asset library after icon review from
+https://github.com/Remix-Design/RemixIcon/blob/master/icons/Business/archive-stack-line.svg.
+The bundled Remix Icon license applies.
+
+2026-10-22: Added official `System/add-line.svg` for the icon-only canvas create button from
+https://github.com/Remix-Design/RemixIcon/blob/master/icons/System/add-line.svg.
+The bundled Remix Icon license applies.
+
 2026-10-15: Added official `System/star-line.svg` and `System/star-fill.svg` from
 https://github.com/Remix-Design/RemixIcon/tree/master/icons/System for asset favorites.
 The bundled Remix Icon license applies.

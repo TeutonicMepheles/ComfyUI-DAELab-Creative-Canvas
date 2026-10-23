@@ -78,7 +78,7 @@ export function installMaterialGroups(app){
         panel.append(arrange,el('span','gr-divider'),numbers,el('span','gr-divider'),colors,el('span','gr-divider'),options,el('span','gr-divider'),remove);
     }
     const decorated=new Map();
-    function restoreMedia(){for(const bar of decorated.values()){for(const action of bar.querySelectorAll('.gr-media-action')){action.textContent=action.getAttribute('aria-label');action.classList.remove('gr-media-action');}}decorated.clear();}
+    function restoreMedia(){for(const bar of decorated.values()){for(const action of bar.querySelectorAll('.gr-media-action')){if(!action.dataset.assetFavorite)action.textContent=action.getAttribute('aria-label');action.classList.remove('gr-media-action');}}decorated.clear();}
     function onHide(){if(drag){const current=drag;drag=null;restoreDrag(current);}if(colorEditing){colorEditing=false;history.end();}restoreMedia();layoutElements=[];layoutSignature='';}
     root.addEventListener('dae-canvas-hide',onHide);
     function decorateMedia(){
