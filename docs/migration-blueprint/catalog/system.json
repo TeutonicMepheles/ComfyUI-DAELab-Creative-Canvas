@@ -1,0 +1,1837 @@
+{
+  "features": [
+    {
+      "id": "F-SYS-001",
+      "title": "单仓库单安装入口",
+      "decision": "重构",
+      "current": "当前两个仓库各自注册节点与扩展，完整创作依赖组合安装",
+      "source": [
+        "canvas:__init__.py",
+        "business:__init__.py"
+      ],
+      "target": "__init__.py; backend/integrations/comfyui; frontend/src/integrations/comfyui",
+      "phase": "M1",
+      "rationale": "统一产品组装与版本，消除跨包发现与 fallback",
+      "acceptance": [
+        "干净环境只安装新包即可使用基础创作能力；节点、路由和菜单各注册一次"
+      ]
+    },
+    {
+      "id": "F-SYS-002",
+      "title": "模块边界与公开接口",
+      "decision": "重构",
+      "current": "已有公开 adapter 和分层草案，部分代码仍直接读取宿主及私有状态",
+      "source": [
+        "canvas:docs/adapter-contract.md",
+        "business:docs/architecture/phase1/BOUNDARIES.md"
+      ],
+      "target": "frontend/src/contracts; frontend/src/application; backend/contracts",
+      "phase": "M1",
+      "rationale": "将文档约束落实为依赖检查与消费方契约",
+      "acceptance": [
+        "非法跨层导入、循环依赖和旧仓库 URL 被检查阻止"
+      ]
+    },
+    {
+      "id": "F-SYS-003",
+      "title": "共享组件与同源陈列",
+      "decision": "保留",
+      "current": "共享按钮、字段、主题及辅助陈列已存在",
+      "source": [
+        "canvas:docs/architecture/CONTRIBUTING_CONTROLS.md",
+        "canvas:web/creative_button.mjs",
+        "canvas:web/creative_field.mjs"
+      ],
+      "target": "frontend/src/design; frontend/src/ui; frontend/showcase",
+      "phase": "M1",
+      "rationale": "保留成熟控件，统一来源与生命周期",
+      "acceptance": [
+        "修改一个共享控件后两个产品实例及陈列同步变化，实例值不共享"
+      ]
+    },
+    {
+      "id": "F-SYS-004",
+      "title": "产品文档与发布状态管理",
+      "decision": "重构",
+      "current": "安装入口和专题说明含不同日期的历史状态",
+      "source": [
+        "canvas:README.md",
+        "canvas:docs/migration.md",
+        "business:docs/architecture/SCOPE.md"
+      ],
+      "target": "docs/product; docs/architecture; docs/validation; docs/releases",
+      "phase": "M0",
+      "rationale": "一个当前安装入口，功能与案例可追踪",
+      "acceptance": [
+        "每个纳入功能有实现所有者、阶段、UC/TC和验收状态；历史说明不冒充当前要求"
+      ]
+    },
+    {
+      "id": "F-SYS-005",
+      "title": "文档与执行状态的权威归属",
+      "decision": "重构",
+      "current": "原生图是保存来源，运行事实已有独立回执但前端存在多种缓存",
+      "source": [
+        "canvas:README.md",
+        "canvas:docs/task-contract.md",
+        "business:docs/architecture/phase1/BOUNDARIES.md"
+      ],
+      "target": "frontend/src/application; backend/jobs; frontend/src/integrations/comfyui",
+      "phase": "M1",
+      "rationale": "避免平行可写图和撤销回退执行事实",
+      "acceptance": [
+        "保存重载不保存瞬时忙碌；撤销不重新提交或取消真实任务；旧回调不跨工作流写入"
+      ]
+    },
+    {
+      "id": "F-SYS-006",
+      "title": "宿主版本适配与历史桥接",
+      "decision": "重构",
+      "current": "历史桥接访问 ChangeTracker 内部状态",
+      "source": [
+        "canvas:web/creative_history.mjs",
+        "canvas:web/creative_canvas.js"
+      ],
+      "target": "frontend/src/integrations/comfyui",
+      "phase": "M1",
+      "rationale": "将宿主内部依赖集中并建立支持版本矩阵",
+      "acceptance": [
+        "最低及默认宿主的历史、模式入口、保存与重载全部通过；不支持版本给出明确诊断"
+      ]
+    },
+    {
+      "id": "F-SYS-007",
+      "title": "统一持久任务账本",
+      "decision": "重构",
+      "current": "JSON生成回执、SQLite优化账本及内存缓存并存",
+      "source": [
+        "business:nodes/libtv_bridge/table_generation_api.py",
+        "business:nodes/prompt_optimization/service.py",
+        "business:nodes/prompt_optimization/canvas.py"
+      ],
+      "target": "backend/jobs; compat/legacy",
+      "phase": "M4",
+      "rationale": "统一身份、状态、输入快照、事件与恢复语义",
+      "acceptance": [
+        "导入旧记录不 create；重启后保留可核对的远端身份；相同ID不同输入拒绝"
+      ]
+    },
+    {
+      "id": "F-SYS-008",
+      "title": "后端资产目录与旧收藏迁移",
+      "decision": "重构",
+      "current": "媒体文件在 input/output，收藏目录在浏览器 origin localStorage",
+      "source": [
+        "canvas:docs/asset-library.md",
+        "canvas:web/asset_library_model.mjs"
+      ],
+      "target": "backend/assets; compat/legacy; frontend/src/features/assets",
+      "phase": "M2",
+      "rationale": "使收藏与资产来源可备份和迁移",
+      "acceptance": [
+        "不同origin旧目录可显式导入、去重并保留文本快照；缺失媒体可见且不创建空节点"
+      ]
+    },
+    {
+      "id": "F-SYS-009",
+      "title": "可选能力与配置隔离",
+      "decision": "重构",
+      "current": "业务根入口混合导入，提供方依赖与连接状态有不同入口",
+      "source": [
+        "business:__init__.py",
+        "business:docs/comfy-credit-generation.md",
+        "business:docs/prompt-optimization-environment.md"
+      ],
+      "target": "backend/providers; backend/integrations/comfyui; frontend/src/application",
+      "phase": "M1",
+      "rationale": "可选依赖失败不拖垮核心安装",
+      "acceptance": [
+        "无密钥/无模型/无ComfyTV时核心可启动；对应执行入口给出具体不可用原因"
+      ]
+    },
+    {
+      "id": "F-SYS-010",
+      "title": "分资源调度与背压",
+      "decision": "重构",
+      "current": "生成已有本地/云并发限制及本地准入，归属分散",
+      "source": [
+        "business:nodes/libtv_bridge/table_generation_api.py",
+        "business:nodes/libtv_bridge/table_local_execution.py"
+      ],
+      "target": "backend/jobs; backend/media; backend/providers",
+      "phase": "M4",
+      "rationale": "统一GPU、云请求和转码队列，避免相互阻塞",
+      "acceptance": [
+        "峰值并发不超过配置；取消排队不派发；不同资源任务不无限饥饿"
+      ]
+    },
+    {
+      "id": "F-SYS-011",
+      "title": "诊断与错误合同",
+      "decision": "重构",
+      "current": "各功能已有错误提示和日志，缺少单产品诊断入口",
+      "source": [
+        "canvas:nodes/material_output_api.py",
+        "business:nodes/libtv_bridge/table_generation_api.py"
+      ],
+      "target": "backend/contracts; backend/jobs; tools",
+      "phase": "M1",
+      "rationale": "提供可定位的用户错误与脱敏诊断",
+      "acceptance": [
+        "按请求ID能关联提交/恢复/下载；错误含可恢复动作；导出诊断不含凭据"
+      ]
+    },
+    {
+      "id": "F-SYS-012",
+      "title": "性能预算与资源释放",
+      "decision": "重构",
+      "current": "已有释放机制及多处轮询，尚无统一性能预算",
+      "source": [
+        "canvas:web/creative_canvas_view.mjs",
+        "canvas:web/creative_panel_state.mjs",
+        "business:web/table_generation_tasks.mjs"
+      ],
+      "target": "frontend/src/canvas; frontend/src/application; tests/performance",
+      "phase": "M5",
+      "rationale": "以固定场景度量响应、内存和任务订阅",
+      "acceptance": [
+        "达到TEST_STRATEGY PERF-01至07；关闭实例资源计数回基线"
+      ]
+    },
+    {
+      "id": "F-SYS-013",
+      "title": "旧工作流稳定合同",
+      "decision": "保留",
+      "current": "节点ID、槽位、material JSON、画布状态与剪贴板均有兼容约束",
+      "source": [
+        "canvas:docs/adapter-contract.md",
+        "canvas:AGENTS.md"
+      ],
+      "target": "compat/workflows; frontend/src/integrations/comfyui",
+      "phase": "M6",
+      "rationale": "内部重构不破坏已有创作文件",
+      "acceptance": [
+        "导入编辑保存重开保持ID/槽位/顺序/未知字段；未迁节点报告并保留原件"
+      ]
+    },
+    {
+      "id": "F-SYS-014",
+      "title": "版本化数据迁移与备份",
+      "decision": "重构",
+      "current": "已有拆库迁移说明，未形成统一新产品迁移器",
+      "source": [
+        "canvas:docs/migration.md",
+        "business:docs/architecture/phase1/BOUNDARIES.md"
+      ],
+      "target": "compat/workflows; compat/legacy; tools",
+      "phase": "M6",
+      "rationale": "新增可预检、可重试且保护原数据的迁移流程",
+      "acceptance": [
+        "dry-run无写入；迁移重复不重复数据；中途失败可恢复；原始数据和清单可验证"
+      ]
+    },
+    {
+      "id": "F-SYS-015",
+      "title": "新旧包冲突检测",
+      "decision": "重构",
+      "current": "历史拆库已出现同名映射与前端入口重复风险",
+      "source": [
+        "canvas:docs/migration.md",
+        "canvas:__init__.py",
+        "business:__init__.py"
+      ],
+      "target": "backend/integrations/comfyui; frontend/src/integrations/comfyui; tools",
+      "phase": "M1",
+      "rationale": "不依赖加载顺序接管注册",
+      "acceptance": [
+        "冲突时指出旧包与处理方法，不删除目录，不启动两份可写面板"
+      ]
+    },
+    {
+      "id": "F-SYS-016",
+      "title": "可重复构建与单版本发布",
+      "decision": "重构",
+      "current": "当前两个独立CI；正式画布与辅助构建入口分离",
+      "source": [
+        "canvas:.github/workflows/checks.yml",
+        "business:.github/workflows/integration-checks.yml"
+      ],
+      "target": "package.json; pyproject.toml; web; .github/workflows; docs/releases",
+      "phase": "M6",
+      "rationale": "前后端、静态资源与schema作为一个产品发行",
+      "acceptance": [
+        "清洁检出构建相同资产清单；安装包无需用户npm构建；版本不匹配被诊断"
+      ]
+    },
+    {
+      "id": "F-SYS-017",
+      "title": "完整创作流程验收",
+      "decision": "重构",
+      "current": "已有分散用例和历史验收记录",
+      "source": [
+        "canvas:docs/validation.md",
+        "business:docs/integration-20261023.md"
+      ],
+      "target": "tests/host; tests/integration; docs/validation",
+      "phase": "M5",
+      "rationale": "按用户完成创作的流程验收而非仅按模块",
+      "acceptance": [
+        "分镜到生成到剪辑导出再保存重开完整通过；真实生成仅本地Qwen/MiniMax，假提供方与本地实测分别记录。"
+      ]
+    },
+    {
+      "id": "F-SYS-018",
+      "title": "可选ComfyTV公开兼容",
+      "decision": "保留",
+      "current": "已有只读上游适配与兼容类型",
+      "source": [
+        "canvas:web/adapters/comfytv.mjs",
+        "canvas:docs/adapter-contract.md",
+        "canvas:README.md"
+      ],
+      "target": "frontend/src/integrations/comfyui; compat/legacy",
+      "phase": "M2",
+      "rationale": "保留已声明的可选兼容，不捆绑上游",
+      "acceptance": [
+        "无上游不显示不可用入口；有上游只使用声明能力，文件与注册未被改写"
+      ]
+    },
+    {
+      "id": "F-SYS-019",
+      "title": "结果未知与断点恢复",
+      "decision": "保留",
+      "current": "当前生成与优化已有unknown/needs_recovery保护",
+      "source": [
+        "business:nodes/prompt_optimization/service.py",
+        "business:nodes/libtv_bridge/table_generation_api.py"
+      ],
+      "target": "backend/jobs; backend/providers",
+      "phase": "M4",
+      "rationale": "保留防止重复付费与恢复原任务的成熟语义",
+      "acceptance": [
+        "断响应、刷新、重启和下载中断均不多次create；不支持查询时保持unknown"
+      ]
+    },
+    {
+      "id": "F-SYS-020",
+      "title": "文件范围与敏感数据边界",
+      "decision": "保留",
+      "current": "素材导入与提供方输入已有路径/类型校验",
+      "source": [
+        "canvas:nodes/material_output_api.py",
+        "business:nodes/libtv_bridge/table_generation_api.py"
+      ],
+      "target": "backend/assets; backend/contracts; backend/providers",
+      "phase": "M2",
+      "rationale": "迁移后继续服务端校验，保护用户本地文件和凭据",
+      "acceptance": [
+        "目录穿越、越界引用、畸形输入被拒绝；日志和工作流不保存凭据；原素材不受失败影响"
+      ]
+    },
+    {
+      "id": "F-SYS-021",
+      "title": "旧库退出与数据回滚",
+      "decision": "重构",
+      "current": "已有拆库回滚说明，新产品尚无完整切换演练",
+      "source": [
+        "canvas:docs/migration.md"
+      ],
+      "target": "tools; compat; docs/releases",
+      "phase": "M6",
+      "rationale": "达到单库维护目标并保留可恢复的历史状态",
+      "acceptance": [
+        "新包运行不加载旧库；回滚能恢复旧数据；新产生且旧版不识别的数据独立保全"
+      ]
+    }
+  ],
+  "usecases": [
+    {
+      "id": "UC-SYS-001",
+      "title": "在干净ComfyUI安装并开始创作",
+      "features": [
+        "F-SYS-001",
+        "F-SYS-002",
+        "F-SYS-003",
+        "F-SYS-006",
+        "F-SYS-009",
+        "F-SYS-015",
+        "F-SYS-016"
+      ],
+      "actor": "安装者",
+      "preconditions": [
+        "隔离ComfyUI及空白用户目录",
+        "只取得新发布包"
+      ],
+      "steps": [
+        "安装新包并启动",
+        "创建两个素材实例与文本",
+        "保存、刷新并重开"
+      ],
+      "outcomes": [
+        "只有一个画布入口",
+        "核心功能不要求可选凭据",
+        "实例和内容恢复"
+      ],
+      "exceptions": [
+        "旧包冲突需显式处理",
+        "缺可选能力只影响对应操作"
+      ]
+    },
+    {
+      "id": "UC-SYS-002",
+      "title": "跨模式编辑与任务事实隔离",
+      "features": [
+        "F-SYS-003",
+        "F-SYS-005",
+        "F-SYS-006"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "存在两个不同工作流会话和一个假执行中任务"
+      ],
+      "steps": [
+        "编辑节点及表格并撤销重做",
+        "在Graph与画布间切换",
+        "切到另一工作流后让旧任务返回"
+      ],
+      "outcomes": [
+        "编辑事务正确",
+        "执行身份不回退",
+        "旧回调不覆盖另一工作流"
+      ],
+      "exceptions": [
+        "删除节点后结果仅保留账本，不重建已删节点"
+      ]
+    },
+    {
+      "id": "UC-SYS-003",
+      "title": "完成分镜到成片的创作",
+      "features": [
+        "F-SYS-005",
+        "F-SYS-007",
+        "F-SYS-008",
+        "F-SYS-010",
+        "F-SYS-017"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "自建分镜和媒体夹具",
+        "可控假提供方",
+        "真实生成版本只可替换为本地Qwen/MiniMax；其他通道继续使用假服务。"
+      ],
+      "steps": [
+        "导入分镜并修正映射",
+        "配置提示词与表内/表外生成",
+        "将结果输出为组接入剪辑",
+        "导出后保存并重开"
+      ],
+      "outcomes": [
+        "输入/生成/结果来源可追踪",
+        "成片与剪辑设置一致",
+        "重开可继续编辑且不重发任务"
+      ],
+      "exceptions": [
+        "失败行独立可恢复",
+        "失效成片阻止新连接但保留已有引用证据"
+      ]
+    },
+    {
+      "id": "UC-SYS-004",
+      "title": "网络或服务重启后恢复原任务",
+      "features": [
+        "F-SYS-007",
+        "F-SYS-011",
+        "F-SYS-019"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "假提供方可记录create次数和远端ID"
+      ],
+      "steps": [
+        "提交任务并注入断网或重启",
+        "重开工作流查看状态",
+        "按能力恢复查询或下载"
+      ],
+      "outcomes": [
+        "远端身份保持",
+        "结果未知有明确提示",
+        "生成create次数不增加"
+      ],
+      "exceptions": [
+        "提供方无查询能力时保持unknown，不声称自动恢复成功"
+      ]
+    },
+    {
+      "id": "UC-SYS-005",
+      "title": "将旧创作环境迁入新包",
+      "features": [
+        "F-SYS-008",
+        "F-SYS-013",
+        "F-SYS-014",
+        "F-SYS-015",
+        "F-SYS-020",
+        "F-SYS-021",
+        "F-OUT-001",
+        "F-OUT-002",
+        "F-OUT-003",
+        "F-OUT-004",
+        "F-OUT-005",
+        "F-OUT-006",
+        "F-OUT-007",
+        "F-OUT-008",
+        "F-OUT-009",
+        "F-OUT-010",
+        "F-OUT-011",
+        "F-OUT-012",
+        "F-OUT-013",
+        "F-OUT-014"
+      ],
+      "actor": "迁移执行者",
+      "preconditions": [
+        "固定旧版本的脱敏数据副本",
+        "工作流/媒体/收藏/回执齐全"
+      ],
+      "steps": [
+        "运行预检与dry-run",
+        "处理在途任务并备份",
+        "停用旧包后迁移到新包",
+        "重开、编辑、保存再重开"
+      ],
+      "outcomes": [
+        "原始数据保全",
+        "收藏和资产引用可用",
+        "未知节点报告且原JSON保留",
+        "重复迁移不重复数据"
+      ],
+      "exceptions": [
+        "缺失文件或不可恢复在途任务阻止相关切换，不伪造成功"
+      ]
+    },
+    {
+      "id": "UC-SYS-006",
+      "title": "升级失败后回滚并保全新数据",
+      "features": [
+        "F-SYS-013",
+        "F-SYS-014",
+        "F-SYS-016",
+        "F-SYS-021"
+      ],
+      "actor": "迁移执行者",
+      "preconditions": [
+        "有迁移前备份",
+        "新版本已产生少量新工作流或结果"
+      ],
+      "steps": [
+        "导出新数据保全包",
+        "停服务并恢复旧代码与旧数据副本",
+        "启动旧环境核对样本"
+      ],
+      "outcomes": [
+        "旧流程可继续",
+        "新数据保全包未被覆盖",
+        "不自动覆盖用户原目录"
+      ],
+      "exceptions": [
+        "旧版无法读取新schema时不直接降写，保留可读说明和原数据"
+      ]
+    },
+    {
+      "id": "UC-SYS-007",
+      "title": "在缺少可选提供方时继续工作",
+      "features": [
+        "F-SYS-001",
+        "F-SYS-009",
+        "F-SYS-018"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "未配置云凭据/本地模型/ComfyTV"
+      ],
+      "steps": [
+        "启动并上传编组编辑表格",
+        "查看生成配置与能力状态",
+        "尝试不可用组合"
+      ],
+      "outcomes": [
+        "基础编辑可用",
+        "不可用原因准确",
+        "禁止执行入口不会提交任务"
+      ],
+      "exceptions": [
+        "配置可用后按能力刷新，不要求重建全部文档"
+      ]
+    },
+    {
+      "id": "UC-SYS-008",
+      "title": "管理多种资源的排队任务",
+      "features": [
+        "F-SYS-007",
+        "F-SYS-010",
+        "F-SYS-019"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "已设GPU/云/转码额度",
+        "100个假任务"
+      ],
+      "steps": [
+        "混合提交各资源任务",
+        "暂停未派发项并取消指定排队项",
+        "观察其他资源任务与健康查询"
+      ],
+      "outcomes": [
+        "额度不超限",
+        "取消排队项不派发",
+        "其他资源继续前进"
+      ],
+      "exceptions": [
+        "远端不支持取消时说明仍在执行，不假报已取消"
+      ]
+    },
+    {
+      "id": "UC-SYS-009",
+      "title": "导出可定位且脱敏的诊断",
+      "features": [
+        "F-SYS-006",
+        "F-SYS-011",
+        "F-SYS-016",
+        "F-SYS-020"
+      ],
+      "actor": "维护者",
+      "preconditions": [
+        "存在一次假提供方失败和版本信息"
+      ],
+      "steps": [
+        "按requestId查看错误阶段",
+        "导出诊断",
+        "按提示恢复原任务"
+      ],
+      "outcomes": [
+        "可关联输入版本和远端ID",
+        "无凭据、用户原始正文或非必要私密素材",
+        "用户能分辨重试查询与新生成"
+      ],
+      "exceptions": [
+        "日志损坏或版本不匹配时保留原始错误，不掩盖为通用成功"
+      ]
+    },
+    {
+      "id": "UC-SYS-010",
+      "title": "长时间处理大型创作项目",
+      "features": [
+        "F-SYS-010",
+        "F-SYS-012"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "固定E6参考机和性能夹具"
+      ],
+      "steps": [
+        "连续拖动、缩放、编辑",
+        "反复创建销毁实例和切换模式",
+        "执行长时混合任务"
+      ],
+      "outcomes": [
+        "响应达到预算",
+        "释放资源回到基线",
+        "保存与恢复无数据丢失"
+      ],
+      "exceptions": [
+        "压力场景降级仍可取消与保存"
+      ]
+    },
+    {
+      "id": "UC-SYS-011",
+      "title": "维护可追踪的单产品版本",
+      "features": [
+        "F-SYS-002",
+        "F-SYS-004",
+        "F-SYS-016",
+        "F-SYS-017",
+        "F-SYS-021"
+      ],
+      "actor": "开发与发布维护者",
+      "preconditions": [
+        "功能F/UC/TC清单与固定源基线"
+      ],
+      "steps": [
+        "实现一项跨模块功能",
+        "运行相关门禁",
+        "打包并在干净机器安装",
+        "登记验收证据与发布范围"
+      ],
+      "outcomes": [
+        "一个版本覆盖前后端",
+        "发布记录区分能力保留/协议验证与本轮本地Qwen/MiniMax实测；不把其他通道标为本轮真实验收通过",
+        "新需求只在新库维护"
+      ],
+      "exceptions": [
+        "缺少必测环境标阻塞，不用不适用绕过"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "id": "TC-SYS-001",
+      "title": "仅新包的最小安装",
+      "features": [
+        "F-SYS-001",
+        "F-SYS-009",
+        "F-SYS-016"
+      ],
+      "usecases": [
+        "UC-SYS-001",
+        "UC-SYS-007"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M1",
+      "fixture": "E2 空用户目录及仅测试环境启用的最小节点/面板契约夹具",
+      "setup": [
+        "移除旧包加载路径且不配置可选服务"
+      ],
+      "steps": [
+        "安装发布产物并启动",
+        "读取节点清单并打开画布",
+        "创建两个最小受控面板，验证编辑、保存和刷新；M2再使用正式上传/文本，M6验收完整节点清单。"
+      ],
+      "expected": [
+        "启动无本包导入异常",
+        "当前阶段声明已交付的节点均可创建且仅一份；契约夹具不进入正式发布包",
+        "不需运行npm构建，不访问付费接口"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-002",
+      "title": "新旧包冲突可见且无覆盖",
+      "features": [
+        "F-SYS-015"
+      ],
+      "usecases": [
+        "UC-SYS-001",
+        "UC-SYS-005"
+      ],
+      "level": "integration",
+      "priority": "P0",
+      "phase": "M1",
+      "fixture": "E5 冲突目录副本",
+      "setup": [
+        "创建旧Canvas和旧业务各自/同时存在的三种组合"
+      ],
+      "steps": [
+        "运行安装预检与受控启动",
+        "检查冲突诊断和注册结果"
+      ],
+      "expected": [
+        "明确指出冲突包路径与处理方式",
+        "不删除目录，不依赖加载顺序替换同名类",
+        "不出现两个可写画布或两份事件绑定"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-003",
+      "title": "依赖方向及旧资源路径检查",
+      "features": [
+        "F-SYS-002",
+        "F-SYS-004"
+      ],
+      "usecases": [
+        "UC-SYS-011"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M1",
+      "fixture": "静态源依赖图",
+      "setup": [
+        "只对白名单compat历史文本允许旧路径"
+      ],
+      "steps": [
+        "扫描import和资源URL",
+        "注入测试夹具中的跨feature私有import及循环",
+        "运行依赖检查"
+      ],
+      "expected": [
+        "正式源无非法跨层或循环",
+        "禁止样例被拒绝",
+        "运行产物不指向两个旧仓库目录"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-004",
+      "title": "同源控件与双实例隔离",
+      "features": [
+        "F-SYS-003",
+        "F-SYS-005"
+      ],
+      "usecases": [
+        "UC-SYS-001",
+        "UC-SYS-002"
+      ],
+      "level": "host",
+      "priority": "P1",
+      "phase": "M1",
+      "fixture": "FX-GRAPH 两实例",
+      "setup": [
+        "在陈列和宿主使用同一按钮/字段实现"
+      ],
+      "steps": [
+        "改变共享主题测试变量",
+        "编辑A字段并让A异步忙碌",
+        "销毁A再操作B"
+      ],
+      "expected": [
+        "三处控件显示同一版本",
+        "B值与忙碌态不受A污染",
+        "B可继续操作且A订阅释放"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-005",
+      "title": "模式切换与异步会话隔离",
+      "features": [
+        "F-SYS-005",
+        "F-SYS-006"
+      ],
+      "usecases": [
+        "UC-SYS-002"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M1",
+      "fixture": "FX-GRAPH 两工作流",
+      "setup": [
+        "假任务延迟返回，记录两图的稳定ID"
+      ],
+      "steps": [
+        "提交图A请求",
+        "切Graph再切画布并打开图B",
+        "让图A响应返回"
+      ],
+      "expected": [
+        "图B内容/选中/布局不被改写",
+        "图A任务账本结果仍可查看",
+        "只有有效会话可应用结果"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-006",
+      "title": "撤销不回退执行事实",
+      "features": [
+        "F-SYS-005",
+        "F-SYS-007",
+        "F-SYS-019"
+      ],
+      "usecases": [
+        "UC-SYS-002",
+        "UC-SYS-004"
+      ],
+      "level": "integration",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "FX-JOBS 已提交任务",
+      "setup": [
+        "假服务记录create次数"
+      ],
+      "steps": [
+        "提交任务",
+        "修改及撤销其来源文本，删除并撤销恢复节点",
+        "刷新并查询状态"
+      ],
+      "expected": [
+        "requestId与远端ID不因undo变化",
+        "create仅一次",
+        "输入版本变化时结果不会自动覆盖现文本"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-007",
+      "title": "缺少可选依赖的最小能力",
+      "features": [
+        "F-SYS-001",
+        "F-SYS-009"
+      ],
+      "usecases": [
+        "UC-SYS-007"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M1",
+      "fixture": "E1 提供方故障注入",
+      "setup": [
+        "分别模拟依赖导入错误、无凭据、缺模型、连接不可达"
+      ],
+      "steps": [
+        "初始化产品",
+        "请求核心健康与能力接口；M2/M3在本场景追加真实资产和表格服务回归",
+        "读取能力列表并请求受影响能力"
+      ],
+      "expected": [
+        "基础服务始终可用",
+        "不可用能力带具体原因",
+        "无模拟成功、无意外提交、无整包导入失败"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-008",
+      "title": "旧稳定标识与未知字段往返",
+      "features": [
+        "F-SYS-013",
+        "F-SYS-005"
+      ],
+      "usecases": [
+        "UC-SYS-005"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "FX-GRAPH 旧版本与未知字段",
+      "setup": [
+        "保留原始JSON及归一化差异白名单"
+      ],
+      "steps": [
+        "导入旧图",
+        "改一处无关标题",
+        "导出并重开"
+      ],
+      "expected": [
+        "节点ID/槽位/连接/组顺序/material JSON保持",
+        "未知字段未静默丢弃",
+        "差异仅包括显式编辑和记录的版本投影"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-009",
+      "title": "未迁节点报告与原件保留",
+      "features": [
+        "F-SYS-013",
+        "F-SYS-014",
+        "F-OUT-001",
+        "F-OUT-002",
+        "F-OUT-003",
+        "F-OUT-004",
+        "F-OUT-005",
+        "F-OUT-006",
+        "F-OUT-007",
+        "F-OUT-008",
+        "F-OUT-009",
+        "F-OUT-010",
+        "F-OUT-011",
+        "F-OUT-012",
+        "F-OUT-013",
+        "F-OUT-014"
+      ],
+      "usecases": [
+        "UC-SYS-005"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "FX-GRAPH 徽章/原型/未知外部节点",
+      "setup": [
+        "副本包含被排除ID和通用创作节点"
+      ],
+      "steps": [
+        "预检并导入副本",
+        "查看缺失能力报告",
+        "尝试导出可恢复文件"
+      ],
+      "expected": [
+        "全部缺失ID可见",
+        "原始JSON未修改",
+        "不删除未知节点或其连线，不伪造执行结果"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-010",
+      "title": "跨origin收藏目录显式迁移",
+      "features": [
+        "F-SYS-008",
+        "F-SYS-014"
+      ],
+      "usecases": [
+        "UC-SYS-005"
+      ],
+      "level": "migration",
+      "priority": "P1",
+      "phase": "M2",
+      "fixture": "FX-LIBRARY 两个origin导出",
+      "setup": [
+        "两目录含重复媒体、不同文本快照和失效引用"
+      ],
+      "steps": [
+        "分别导出旧目录并导入新资产目录",
+        "重复导入",
+        "在新origin重开资产库"
+      ],
+      "expected": [
+        "重复项按明确身份去重",
+        "两个文本快照保持",
+        "失效引用有标记，未创建空节点",
+        "新目录可备份且不依赖原origin"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-011",
+      "title": "迁移预检与dry-run无写入",
+      "features": [
+        "F-SYS-014",
+        "F-SYS-020"
+      ],
+      "usecases": [
+        "UC-SYS-005"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "E5 全量副本",
+      "setup": [
+        "对所有源与目标路径做前置哈希快照"
+      ],
+      "steps": [
+        "执行dry-run",
+        "检查未知schema/缺失媒体/活动任务报告",
+        "重新比较目录"
+      ],
+      "expected": [
+        "工作流/素材/账本未改变",
+        "报告包含预期转换和阻断项",
+        "凭据不进入报告"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-012",
+      "title": "迁移中断后的原子恢复",
+      "features": [
+        "F-SYS-014",
+        "F-SYS-021"
+      ],
+      "usecases": [
+        "UC-SYS-005",
+        "UC-SYS-006"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "FX-JOBS FX-LIBRARY",
+      "setup": [
+        "分别在复制后、数据库提交前、清单落盘前注入终止"
+      ],
+      "steps": [
+        "启动迁移并在注入点终止",
+        "重启迁移工具",
+        "执行恢复或回滚"
+      ],
+      "expected": [
+        "原始备份完整",
+        "不存在可见的半成功数据集",
+        "恢复后引用及数量一致"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-013",
+      "title": "迁移重复执行保持幂等",
+      "features": [
+        "F-SYS-014",
+        "F-SYS-007",
+        "F-SYS-008"
+      ],
+      "usecases": [
+        "UC-SYS-005"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "E5 确定性全量副本",
+      "setup": [
+        "固定数据版本和迁移ID"
+      ],
+      "steps": [
+        "连续执行迁移两次",
+        "对比节点/资产/收藏/任务数量与ID",
+        "检查假服务调用记录"
+      ],
+      "expected": [
+        "第二次无额外实体",
+        "原任务身份不变",
+        "外部create调用为0"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-014",
+      "title": "在途任务切换保护",
+      "features": [
+        "F-SYS-014",
+        "F-SYS-019",
+        "F-SYS-021"
+      ],
+      "usecases": [
+        "UC-SYS-005"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "FX-JOBS running/unknown",
+      "setup": [
+        "同时准备有远端ID和无可恢复身份的任务"
+      ],
+      "steps": [
+        "运行切换预检",
+        "保存可恢复任务身份",
+        "尝试切换不可恢复任务"
+      ],
+      "expected": [
+        "可恢复任务附恢复计划",
+        "不可恢复在途任务未被当已迁完成",
+        "不会自动重新提交任何任务"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-015",
+      "title": "回滚保护旧数据与新数据",
+      "features": [
+        "F-SYS-014",
+        "F-SYS-016",
+        "F-SYS-021"
+      ],
+      "usecases": [
+        "UC-SYS-006"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "E5 旧备份和新schema数据",
+      "setup": [
+        "新包已生成合成的新工作流与媒体"
+      ],
+      "steps": [
+        "创建新数据保全包",
+        "停用新包恢复旧版和迁移前数据",
+        "启动旧环境并核对保全包"
+      ],
+      "expected": [
+        "旧图可加载且引用正确",
+        "新数据及其清单完整",
+        "不将新schema直接覆写为旧schema"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-016",
+      "title": "重启任务账本恢复原身份",
+      "features": [
+        "F-SYS-007",
+        "F-SYS-019"
+      ],
+      "usecases": [
+        "UC-SYS-004"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "FX-JOBS submitted/running/success",
+      "setup": [
+        "假服务可查询且计数create"
+      ],
+      "steps": [
+        "启动任务并持久化远端ID",
+        "终止并重启后端进程",
+        "查询并下载原结果"
+      ],
+      "expected": [
+        "create不增加",
+        "状态按事实恢复",
+        "成功记录不会恢复为新的running"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-017",
+      "title": "提交应答丢失不重复付费",
+      "features": [
+        "F-SYS-007",
+        "F-SYS-019"
+      ],
+      "usecases": [
+        "UC-SYS-004"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "FX-PROVIDER response-lost",
+      "setup": [
+        "假服务create已生效但不返回响应"
+      ],
+      "steps": [
+        "发送一次请求",
+        "注入超时并重启",
+        "执行恢复动作，分别启用/禁用查询能力"
+      ],
+      "expected": [
+        "支持核对时使用同一身份核对",
+        "无查询能力时保持unknown",
+        "不新建requestId自动重发"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-018",
+      "title": "取消能力与排队范围",
+      "features": [
+        "F-SYS-010",
+        "F-SYS-019"
+      ],
+      "usecases": [
+        "UC-SYS-008"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "FX-PROVIDER 无取消能力",
+      "setup": [
+        "同时存在排队和已提交任务"
+      ],
+      "steps": [
+        "取消排队项",
+        "请求停止已提交项",
+        "读取后台与前端状态"
+      ],
+      "expected": [
+        "排队项永不create",
+        "无远端取消能力时不宣称已取消",
+        "结果到达仍可在账本核对"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-019",
+      "title": "分资源限流及公平推进",
+      "features": [
+        "F-SYS-010"
+      ],
+      "usecases": [
+        "UC-SYS-008"
+      ],
+      "level": "backend",
+      "priority": "P1",
+      "phase": "M4",
+      "fixture": "100个确定性假任务",
+      "setup": [
+        "GPU=1、云=3、转码=2作为测试配置"
+      ],
+      "steps": [
+        "混合提交含失败与慢任务",
+        "采集各资源并发峰值",
+        "取消部分排队任务"
+      ],
+      "expected": [
+        "各峰值不超过配置",
+        "不同资源队列均有推进",
+        "失败释放配额，取消项不执行"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-020",
+      "title": "输入与文件路径校验",
+      "features": [
+        "F-SYS-020"
+      ],
+      "usecases": [
+        "UC-SYS-005",
+        "UC-SYS-009"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "FX-MEDIA 非法路径/损坏文件",
+      "setup": [
+        "仅允许指定input/output目录并配置请求大小上限"
+      ],
+      "steps": [
+        "请求目录穿越、绝对越界路径、错误类型及超限体积",
+        "对正常素材执行同接口"
+      ],
+      "expected": [
+        "非法请求被可读错误拒绝",
+        "无越界读取或写入",
+        "正常素材成功且原文件内容不变"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-021",
+      "title": "日志与导出不泄漏凭据",
+      "features": [
+        "F-SYS-011",
+        "F-SYS-020"
+      ],
+      "usecases": [
+        "UC-SYS-009"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M1",
+      "fixture": "虚构标记密钥",
+      "setup": [
+        "将唯一哨兵密钥放入测试连接配置"
+      ],
+      "steps": [
+        "执行成功、校验失败、远端错误",
+        "导出工作流与诊断包",
+        "扫描产物和异常文本"
+      ],
+      "expected": [
+        "哨兵密钥只存在受控配置中",
+        "诊断包含requestId和错误阶段",
+        "工作流/日志/前端快照无密钥"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-022",
+      "title": "错误与版本诊断可定位",
+      "features": [
+        "F-SYS-006",
+        "F-SYS-011",
+        "F-SYS-016"
+      ],
+      "usecases": [
+        "UC-SYS-009"
+      ],
+      "level": "integration",
+      "priority": "P1",
+      "phase": "M1",
+      "fixture": "FX-PROVIDER 429/500",
+      "setup": [
+        "记录前后端构建指纹"
+      ],
+      "steps": [
+        "触发429、输入错误与版本不匹配",
+        "查看错误和诊断",
+        "恢复原任务查询"
+      ],
+      "expected": [
+        "原因及可采取动作不同",
+        "版本不匹配能定位缓存/安装问题",
+        "重试查询不会调用create"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-023",
+      "title": "小型场景帧时间",
+      "features": [
+        "F-SYS-012"
+      ],
+      "usecases": [
+        "UC-SYS-010"
+      ],
+      "level": "performance",
+      "priority": "P1",
+      "phase": "M5",
+      "fixture": "FX-PERF-S",
+      "setup": [
+        "使用E6测量协议"
+      ],
+      "steps": [
+        "运行30秒固定拖动缩放轨迹五次",
+        "保存帧间隔和长停顿"
+      ],
+      "expected": [
+        "满足PERF-01",
+        "报告所有五次p50/p95及环境，不筛选最好结果"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-024",
+      "title": "标准场景交互延迟",
+      "features": [
+        "F-SYS-012"
+      ],
+      "usecases": [
+        "UC-SYS-010"
+      ],
+      "level": "performance",
+      "priority": "P1",
+      "phase": "M5",
+      "fixture": "FX-PERF-M",
+      "setup": [
+        "使用E6测量协议"
+      ],
+      "steps": [
+        "同时播放可见预览",
+        "拖动缩放并编辑固定表格单元格"
+      ],
+      "expected": [
+        "满足PERF-02",
+        "视频/无视频分别报告"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-025",
+      "title": "标准场景保存与重开",
+      "features": [
+        "F-SYS-012",
+        "F-SYS-013"
+      ],
+      "usecases": [
+        "UC-SYS-010",
+        "UC-SYS-005"
+      ],
+      "level": "performance",
+      "priority": "P1",
+      "phase": "M5",
+      "fixture": "FX-PERF-M",
+      "setup": [
+        "媒体缓存已预热且有固定JSON哈希"
+      ],
+      "steps": [
+        "保存工作流并重开五次",
+        "比较编辑数据与可交互时间"
+      ],
+      "expected": [
+        "满足PERF-03",
+        "数据无丢失；不等待不可见视频解码"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-026",
+      "title": "大型场景降级与取消",
+      "features": [
+        "F-SYS-012"
+      ],
+      "usecases": [
+        "UC-SYS-010"
+      ],
+      "level": "performance",
+      "priority": "P1",
+      "phase": "M5",
+      "fixture": "FX-PERF-L",
+      "setup": [
+        "记录当前资源预算"
+      ],
+      "steps": [
+        "打开大型场景",
+        "滚动并启动可取消的批量操作",
+        "取消后保存"
+      ],
+      "expected": [
+        "满足PERF-04",
+        "取消有效且保存成功",
+        "未操作对象保持原值"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-027",
+      "title": "生命周期资源回收",
+      "features": [
+        "F-SYS-012",
+        "F-SYS-005"
+      ],
+      "usecases": [
+        "UC-SYS-002",
+        "UC-SYS-010"
+      ],
+      "level": "performance",
+      "priority": "P1",
+      "phase": "M5",
+      "fixture": "FX-PERF-M",
+      "setup": [
+        "启用订阅/计时器/媒体资源测试计数"
+      ],
+      "steps": [
+        "创建销毁、切模式、开关面板20轮",
+        "按协议受控GC并取样"
+      ],
+      "expected": [
+        "满足PERF-05",
+        "无已销毁实例继续回调",
+        "任务执行不因视图销毁被取消"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-028",
+      "title": "混合队列后端响应",
+      "features": [
+        "F-SYS-010",
+        "F-SYS-012"
+      ],
+      "usecases": [
+        "UC-SYS-008",
+        "UC-SYS-010"
+      ],
+      "level": "performance",
+      "priority": "P1",
+      "phase": "M5",
+      "fixture": "FX-PROVIDER 100任务",
+      "setup": [
+        "同时模拟转码和文件操作"
+      ],
+      "steps": [
+        "周期查询健康接口",
+        "记录队列等待与并发",
+        "等待所有非取消任务结束"
+      ],
+      "expected": [
+        "满足PERF-06",
+        "无事件循环长时间阻塞或配额泄漏"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-029",
+      "title": "一小时创作稳定性",
+      "features": [
+        "F-SYS-012",
+        "F-SYS-017"
+      ],
+      "usecases": [
+        "UC-SYS-003",
+        "UC-SYS-010"
+      ],
+      "level": "performance",
+      "priority": "P1",
+      "phase": "M5",
+      "fixture": "FX-PERF-M 加假任务",
+      "setup": [
+        "隔离环境，记录起始数据和资源计数"
+      ],
+      "steps": [
+        "循环编辑、保存、任务、切换和销毁1小时",
+        "重开并核对数据"
+      ],
+      "expected": [
+        "满足PERF-07",
+        "无重复提交、丢失编辑或持续资源增长"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-030",
+      "title": "构建发布与缓存一致性",
+      "features": [
+        "F-SYS-016"
+      ],
+      "usecases": [
+        "UC-SYS-001",
+        "UC-SYS-011"
+      ],
+      "level": "integration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "两次清洁检出",
+      "setup": [
+        "固定依赖与工具版本，不带node_modules/旧dist"
+      ],
+      "steps": [
+        "各自构建并比对资源清单",
+        "安装发布包",
+        "模拟缓存旧前端访问新后端"
+      ],
+      "expected": [
+        "除明确时间戳元数据外产物一致",
+        "资源版本和包版本可诊断",
+        "旧缓存不会静默使用不兼容schema"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-031",
+      "title": "宿主支持版本矩阵",
+      "features": [
+        "F-SYS-006",
+        "F-SYS-016"
+      ],
+      "usecases": [
+        "UC-SYS-001",
+        "UC-SYS-011"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "E2 最低/默认/候选宿主",
+      "setup": [
+        "每个环境使用独立用户目录"
+      ],
+      "steps": [
+        "安装同一新包",
+        "执行注册、连线、撤销、模式、保存重开",
+        "记录差异"
+      ],
+      "expected": [
+        "最低/默认均通过",
+        "候选失败则不声明支持",
+        "不存在仅维护者环境可用的隐藏依赖"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-032",
+      "title": "完整创作流程的可重复验收",
+      "features": [
+        "F-SYS-017",
+        "F-SYS-005",
+        "F-SYS-007",
+        "F-SYS-008"
+      ],
+      "usecases": [
+        "UC-SYS-003"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M5",
+      "fixture": "FX-DOCX FX-MEDIA FX-EDIT FX-PROVIDER",
+      "setup": [
+        "两个表格、一个外部生成节点及两个结果组"
+      ],
+      "steps": [
+        "导入并修改提示词",
+        "分别从表内和表外提交假任务",
+        "结果回填并输出组到剪辑",
+        "编辑导出、保存重开"
+      ],
+      "expected": [
+        "来源/顺序/配置不串实例",
+        "输出媒体参数匹配剪辑",
+        "重开不增加create次数，继续编辑可用"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-033",
+      "title": "可选ComfyTV存在与缺失",
+      "features": [
+        "F-SYS-018",
+        "F-SYS-009",
+        "F-OUT-012"
+      ],
+      "usecases": [
+        "UC-SYS-007"
+      ],
+      "level": "host",
+      "priority": "P1",
+      "phase": "M2",
+      "fixture": "E2 与 E3",
+      "setup": [
+        "记录上游文件哈希及注册节点"
+      ],
+      "steps": [
+        "无上游运行基础流程",
+        "安装支持的上游版本并运行兼容展示/接线",
+        "再次对比上游文件"
+      ],
+      "expected": [
+        "缺失时无虚假菜单",
+        "兼容仅通过声明能力工作",
+        "未改写上游文件或替换上游注册"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-034",
+      "title": "旧库退出与排除项检查",
+      "features": [
+        "F-SYS-001",
+        "F-SYS-004",
+        "F-SYS-021",
+        "F-OUT-001",
+        "F-OUT-002",
+        "F-OUT-003",
+        "F-OUT-004",
+        "F-OUT-005",
+        "F-OUT-006",
+        "F-OUT-007",
+        "F-OUT-008",
+        "F-OUT-009",
+        "F-OUT-010",
+        "F-OUT-011",
+        "F-OUT-012",
+        "F-OUT-013",
+        "F-OUT-014"
+      ],
+      "usecases": [
+        "UC-SYS-005",
+        "UC-SYS-011"
+      ],
+      "level": "integration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "最终发布包及NODE_INVENTORY",
+      "setup": [
+        "两个旧库目录均不在加载路径"
+      ],
+      "steps": [
+        "扫描发布包与运行请求",
+        "核对正式注册节点",
+        "打开仅含纳入节点的兼容工作流"
+      ],
+      "expected": [
+        "无旧库导入和资源请求",
+        "正式生产注册与菜单不暴露排除能力；兼容读取白名单可提供最小只读schema，但不得启用旧执行",
+        "纳入流程完整运行"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-035",
+      "title": "数据写入失败保持一致",
+      "features": [
+        "F-SYS-007",
+        "F-SYS-008",
+        "F-SYS-014"
+      ],
+      "usecases": [
+        "UC-SYS-004",
+        "UC-SYS-005"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "临时账本与文件目录",
+      "setup": [
+        "注入磁盘满/只读/原子替换失败"
+      ],
+      "steps": [
+        "执行任务回执与资产结果落盘",
+        "在失败点重启",
+        "核对数据库与文件"
+      ],
+      "expected": [
+        "UI不显示虚假保存成功",
+        "无指向半文件的完成结果",
+        "可从原身份恢复或给出明确待修复状态"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-SYS-036",
+      "title": "本地 Qwen 与 MiniMax 完整流程及实测范围",
+      "features": [
+        "F-SYS-009",
+        "F-SYS-017",
+        "F-SYS-019"
+      ],
+      "usecases": [
+        "UC-SYS-003",
+        "UC-SYS-004",
+        "UC-SYS-011"
+      ],
+      "level": "provider-live",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "E4 白名单本地Qwen/MiniMax最小任务集，与表内/表外入口和剪辑流程连接",
+      "setup": [
+        "只允许live_models中的本地模型及执行路径；记录资源窗口、实际权重、节点和GPU。",
+        "所有云端提交设为禁止；本轮文档修订不执行模型。"
+      ],
+      "steps": [
+        "通过表内/表外已支持入口执行本地Qwen图像/文本与MiniMax视频样本，接入结果回填及剪辑。",
+        "记录本地prompt/task ID、输入模式和输出属性。",
+        "在可控条件下验证本地队列状态、结果重读和中断后明确重跑；核对云端提交数。"
+      ],
+      "expected": [
+        "本地真实结果与模式一致，不以mock替代真实结果。",
+        "缺失或失败的本地能力不标本轮实测通过，不自动改用云端或其他模型。",
+        "其他提供方适配代码保留，只记录协议测试/真实运行未验收；不据此阻塞本轮本地生成范围。",
+        "云端提交次数为零。"
+      ],
+      "automation": "混合",
+      "execution_policy": "仅本地 Qwen/MiniMax",
+      "existing_coverage": [],
+      "live_models": [
+        "qwen3.5:9b-q4_K_M",
+        "Qwen-Image-2.1 Turbo（本地）",
+        "MiniMax H3 FL（本地）"
+      ]
+    }
+  ]
+}

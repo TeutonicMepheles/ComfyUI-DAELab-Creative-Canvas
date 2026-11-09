@@ -1,0 +1,2712 @@
+{
+  "features": [
+    {
+      "id": "F-CAN-001",
+      "title": "单包安装、节点注册与版本检查",
+      "decision": "重构",
+      "current": "现库已注册上传、输入文本、素材组、剪辑；README 要求分别安装业务库，尚无统一产品安装包或已验证最低宿主版本范围。",
+      "source": [
+        "canvas:__init__.py",
+        "canvas:README.md:33",
+        "canvas:README.md:37"
+      ],
+      "target": "backend/integrations/comfyui; frontend/src/integrations/comfyui",
+      "phase": "M1",
+      "rationale": "把分散的安装/注册收敛为单包，保留稳定节点 ID；旧同名节点包冲突必须在加载前给出明确诊断。",
+      "acceptance": [
+        "仅安装新包即可加载迁入能力，不依赖两个旧仓库源码目录。",
+        "节点 ID 不重复注册；同时发现旧同名节点实现时阻止静默覆盖并报告冲突路径。",
+        "声明并记录验证过的 ComfyUI、前端、Python 版本组合。"
+      ]
+    },
+    {
+      "id": "F-CAN-002",
+      "title": "创作画布与原生图模式切换",
+      "decision": "重构",
+      "current": "源码已有画布显示/隐藏、模式菜单注入及保存的 active 状态恢复。",
+      "source": [
+        "canvas:web/creative_canvas.js",
+        "canvas:web/creative_canvas_view.mjs:838"
+      ],
+      "target": "frontend/src/integrations/comfyui/modes; frontend/src/canvas",
+      "phase": "M1",
+      "rationale": "保留模式语义，将宿主菜单与生命周期适配从画布交互中抽离。",
+      "acceptance": [
+        "往返切换保留同一原生图、节点业务数据和连线。",
+        "隐藏时关闭画布浮层并释放/归还借用面板；恢复时不重复挂载。",
+        "工作流保存后按记录恢复画布模式。"
+      ]
+    },
+    {
+      "id": "F-CAN-003",
+      "title": "共享组件、主题与可访问交互状态",
+      "decision": "保留",
+      "current": "源码已有共享按钮、字段、主题、任务样式；规范已有焦点、禁用、忙碌、错误及视觉要求。",
+      "source": [
+        "canvas:web/creative_button.mjs",
+        "canvas:web/creative_field.mjs",
+        "canvas:web/creative_theme.css",
+        "canvas:docs/architecture/CONTRIBUTING_CONTROLS.md"
+      ],
+      "target": "frontend/src/design; frontend/src/ui",
+      "phase": "M1",
+      "rationale": "保留已形成的组件语义与视觉基线，统一令牌和实例生命周期；迁移不另建节点私有控件体系。",
+      "acceptance": [
+        "按钮的异步忙碌、字段的草稿/提交、焦点和错误状态由共享实现提供。",
+        "样式限定产品根范围，不改变宿主和未迁入插件控件。",
+        "所有基础组件覆盖键盘、中文输入、禁用、忙碌、错误状态。"
+      ]
+    },
+    {
+      "id": "F-CAN-004",
+      "title": "按已注册能力新建节点",
+      "decision": "保留",
+      "current": "源码已有空白双击、右键与底部新建菜单，按注册定义和适配器提供可用节点。",
+      "source": [
+        "canvas:web/creative_canvas_catalog.mjs",
+        "canvas:web/creative_canvas_view.mjs:517",
+        "canvas:docs/architecture/FRONTEND_INTERACTION.md"
+      ],
+      "target": "frontend/src/canvas/commands; frontend/src/application/catalog",
+      "phase": "M2",
+      "rationale": "保留一致入口和真实能力发现，避免新库暴露不可运行的旧业务节点。",
+      "acceptance": [
+        "三个入口展示一致的可用节点集合。",
+        "未安装/未启用的能力不显示可执行菜单项。",
+        "一次新建和初始定位形成一个可撤销编辑。"
+      ]
+    },
+    {
+      "id": "F-CAN-005",
+      "title": "单文件与批量本地媒体上传",
+      "decision": "保留",
+      "current": "源码已有选择文件上传、拖入空白创建节点、多文件顺序创建及支持格式筛选。",
+      "source": [
+        "canvas:web/media_upload.js",
+        "canvas:web/creative_canvas_view.mjs",
+        "canvas:web/media_upload_model.mjs"
+      ],
+      "target": "frontend/src/features/assets/upload; backend/assets",
+      "phase": "M2",
+      "rationale": "保留低门槛素材入口和部分失败不阻断整批的行为。",
+      "acceptance": [
+        "PNG/JPG/WebP/MP4/WebM/MOV 按已声明格式处理。",
+        "多文件按来源顺序各建一个素材节点，拖到已有卡片也不覆盖原素材。",
+        "不支持文件显示原因；同批支持文件继续处理。"
+      ]
+    },
+    {
+      "id": "F-CAN-006",
+      "title": "替换素材、连线类型保护与失败保留",
+      "decision": "保留",
+      "current": "上传实现包含原值、请求 epoch、AbortController 和跨类型已连线拒绝。",
+      "source": [
+        "canvas:web/media_upload.js:49",
+        "canvas:web/media_upload_model.mjs"
+      ],
+      "target": "frontend/src/features/assets/upload; frontend/src/contracts/assets",
+      "phase": "M2",
+      "rationale": "保留用户资产与连接安全，避免新异步服务改写后丢失竞态保护。",
+      "acceptance": [
+        "单文件替换成功才提交新的素材引用；失败保留原值和原媒体。",
+        "已连输出时，图片/视频跨类型替换拒绝且不删除连线。",
+        "取消、删除、重载或后续请求发生后，旧上传结果不回写。"
+      ]
+    },
+    {
+      "id": "F-CAN-007",
+      "title": "素材预览、媒体操作与视频播放",
+      "decision": "保留",
+      "current": "源码已有比例预览、下载、全屏、视频播放控制和缺失/编码错误提示。",
+      "source": [
+        "canvas:web/media_upload.js",
+        "canvas:web/upload_video_controls.mjs",
+        "canvas:web/media_upload.css"
+      ],
+      "target": "frontend/src/features/assets/media; frontend/src/ui/media",
+      "phase": "M2",
+      "rationale": "保留素材浏览体验，播放器状态必须独立于画布拖动与其他实例。",
+      "acceptance": [
+        "图片/视频按原比例显示，空态 16:9，已有文件不被重采样替换。",
+        "下载、全屏、播放/暂停、进度、音量、静音可操作且不触发节点拖动。",
+        "两个实例独立；替换/删除释放监听与旧媒体源。"
+      ]
+    },
+    {
+      "id": "F-CAN-008",
+      "title": "独立文本节点与原生 STRING 输出",
+      "decision": "保留",
+      "current": "源码已有多行文本、共享字段、收藏入口和原生 STRING 输出。",
+      "source": [
+        "canvas:web/text_input.js",
+        "canvas:web/text_input_model.mjs",
+        "canvas:nodes/text_input.py"
+      ],
+      "target": "frontend/src/features/assets/text; backend/integrations/comfyui/nodes",
+      "phase": "M2",
+      "rationale": "文本是素材与生成输入共同基础，保留原生类型和保存语义。",
+      "acceptance": [
+        "文本编辑支持中文组合输入和多行内容，修改 A 不影响 B。",
+        "输出保持原生 STRING，与已声明文本消费者连接。",
+        "收藏保存当时文本快照，后续编辑不修改旧收藏。"
+      ]
+    },
+    {
+      "id": "F-CAN-009",
+      "title": "节点与素材组命名",
+      "decision": "保留",
+      "current": "源码/规范已有自动文件名、保留手工名、孤立及组内双击改名。",
+      "source": [
+        "canvas:web/media_upload.js:32",
+        "canvas:web/creative_canvas_view.mjs",
+        "canvas:web/material_groups.mjs",
+        "canvas:docs/architecture/FRONTEND_INTERACTION.md"
+      ],
+      "target": "frontend/src/canvas/commands/rename; frontend/src/ui/title",
+      "phase": "M2",
+      "rationale": "保留清楚的素材身份和中文编辑行为，不把显示标题作为业务 ID。",
+      "acceptance": [
+        "替换素材时自动标题跟随文件名，手工标题不被覆盖。",
+        "Enter/失焦提交非空名，Esc 取消，组合输入不提前提交。",
+        "长名称省略但可聚焦；名称在保存重载、移入移出组后保留。"
+      ]
+    },
+    {
+      "id": "F-CAN-010",
+      "title": "画布视口、平移和缩放",
+      "decision": "保留",
+      "current": "源码已有中键拖动、滚轮平移、Shift 横移和 Ctrl 围绕指针缩放。",
+      "source": [
+        "canvas:web/creative_navigation.mjs",
+        "canvas:web/creative_canvas_model.mjs",
+        "canvas:web/creative_canvas_view.mjs:105"
+      ],
+      "target": "frontend/src/canvas/viewport",
+      "phase": "M2",
+      "rationale": "保留创作工具操作习惯，分清屏幕与画布坐标并统一布局通知。",
+      "acceptance": [
+        "指针缩放保持其指向的画布坐标不漂移。",
+        "标题与 Slot 的屏幕像素规则同步更新，媒体内容随画布比例变化。",
+        "纯视口移动不变更业务内容，不破坏撤销/重做链。"
+      ]
+    },
+    {
+      "id": "F-CAN-011",
+      "title": "选择、框选、拖动与输入事件优先级",
+      "decision": "重构",
+      "current": "主视图和素材组模块已实现单选/多选、框选及拖动，事件判定分布在多个入口。",
+      "source": [
+        "canvas:web/creative_canvas_view.mjs",
+        "canvas:web/material_groups.mjs",
+        "canvas:docs/architecture/FRONTEND_INTERACTION.md"
+      ],
+      "target": "frontend/src/canvas/interaction",
+      "phase": "M2",
+      "rationale": "以明确的交互状态机组织现有语义，避免标题、媒体、表格与画布争夺同一事件。",
+      "acceptance": [
+        "Shift/Ctrl 追加选择、空白框选与组内选择行为符合现有规范。",
+        "按钮、下载链接、文本输入和媒体滑条操作不拖动节点。",
+        "Esc/pointercancel 清理拖动、落点与连线预览，不留下捕获状态。"
+      ]
+    },
+    {
+      "id": "F-CAN-012",
+      "title": "复制粘贴、组成员和内部连接重映射",
+      "decision": "保留",
+      "current": "源码已有 DAELAB.CreativeNode.v1 剪贴板、节点复制及 prepareCopy/remapCopy 适配接口。",
+      "source": [
+        "canvas:web/creative_navigation.mjs",
+        "canvas:web/creative_canvas_view.mjs:790",
+        "canvas:web/material_group_model.mjs",
+        "canvas:docs/adapter-contract.md"
+      ],
+      "target": "frontend/src/canvas/clipboard; frontend/src/contracts/clipboard",
+      "phase": "M2",
+      "rationale": "保留稳定格式和素材引用，副本业务任务身份由能力模块重新生成。",
+      "acceptance": [
+        "复制选区保留内部连线、成员顺序和素材引用，节点 ID 与业务请求 ID 独立重映射。",
+        "不复制源选区外部连接，也不修改源节点。",
+        "文本编辑器内 Ctrl+C/V 保留系统文本行为。"
+      ]
+    },
+    {
+      "id": "F-CAN-013",
+      "title": "编辑事务、撤销重做与派生同步合并",
+      "decision": "重构",
+      "current": "现有历史桥接调用并修改宿主 ChangeTracker 状态，另有布局恢复优化和派生 amend。",
+      "source": [
+        "canvas:web/creative_history.mjs",
+        "canvas:web/material_groups.mjs",
+        "canvas:web/video_edit.js"
+      ],
+      "target": "frontend/src/application/history; frontend/src/integrations/comfyui/history",
+      "phase": "M1",
+      "rationale": "原生图仍是权威编辑保存模型；所有历史耦合集中到宿主适配层，业务通过统一事务调用。",
+      "acceptance": [
+        "一次用户动作连同关联节点/连线变化只产生一个撤销步骤。",
+        "派生素材同步并入原编辑，不新增历史且不清空重做。",
+        "异步结果提交前检查图、节点与内容版本；不复活已删除内容。"
+      ]
+    },
+    {
+      "id": "F-CAN-014",
+      "title": "原生工作流保存、载入与版本兼容",
+      "decision": "保留",
+      "current": "现有画布布局写 graph.extra.daelabCreativeCanvasV1；节点、素材和剪辑保留版本化 JSON。",
+      "source": [
+        "canvas:web/creative_canvas_model.mjs:2",
+        "canvas:docs/adapter-contract.md:58",
+        "canvas:nodes/media_upload.py",
+        "canvas:web/video_edit_model.mjs"
+      ],
+      "target": "frontend/src/integrations/comfyui/serialization; compat/workflows",
+      "phase": "M6",
+      "rationale": "维持原生图唯一权威编辑保存来源，避免另建双向同步的产品文档。",
+      "acceptance": [
+        "保留稳定 ID、槽位位置、material JSON 和 daelabCreativeCanvasV1 的已承诺含义。",
+        "导入旧格式时先保留原文件并报告转换；未知版本不静默覆盖。",
+        "任务运行状态、DOM、Promise、监听器和凭据不写入工作流或撤销数据。"
+      ]
+    },
+    {
+      "id": "F-CAN-015",
+      "title": "素材组创建、成员移入移出与顺序",
+      "decision": "保留",
+      "current": "素材组有稳定 DAELAB.MaterialGroup 节点与成员 ID 列表，支持上传素材和文本成员。",
+      "source": [
+        "canvas:web/material_group_model.mjs",
+        "canvas:web/material_groups.mjs",
+        "canvas:nodes/material_group.py",
+        "canvas:docs/material-groups.md"
+      ],
+      "target": "frontend/src/features/groups; backend/integrations/comfyui/nodes",
+      "phase": "M2",
+      "rationale": "保留有序集合语义与节点身份，组操作不应隐式改写已有业务连线。",
+      "acceptance": [
+        "多选后打组，拖入/移出保持成员唯一性、顺序和节点身份。",
+        "不支持嵌套组时清楚拒绝，不能产生环或静默丢成员。",
+        "单素材已有连线在打组后保留，除非用户显式建立组输入替代它。"
+      ]
+    },
+    {
+      "id": "F-CAN-016",
+      "title": "素材组布局、颜色、序号与紧凑展示",
+      "decision": "保留",
+      "current": "源码已有宫格/水平/垂直排列、五色及自选色、序号、组内标题与悬浮工具栏。",
+      "source": [
+        "canvas:web/material_groups.mjs",
+        "canvas:web/material_groups.css",
+        "canvas:docs/architecture/FRONTEND_INTERACTION.md"
+      ],
+      "target": "frontend/src/features/groups/layout; frontend/src/design",
+      "phase": "M2",
+      "rationale": "保留已有创作审阅体验，以共享令牌统一视觉。",
+      "acceptance": [
+        "三种排列按成员顺序布局且容器贴合内容。",
+        "自选色、序号状态保存重载后保留；成员显示不重排素材顺序。",
+        "缩放、平移、调整内容后工具栏与组边界跟随，不遮挡必要控件。"
+      ]
+    },
+    {
+      "id": "F-CAN-017",
+      "title": "素材组锁定、收起、解散和删除",
+      "decision": "保留",
+      "current": "源码已有锁定、收起、解散、删除组及统一历史操作。",
+      "source": [
+        "canvas:web/material_groups.mjs",
+        "canvas:docs/material-groups.md"
+      ],
+      "target": "frontend/src/features/groups/commands",
+      "phase": "M2",
+      "rationale": "保留删除与解散差异，避免迁移时引入破坏性语义变化。",
+      "acceptance": [
+        "锁定阻止整组、成员移动与排列改变；解锁恢复。",
+        "解散只移除组容器及其连接，保留成员；删除组连成员及相关连接一并删除。",
+        "以上操作均一次撤销恢复数据、顺序和连线。"
+      ]
+    },
+    {
+      "id": "F-CAN-018",
+      "title": "统一 Slot、类型校验、用途选择与磁吸",
+      "decision": "重构",
+      "current": "已有共享可视端口与原生类型映射，包含磁吸、反向拉线和 first-free 能力。",
+      "source": [
+        "canvas:web/creative_connections.mjs",
+        "canvas:web/creative_canvas_view.mjs",
+        "canvas:docs/adapter-contract.md",
+        "canvas:docs/architecture/FRONTEND_INTERACTION.md"
+      ],
+      "target": "frontend/src/canvas/connections; frontend/src/contracts/ports",
+      "phase": "M2",
+      "rationale": "统一端口状态机与命中计算；业务只声明类型、用途和限制。",
+      "acceptance": [
+        "视觉合并不改变原生槽位索引及类型；禁止用 wildcard 绕过校验。",
+        "多用途选择清楚，first-free 只取首个兼容空槽且不覆盖现有连接。",
+        "隐藏、停用、被组压制或不兼容端口不接受磁吸连接。"
+      ]
+    },
+    {
+      "id": "F-CAN-019",
+      "title": "连线选择、删除、拖断与动画",
+      "decision": "保留",
+      "current": "主视图已有连线绘制、选中删除、拖断、双击删除及关联脉冲。",
+      "source": [
+        "canvas:web/creative_canvas_view.mjs",
+        "canvas:web/creative_canvas.css",
+        "canvas:docs/architecture/FRONTEND_INTERACTION.md"
+      ],
+      "target": "frontend/src/canvas/connections; frontend/src/ui/wires",
+      "phase": "M2",
+      "rationale": "保留可见连线操作与撤销语义，动画不应影响数据处理。",
+      "acceptance": [
+        "双击、Delete/Backspace、拖断均删除同一真实连线并支持撤销。",
+        "文字编辑期间 Backspace 不删除图连接。",
+        "平移/缩放重绘不重启脉冲相位；减少动态效果模式使用静态高亮。"
+      ]
+    },
+    {
+      "id": "F-CAN-020",
+      "title": "有序素材/文本快照与真实类型输出",
+      "decision": "保留",
+      "current": "已有 assets/inputSnapshot、DAELAB_ASSETS、上传原生及 ComfyTV 引用类型和混合组快照。",
+      "source": [
+        "canvas:web/creative_input_exchange.mjs",
+        "canvas:web/material_group_model.mjs",
+        "canvas:nodes/material_group.py",
+        "canvas:nodes/media_upload.py",
+        "canvas:docs/adapter-contract.md"
+      ],
+      "target": "frontend/src/contracts/assets; frontend/src/features/groups; backend/assets",
+      "phase": "M2",
+      "rationale": "保留单素材、整组与混合文本集合的区别，不把显示顺序等同于无序文件集合。",
+      "acceptance": [
+        "快照版本和顺序稳定，返回副本不可反向修改源状态。",
+        "ready:false 与空集合不同，未就绪不删除下游已有编辑。",
+        "停用来源不提供可消费快照，原生执行类型与前端约束一致。"
+      ]
+    },
+    {
+      "id": "F-CAN-021",
+      "title": "素材向业务落点的一次性填充",
+      "decision": "保留",
+      "current": "已有 materialTargets/acceptMaterials、按类型声明接收、落点预览和原子历史边界。",
+      "source": [
+        "canvas:web/creative_material_drop.mjs",
+        "canvas:web/creative_canvas_view.mjs",
+        "canvas:docs/adapter-contract.md:61"
+      ],
+      "target": "frontend/src/canvas/material-exchange; frontend/src/contracts/material-exchange",
+      "phase": "M3",
+      "rationale": "宿主只管快照、命中与事务，表格列/行/单格规则由表格拥有。",
+      "acceptance": [
+        "直接落点优先于附近 Slot，按声明类型拒绝非法输入。",
+        "高亮范围与本次实际影响范围一致；取消/完成清除高亮。",
+        "填充后源节点位置和组关系恢复，不产生伪原生连接或持续自动覆盖。"
+      ]
+    },
+    {
+      "id": "F-CAN-022",
+      "title": "生成结果输出为素材组与单素材拖出",
+      "decision": "保留",
+      "current": "已有 outputMaterials 分组快照、本地文件核验、单格 materialItem 拖出和异步来源复核。",
+      "source": [
+        "canvas:web/creative_output.mjs",
+        "canvas:web/creative_canvas_view.mjs:222",
+        "canvas:nodes/material_output_api.py",
+        "canvas:docs/adapter-contract.md:75"
+      ],
+      "target": "frontend/src/canvas/material-exchange; backend/assets/references",
+      "phase": "M3",
+      "rationale": "将业务结果纳入素材创作链，同时保留来源文件引用和业务所有权。",
+      "acceptance": [
+        "分组 count 总和等于素材数；按业务 label/order 创建，每个有效任务可独立成组。",
+        "单素材拖出只创建一个素材节点，原单元格和文件不被删除。",
+        "来源/工作流在异步核验期间改变时放弃创建；全部新建可一次撤销。"
+      ]
+    },
+    {
+      "id": "F-CAN-023",
+      "title": "面板借用、内容呈现、尺寸和公开上下文",
+      "decision": "重构",
+      "current": "已有 leasePanel、公开 panel context、content/fullHeight/resizable、悬浮标题及布局事件。",
+      "source": [
+        "canvas:web/creative_canvas_view.mjs:27",
+        "canvas:web/creative_panel_context.mjs",
+        "canvas:docs/adapter-contract.md:83"
+      ],
+      "target": "frontend/src/ui/panels; frontend/src/integrations/comfyui/panels; frontend/src/contracts/panels",
+      "phase": "M1",
+      "rationale": "保留真实编辑器状态，抽离挂载/归还和宿主布局，禁止业务查私有宿主 DOM。",
+      "acceptance": [
+        "借用和归还同一面板，不克隆独立业务状态；release/abandon 幂等清理。",
+        "面板宽度可按能力调整、取消和保存；fullHeight 不被通用高度裁切。",
+        "失效上下文的 focus/pan/resize 返回失败且不操作别的节点。"
+      ]
+    },
+    {
+      "id": "F-CAN-024",
+      "title": "收藏快照与资产目录持久化迁移",
+      "decision": "重构",
+      "current": "现有收藏目录保存在当前站点 localStorage，媒体仅存本地引用、文本存内容快照，尚无统一后端资产目录。",
+      "source": [
+        "canvas:web/asset_library_model.mjs",
+        "canvas:web/asset_favorite.mjs",
+        "canvas:docs/asset-library.md:7"
+      ],
+      "target": "backend/assets/catalog; frontend/src/features/assets/library; compat/workflows/assets",
+      "phase": "M2",
+      "rationale": "在同一产品数据目录内持久化收藏，迁入浏览器旧目录，避免换端口导致收藏不可见。",
+      "acceptance": [
+        "收藏去重采用内容身份；取消收藏不删除源文件或已建节点。",
+        "旧 localStorage 可导出并显式导入，保留原目录与逐条结果报告。",
+        "存储满、损坏、未知版本均不覆盖有效数据；目录持久化与工作流保存分离。"
+      ]
+    },
+    {
+      "id": "F-CAN-025",
+      "title": "资产库抽屉、筛选、搜索、预览与复用",
+      "decision": "保留",
+      "current": "已有底部抽屉、图片/视频/文本筛选、名称搜索、预览和加入画布。",
+      "source": [
+        "canvas:web/asset_library.mjs",
+        "canvas:web/asset_library.css",
+        "canvas:docs/asset-library.md"
+      ],
+      "target": "frontend/src/features/assets/library",
+      "phase": "M2",
+      "rationale": "保留可发现的素材复用入口，数据来源改为新资产目录。",
+      "acceptance": [
+        "抽屉固定屏幕尺寸，画布缩放不放大抽屉。",
+        "搜索/类型筛选正确，预览关闭后焦点返回原控件并暂停视频。",
+        "文件失效时报告原因，不创建空素材；有效加入画布形成可撤销编辑。"
+      ]
+    },
+    {
+      "id": "F-CAN-026",
+      "title": "统一只读任务胶囊与真实进度",
+      "decision": "保留",
+      "current": "已有任务快照校验/格式化与胶囊；queued/running/paused/cancelled/error/recovery/success 状态已定义。",
+      "source": [
+        "canvas:web/creative_tasks_model.mjs",
+        "canvas:web/creative_tasks.mjs",
+        "canvas:docs/task-contract.md"
+      ],
+      "target": "frontend/src/features/tasks; frontend/src/contracts/tasks",
+      "phase": "M4",
+      "rationale": "保留纯展示层，任务执行/恢复由后端任务服务拥有，不能由 UI 显隐推断执行状态。",
+      "acceptance": [
+        "计数和进度来自明确快照，不把结束数误作成功数。",
+        "历史 success/cancelled 无 finishedAt 时不重复弹新通知；当前终态按规则消退。",
+        "关闭、隐藏或销毁胶囊不取消任务；刷新 running 只有后端证据支持才显示运行。"
+      ]
+    },
+    {
+      "id": "F-CAN-027",
+      "title": "Active/Mute/Bypass、实例隔离与异步释放",
+      "decision": "重构",
+      "current": "已有面板模式管理、媒体暂停、AbortController、租借释放及多实例设计；当前部分同步依赖轮询。",
+      "source": [
+        "canvas:web/creative_panel_state.mjs",
+        "canvas:web/media_upload.js",
+        "canvas:web/text_input.js",
+        "canvas:web/creative_canvas_view.mjs"
+      ],
+      "target": "frontend/src/application/lifecycle; frontend/src/integrations/comfyui/modes",
+      "phase": "M1",
+      "rationale": "统一实例生命周期事件，避免重复计时器/订阅；执行状态不随 UI 停用被虚构修改。",
+      "acceptance": [
+        "停用隐藏正文与媒体且禁用操作，恢复 Active 还原原属性与数据。",
+        "修改、播放或取消 A 不影响 B。",
+        "删除/重载释放监听、媒体、订阅和请求；旧异步回调不能改新实例。"
+      ]
+    },
+    {
+      "id": "F-CAN-028",
+      "title": "剪辑输入同步、来源身份与多素材组",
+      "decision": "保留",
+      "current": "剪辑已有上传/组输入、动态多组槽、按节点身份同步、删除记录与派生历史合并。",
+      "source": [
+        "canvas:web/video_edit.js",
+        "canvas:nodes/video_edit.py",
+        "canvas:web/video_edit_model.mjs",
+        "canvas:docs/video-edit.md"
+      ],
+      "target": "frontend/src/features/editor/input; backend/integrations/comfyui/nodes",
+      "phase": "M5",
+      "rationale": "保留复杂但已明确的来源语义，不按文件路径错误合并不同节点。",
+      "acceptance": [
+        "不同节点引用同一文件仍是独立片段来源；重复同步不重复追加。",
+        "移除/重排一个组输入不丢其他组的编辑或删除记录。",
+        "上游重排不重排已编辑时间轴；手工删除不会被后续同步补回。"
+      ]
+    },
+    {
+      "id": "F-CAN-029",
+      "title": "单轨剪辑编辑、吸附与键盘逐帧操作",
+      "decision": "保留",
+      "current": "已有单轨图片/视频混排、裁剪、拖排、分割、复制、删除、播放头吸附和逐帧操作。",
+      "source": [
+        "canvas:web/video_edit_model.mjs",
+        "canvas:web/video_edit_panel.mjs",
+        "canvas:docs/video-edit.md"
+      ],
+      "target": "frontend/src/features/editor/timeline",
+      "phase": "M5",
+      "rationale": "保留已界定单轨范围，避免迁移阶段扩成多轨编辑器。",
+      "acceptance": [
+        "图片默认 3 秒，片段最短一帧，裁剪不越视频源范围。",
+        "分割/复制/删除/排序结果可撤销，片段首尾相接。",
+        "吸附开关、10 屏幕像素阈值和逐帧键盘操作保持可预测。"
+      ]
+    },
+    {
+      "id": "F-CAN-030",
+      "title": "时间轴预览、播放时钟与画面切换",
+      "decision": "重构",
+      "current": "面板已有播放、跳转、同源复用、下一段预载、等待画面时暂停时钟和页面内播放位置保留。",
+      "source": [
+        "canvas:web/video_edit_panel.mjs",
+        "canvas:web/video_edit.js",
+        "canvas:docs/video-edit.md"
+      ],
+      "target": "frontend/src/features/editor/preview",
+      "phase": "M5",
+      "rationale": "将媒体加载与编辑状态分离，保证播放时钟和异步解码稳定。",
+      "acceptance": [
+        "选择片段与撤销不无故跳到片头，超出新时长时才限制到末尾。",
+        "画面未就绪时保留上一帧并暂停推进，不能空白闪烁或时钟越过待加载片段。",
+        "同源连续片段复用媒体；不同实例播放位置不共享。"
+      ]
+    },
+    {
+      "id": "F-CAN-031",
+      "title": "低倍率预览副本、缓存与取消",
+      "decision": "保留",
+      "current": "后端已有 0.5/0.75/1 倍预览、串行转换锁、基于源信息复用缓存及过期清理。",
+      "source": [
+        "canvas:nodes/video_edit.py:45",
+        "canvas:nodes/video_edit_media.py",
+        "canvas:docs/video-edit.md"
+      ],
+      "target": "backend/media/previews; frontend/src/features/editor/preview",
+      "phase": "M5",
+      "rationale": "保留实际低分辨率媒体路径，不以 CSS 缩小冒充解码优化。",
+      "acceptance": [
+        "只生成所选倍率，同源同倍率复用，源大小/修改时间变化后失效。",
+        "取消/断开/删除后旧预览不覆盖新选择；后台任务最终释放临时资源。",
+        "预览副本时长/时间映射不改变，原素材和导出规格不受倍率影响。"
+      ]
+    },
+    {
+      "id": "F-CAN-032",
+      "title": "剪辑分辨率、画面适配与静音",
+      "decision": "保留",
+      "current": "已有按首素材的偶数尺寸/帧率推导、分辨率锁、片段 contain/cover 和静音。",
+      "source": [
+        "canvas:web/video_edit_model.mjs",
+        "canvas:web/video_edit_panel.mjs",
+        "canvas:nodes/video_edit_media.py",
+        "canvas:docs/video-edit.md"
+      ],
+      "target": "frontend/src/features/editor/settings; backend/media/render",
+      "phase": "M5",
+      "rationale": "同一编辑数据定义预览与导出，避免视觉正确而成片错误。",
+      "acceptance": [
+        "分辨率锁后替换/移除首片段保持尺寸，解锁后重新跟随；编码尺寸为合法偶数。",
+        "适配模式/静音按片段保存，复制和分割继承；图片静音操作禁用。",
+        "预览与实际导出构图和音轨行为一致。"
+      ]
+    },
+    {
+      "id": "F-CAN-033",
+      "title": "剪辑导出队列、进度、取消与错误恢复",
+      "decision": "重构",
+      "current": "现有剪辑以 ComfyUI 队列执行，前端按 prompt 身份跟踪导出并可取消。",
+      "source": [
+        "canvas:web/video_edit.js",
+        "canvas:nodes/video_edit.py:31",
+        "canvas:nodes/video_edit_media.py"
+      ],
+      "target": "backend/jobs; backend/media/render; backend/integrations/comfyui; frontend/src/features/editor/export",
+      "phase": "M5",
+      "rationale": "纳入统一后端任务账本，保留 ComfyUI 执行与任务身份隔离，不从 UI 缓存推断状态。",
+      "acceptance": [
+        "连续点击只创建一个有效导出任务；只提交该节点及其依赖。",
+        "错误/取消后可明确重试，旧任务不得结束或覆盖新任务。",
+        "输出文件完整后才标成功；进度、错误、取消和重启恢复有可核对任务记录。"
+      ]
+    },
+    {
+      "id": "F-CAN-034",
+      "title": "剪辑成片失效、连接门禁与素材输出",
+      "decision": "保留",
+      "current": "已有 edit_data 对应结果标识、旧结果失效、canConnectOutput 和原生 onConnectOutput 门禁。",
+      "source": [
+        "canvas:web/video_edit.js",
+        "canvas:web/creative_connections.mjs",
+        "canvas:nodes/video_edit.py:28",
+        "canvas:docs/video-edit.md"
+      ],
+      "target": "frontend/src/features/editor/output; frontend/src/contracts/assets; backend/media/results",
+      "phase": "M5",
+      "rationale": "防止下游误用与当前编辑不匹配的成片，同时保留已有连接。",
+      "acceptance": [
+        "只有当前编辑成功导出的结果可新建下游连接。",
+        "编辑变化使旧成片引用失效但保留已有连接；等待时不得按空集合删下游编辑。",
+        "VIDEO 与 COMFYTV_VIDEO 指向同一成片，输出素材复用同一本地引用。"
+      ]
+    },
+    {
+      "id": "F-CAN-035",
+      "title": "ComfyTV 旧工作流的可选兼容",
+      "decision": "保留",
+      "current": "已有可选适配器读取公开 widget/执行事件，未导入或修改上游 Python，菜单隐藏旧分镜工作台入口。",
+      "source": [
+        "canvas:web/adapters/comfytv.mjs",
+        "canvas:docs/adapter-contract.md",
+        "canvas:README.md:100"
+      ],
+      "target": "frontend/src/integrations/comfyui/legacy; compat/workflows",
+      "phase": "M6",
+      "rationale": "兼容既有工作流，但不把 ComfyTV 或其无关功能复制成产品依赖。",
+      "acceptance": [
+        "未安装 ComfyTV 时新产品基础功能完整且不出现失效入口。",
+        "安装时既有兼容节点能展示并保留真实注册/输出，不接管上游实现。",
+        "未知第三方节点保留其序列化数据并给出能力缺失报告，不静默删除。"
+      ]
+    },
+    {
+      "id": "F-CAN-036",
+      "title": "本地素材引用、路径边界与失效处理",
+      "decision": "保留",
+      "current": "后端已有 input/output 引用检查、目录包含校验和素材输出端点本机/Origin 检查。",
+      "source": [
+        "canvas:nodes/material_output_files.py",
+        "canvas:nodes/material_output_api.py",
+        "canvas:nodes/video_edit_media.py",
+        "canvas:web/media_upload_model.mjs"
+      ],
+      "target": "backend/assets/references; backend/media; frontend/src/contracts/assets",
+      "phase": "M2",
+      "rationale": "把安全与资产完整性放在统一边界，迁移不复制大文件、不持久化短期远程链接。",
+      "acceptance": [
+        "只接受被允许目录中的合法存在文件，拒绝目录穿越、任意路径和不支持类型。",
+        "output 类型引用不会错误回退为 input；旧数据缺省 input 保持兼容。",
+        "文件丢失给出可定位错误，失败不创建空节点或损坏原素材。"
+      ]
+    },
+    {
+      "id": "F-CAN-037",
+      "title": "大画布资源预算与离屏媒体治理",
+      "decision": "重构",
+      "current": "现有画布/组/模式含 250/150/100ms 轮询，剪辑已有局部预览优化；未见统一大画布性能门槛。",
+      "source": [
+        "canvas:web/creative_canvas_view.mjs:840",
+        "canvas:web/material_groups.mjs:249",
+        "canvas:web/creative_panel_state.mjs:13",
+        "canvas:web/video_edit_panel.mjs"
+      ],
+      "target": "frontend/src/canvas/scheduler; frontend/src/application/lifecycle; tests/performance",
+      "phase": "M2",
+      "rationale": "把更新合帧、可见范围与资源释放作为明确设计和验收项，以测量决定优化。",
+      "acceptance": [
+        "只对脏状态合帧更新，隐藏/销毁的视图不持续执行全量扫描。",
+        "建立指定机器与 100/500 节点、2000 收藏、长时间轴夹具的基线。",
+        "发布前满足批准的帧时延、响应、资源回收门槛；没有测量不宣称高性能。"
+      ]
+    },
+    {
+      "id": "F-CAN-038",
+      "title": "宿主 API 兼容层与能力/版本诊断",
+      "decision": "重构",
+      "current": "当前模式菜单依赖宿主 DOM，历史直接访问 ChangeTracker 内部字段，README 未定义已验证最低版本。",
+      "source": [
+        "canvas:web/creative_canvas.js:35",
+        "canvas:web/creative_history.mjs",
+        "canvas:README.md:33"
+      ],
+      "target": "frontend/src/integrations/comfyui; backend/integrations/comfyui; tests/host",
+      "phase": "M1",
+      "rationale": "把可能随宿主变化的调用集中到薄适配层，通过能力探测和版本矩阵发现不兼容。",
+      "acceptance": [
+        "业务与通用组件禁止直接读宿主私有历史字段或菜单 DOM。",
+        "宿主缺少必要 API 时给出具体能力/版本诊断，不静默丢保存/撤销。",
+        "每个支持组合通过安装、两实例、模式往返、保存重载和核心流程验证。"
+      ]
+    },
+    {
+      "id": "F-CAN-039",
+      "title": "本地字体图标、资源校验与组件陈列",
+      "decision": "保留",
+      "current": "已有本地字体/图标、许可证和字体 SHA-256 清单；frontend 为辅助 Vue 陈列，实际画布不依赖它运行。",
+      "source": [
+        "canvas:web/vendor/alibaba-puhuiti-3/manifest.json",
+        "canvas:web/vendor/remixicon/LICENSE",
+        "canvas:tools/verify_assets.mjs",
+        "canvas:frontend/package.json",
+        "canvas:README.md:82"
+      ],
+      "target": "frontend/src/design; frontend/src/ui; tests/fixtures/components",
+      "phase": "M1",
+      "rationale": "保留离线资源与统一陈列，避免为新库重复造一套演示实现。",
+      "acceptance": [
+        "离线环境字体/图标加载完整并保留许可证与来源清单。",
+        "陈列使用产品真实组件，状态样例覆盖交互而非另写行为副本。",
+        "组件构建和陈列通过仅作为辅助证据，实际宿主验收另记录。"
+      ]
+    }
+  ],
+  "usecases": [
+    {
+      "id": "UC-CAN-001",
+      "title": "安装单一产品包并进入创作画布",
+      "features": [
+        "F-CAN-001",
+        "F-CAN-002",
+        "F-CAN-004",
+        "F-CAN-038",
+        "F-CAN-039"
+      ],
+      "actor": "创作者/环境维护者",
+      "preconditions": [
+        "使用独立测试 ComfyUI 用户数据目录。",
+        "已记录宿主、前端和 Python 版本；两个旧同名节点包已停用。"
+      ],
+      "steps": [
+        "安装新包并完整重启服务。",
+        "检查启动诊断与节点目录。",
+        "打开空工作流，从模式菜单进入创作画布并打开新建菜单。"
+      ],
+      "outcomes": [
+        "一个画布入口，每个稳定节点 ID 只注册一次。",
+        "基础创作不依赖旧仓库或外部生成服务。",
+        "菜单只列当前可用能力。"
+      ],
+      "exceptions": [
+        "旧包冲突时报告路径和冲突 ID，不能按加载顺序覆盖。",
+        "宿主必要 API 不支持时说明缺失能力，保留用户工作流。"
+      ]
+    },
+    {
+      "id": "UC-CAN-002",
+      "title": "上传并安全替换图片和视频",
+      "features": [
+        "F-CAN-005",
+        "F-CAN-006",
+        "F-CAN-007",
+        "F-CAN-009",
+        "F-CAN-036"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "有两个不同内容的有效媒体和一个不支持文件。",
+        "空画布及一个已有连线的图片节点。"
+      ],
+      "steps": [
+        "将多个文件一起拖到空白处。",
+        "打开一个视频的播放、进度、音量和下载操作。",
+        "单文件拖到已有节点替换，再尝试跨类型替换已连线图片。"
+      ],
+      "outcomes": [
+        "支持媒体按顺序建节点，不支持文件有单独提示。",
+        "媒体比例、名称与文件引用正确，播放不触发画布拖动。",
+        "合法替换原子提交；跨类型已连线替换拒绝并保留原图。"
+      ],
+      "exceptions": [
+        "上传失败保留原值；新请求/删除/重载使旧回包失效。",
+        "文件失效或编码不能预览时显示可操作错误。"
+      ]
+    },
+    {
+      "id": "UC-CAN-003",
+      "title": "整理素材组并控制整体展示",
+      "features": [
+        "F-CAN-009",
+        "F-CAN-011",
+        "F-CAN-015",
+        "F-CAN-016",
+        "F-CAN-017",
+        "F-CAN-020"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "至少三个媒体节点和一个文本节点，各有稳定 ID。"
+      ],
+      "steps": [
+        "多选并打组，再拖入/移出一个成员。",
+        "切换宫格、水平、垂直排列，改组名、颜色和序号。",
+        "锁定后尝试移动；解锁、收起/展开。",
+        "分别执行解散及删除组并撤销。"
+      ],
+      "outcomes": [
+        "成员顺序和节点身份稳定，组输出与界面顺序一致。",
+        "锁定阻止位置/排列改变；收起不改变执行集合。",
+        "解散保留成员，删除组删除成员，两者均能一次撤销。"
+      ],
+      "exceptions": [
+        "拒绝嵌套或无效成员，不产生重复/循环关系。",
+        "组内控件或重命名不被拖动捕获。"
+      ]
+    },
+    {
+      "id": "UC-CAN-004",
+      "title": "使用统一 Slot 建立和管理连接",
+      "features": [
+        "F-CAN-018",
+        "F-CAN-019",
+        "F-CAN-020",
+        "F-CAN-034"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "画布含单素材、素材组、首尾帧用途消费者和剪辑。",
+        "至少一个消费者已有输入连接。"
+      ],
+      "steps": [
+        "从源/目标两方向拖线，观察类型和用途提示。",
+        "尝试不兼容连接，再连接具有多个兼容用途的目标。",
+        "选择连线，用双击、键盘或拖断删除后撤销。"
+      ],
+      "outcomes": [
+        "只能形成真实类型兼容连接，显式用途不被猜测覆盖。",
+        "first-free 消费者选择第一个兼容空输入。",
+        "删除恢复操作对应真实连接且可撤销。"
+      ],
+      "exceptions": [
+        "停用/隐藏/被压制端口不可磁吸。",
+        "未导出或过期剪辑结果拒绝新连接；已有连接不因此删除。"
+      ]
+    },
+    {
+      "id": "UC-CAN-005",
+      "title": "编辑独立文本并传给消费节点",
+      "features": [
+        "F-CAN-003",
+        "F-CAN-008",
+        "F-CAN-020",
+        "F-CAN-027"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "两个文本节点和一个声明 STRING 输入的无付费测试消费者。"
+      ],
+      "steps": [
+        "在 A 中使用中文输入法输入多段文本，B 保持不同内容。",
+        "把 A 连接到消费者，读取输入快照。",
+        "将 A 收藏，再修改原文，切换 Mute/Active。"
+      ],
+      "outcomes": [
+        "文本保存和 STRING 输出一致，B 不受影响。",
+        "收藏为当时快照，后续文本修改不回写收藏。",
+        "停用时不接收编辑/提供可消费快照，恢复后内容仍在。"
+      ],
+      "exceptions": [
+        "组合输入确认不提前提交或触发画布快捷键。",
+        "空文本收藏被明确拒绝，不污染目录。"
+      ]
+    },
+    {
+      "id": "UC-CAN-006",
+      "title": "复制选区、撤销并保存重载",
+      "features": [
+        "F-CAN-010",
+        "F-CAN-012",
+        "F-CAN-013",
+        "F-CAN-014",
+        "F-CAN-015",
+        "F-CAN-020"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "含上传、文本、组和内部/外部连接的工作流。"
+      ],
+      "steps": [
+        "复制选区并粘贴两次。",
+        "拖动和修改一处内容，执行撤销与重做。",
+        "平移/缩放后保存 JSON，关闭测试页面再载入。"
+      ],
+      "outcomes": [
+        "副本节点 ID、成员和内部连接正确映射，源选区不变。",
+        "编辑按用户动作回退，纯视口操作不损坏重做。",
+        "重载恢复节点、布局、名称、素材引用和真实连接。"
+      ],
+      "exceptions": [
+        "非法剪贴板内容不创建部分节点。",
+        "未知工作流版本给出报告并保留原文件，不静默降级覆盖。"
+      ]
+    },
+    {
+      "id": "UC-CAN-007",
+      "title": "在素材与表格/生成结果间交换快照",
+      "features": [
+        "F-CAN-018",
+        "F-CAN-020",
+        "F-CAN-021",
+        "F-CAN-022",
+        "F-CAN-023",
+        "F-CAN-036"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "已启用表格或声明 materialTargets/materialSources 的测试适配器。",
+        "拥有多素材组和包含单素材的业务单元格。"
+      ],
+      "steps": [
+        "将素材/文本拖到兼容落点，观察受影响区域高亮。",
+        "松开填充，随后修改源素材。",
+        "从结果列输出分组素材，再把单个单元格素材拖到空白画布。"
+      ],
+      "outcomes": [
+        "填充为一次快照，源节点归位且后续编辑不覆盖目标。",
+        "宿主不解释表格规则；业务按列/行/单格合同完成原子消费。",
+        "结果按业务分组创建，单素材拖出保留源单元格和文件。"
+      ],
+      "exceptions": [
+        "类型不兼容、来源变化或文件无效时无半成品节点。",
+        "取消清理所有高亮、提示与拖动状态。"
+      ]
+    },
+    {
+      "id": "UC-CAN-008",
+      "title": "收藏、搜索和复用资产",
+      "features": [
+        "F-CAN-007",
+        "F-CAN-008",
+        "F-CAN-024",
+        "F-CAN-025",
+        "F-CAN-036"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "资产目录为空，有图片、视频及文本节点。",
+        "已导出一份旧浏览器收藏目录作迁移夹具。"
+      ],
+      "steps": [
+        "收藏三种素材并重复收藏其中一项。",
+        "按类型及名称搜索，打开视频预览并关闭。",
+        "加入画布、撤销加入、取消收藏。",
+        "导入旧收藏目录并查看逐条报告。"
+      ],
+      "outcomes": [
+        "同身份去重；文本保存内容快照，媒体复用原文件引用。",
+        "加入画布可撤销；取消收藏不删除素材文件或既有节点。",
+        "迁移保留旧数据并报告重复/失效项，刷新后目录保留。"
+      ],
+      "exceptions": [
+        "失效文件不能创建空素材；存储异常不覆盖有效目录。",
+        "未知版本目录保留原始导出并提示无法迁入条目。"
+      ]
+    },
+    {
+      "id": "UC-CAN-009",
+      "title": "查看任务进度而不干扰执行",
+      "features": [
+        "F-CAN-026",
+        "F-CAN-027"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "无付费任务服务模拟器可按指定顺序返回任务快照。"
+      ],
+      "steps": [
+        "触发排队、运行、恢复、错误及完成快照。",
+        "隐藏画布、停用节点、再次打开并刷新。",
+        "缩小卡片并开启减少动态效果。"
+      ],
+      "outcomes": [
+        "胶囊只展示经校验的真实状态和计数。",
+        "显隐不取消任务，刷新只根据后端证据恢复状态。",
+        "历史终态不重复通知，窄宽度摘要不撑大节点或遮挡连线。"
+      ],
+      "exceptions": [
+        "非法/重复任务 ID 被过滤，不造成重复胶囊。",
+        "没有后端执行证据时显示恢复/待核对状态，不能假装继续运行。"
+      ]
+    },
+    {
+      "id": "UC-CAN-010",
+      "title": "从素材组建立并编辑单轨时间轴",
+      "features": [
+        "F-CAN-013",
+        "F-CAN-020",
+        "F-CAN-028",
+        "F-CAN-029"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "两个素材组，包含同一文件的两个独立节点和图片/视频混排。"
+      ],
+      "steps": [
+        "连接两个组到剪辑，裁剪、分割、复制、重排并删除片段。",
+        "向组中新增素材，移除另一组连接。",
+        "撤销/重做最后动作，再保存并重载。"
+      ],
+      "outcomes": [
+        "按节点身份建立片段，同文件不同节点不被合并。",
+        "已有编辑和手工删除记录保留；断开一个组只影响该组。",
+        "派生同步与用户动作共用历史，重载保持最终编辑。"
+      ],
+      "exceptions": [
+        "上游未就绪不视为空集合而删除片段。",
+        "异步读取期间图/连接变化时拒绝旧回包。"
+      ]
+    },
+    {
+      "id": "UC-CAN-011",
+      "title": "预览剪辑并调整画幅和声音",
+      "features": [
+        "F-CAN-007",
+        "F-CAN-029",
+        "F-CAN-030",
+        "F-CAN-031",
+        "F-CAN-032"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "含横竖画幅、图片及带音轨视频的时间轴。"
+      ],
+      "steps": [
+        "播放并定位，选择片段后撤销一次编辑。",
+        "切换 1×/0.75×/0.5× 预览，取消一次未完成转换。",
+        "设置片段留边/填满、静音及锁定分辨率，替换首片段。"
+      ],
+      "outcomes": [
+        "播放时间不因选中或非截断撤销而跳回；加载等待不推进错误时钟。",
+        "倍率只影响预览清晰度，原素材和导出设置不变。",
+        "锁定画幅、逐段构图和音轨设置与编辑数据一致。"
+      ],
+      "exceptions": [
+        "取消/过期代理结果不覆盖当前倍率。",
+        "媒体解码失败给出片段级提示并允许继续编辑。"
+      ]
+    },
+    {
+      "id": "UC-CAN-012",
+      "title": "导出成片并接回创作流程",
+      "features": [
+        "F-CAN-026",
+        "F-CAN-031",
+        "F-CAN-032",
+        "F-CAN-033",
+        "F-CAN-034",
+        "F-CAN-036"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "CPU 可编码的本地测试时间轴，未连接付费节点。"
+      ],
+      "steps": [
+        "点击导出两次并查看任务状态。",
+        "等待完成，预览/下载成片并连接下游。",
+        "修改剪辑，检查旧结果失效，再导出；另一次任务执行取消/失败重试。"
+      ],
+      "outcomes": [
+        "连续点击不重复提交，导出只覆盖本节点及依赖。",
+        "成功结果与时间轴内容/时长/画幅/静音一致，引用同一完整成片。",
+        "编辑后新连接受阻，旧连接保留；新成功结果恢复输出能力。"
+      ],
+      "exceptions": [
+        "取消/错误不标成功，旧任务不覆盖新任务。",
+        "重启后的状态由后端任务账本和执行器证据恢复，不能自动重放副作用任务。"
+      ]
+    },
+    {
+      "id": "UC-CAN-013",
+      "title": "跨模式、缩放和键盘持续编辑",
+      "features": [
+        "F-CAN-002",
+        "F-CAN-003",
+        "F-CAN-007",
+        "F-CAN-009",
+        "F-CAN-010",
+        "F-CAN-011",
+        "F-CAN-023",
+        "F-CAN-027",
+        "F-CAN-037",
+        "F-CAN-039"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "至少两个不同类型实例；视口覆盖桌面和窄窗口。"
+      ],
+      "steps": [
+        "在 50%/100%/150% 画布缩放下编辑标题、字段和菜单。",
+        "用键盘访问按钮、调整手柄与媒体控件。",
+        "往返原生图/画布并切换 Active/Mute/Bypass，然后删除一个实例。"
+      ],
+      "outcomes": [
+        "标题/端口/控件按约定缩放，菜单与焦点不被裁切。",
+        "文本/表格内部操作优先于画布快捷键。",
+        "往返和删除后无重复面板、事件、订阅、媒体播放或遗留浮层。"
+      ],
+      "exceptions": [
+        "不支持的宿主能力明确报告；不能以隐藏整个控件代替修复布局。",
+        "两实例状态隔离，删除 A 不改变 B。"
+      ]
+    },
+    {
+      "id": "UC-CAN-014",
+      "title": "迁入历史工作流并完成发布验收",
+      "features": [
+        "F-CAN-001",
+        "F-CAN-014",
+        "F-CAN-024",
+        "F-CAN-035",
+        "F-CAN-036",
+        "F-CAN-038",
+        "F-CAN-039"
+      ],
+      "actor": "维护者/既有用户",
+      "preconditions": [
+        "旧工作流、素材路径清单、旧收藏导出、宿主版本和两个旧库提交号均已冻结并备份。",
+        "隔离测试环境中仅启用新包；兼容 ComfyTV 的场景另设测试环境。"
+      ],
+      "steps": [
+        "导入典型纯 Canvas 与联合业务工作流。",
+        "查看迁移报告，核对节点/槽位/引用/未知节点。",
+        "执行无付费的打开、编辑、保存、重载、素材复用和剪辑本地导出闭环。",
+        "对照发布矩阵及性能/资源验收记录签署结果。"
+      ],
+      "outcomes": [
+        "受支持数据完整迁入且原始文件保留；不支持项逐项可追踪。",
+        "未安装旧库仍可使用全部迁入能力，ComfyTV 保持可选。",
+        "发布报告区分自动、实际宿主、性能和未授权 provider-live 结果。"
+      ],
+      "exceptions": [
+        "未知节点/版本不静默删除；失败可恢复原工作流与原数据目录。",
+        "未通过必须项阻止发布，不以组件构建代替产品验收。"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "id": "TC-CAN-001",
+      "title": "单包独立启动与重复注册冲突诊断",
+      "features": [
+        "F-CAN-001",
+        "F-CAN-038"
+      ],
+      "usecases": [
+        "UC-CAN-001",
+        "UC-CAN-014"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M1",
+      "fixture": "拟创建：隔离 ComfyUI 用户目录；基础新包；另含旧同名节点包的冲突目录。",
+      "setup": [
+        "锁定宿主/前端/Python 版本并记录新包构建号。",
+        "禁用所有生成服务，使用空 input/output。"
+      ],
+      "steps": [
+        "仅加载新包启动，读取日志及节点目录。",
+        "检查本阶段已交付的正式注册清单与画布入口数量；未实现业务使用仅测试环境启用的契约夹具，不冒充产品功能。",
+        "停机后启用一个旧同名包，重新启动并读取诊断。"
+      ],
+      "expected": [
+        "纯新包无旧仓库导入依赖，每个基础 ID 只出现一次。",
+        "冲突场景报告冲突 ID 和插件路径，不能按发现顺序静默覆盖。",
+        "原工作流与用户目录没有被自动迁移/删除。",
+        "M2扩展真实上传/文本/组注册，M5扩展剪辑，M6核对完整正式清单。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tools/repository_split_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-002",
+      "title": "模式往返保持同一原生图与面板归属",
+      "features": [
+        "F-CAN-002",
+        "F-CAN-023",
+        "F-CAN-027",
+        "F-CAN-038"
+      ],
+      "usecases": [
+        "UC-CAN-001",
+        "UC-CAN-013"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：两个文本、两个上传节点，记录节点 ID、面板 DOM 与素材值。",
+      "setup": [
+        "打开独立测试工作流；记录原生图引用和节点序列化摘要。"
+      ],
+      "steps": [
+        "原生图→画布→原生图循环 5 次。",
+        "在 A 编辑内容，再切到画布检查 A/B。",
+        "保存后重新打开页面。"
+      ],
+      "expected": [
+        "循环中节点 ID、业务数据和真实连线不变，A 修改不影响 B。",
+        "每个节点只有一个实际业务面板，归还后回到正确宿主。",
+        "重载按保存的模式打开，无遗留 dialog、遮罩或重复模式入口。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/creative_panel_lease.test.mjs",
+        "canvas:tools/repository_split_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-003",
+      "title": "三处新建菜单一致且新建可撤销",
+      "features": [
+        "F-CAN-004",
+        "F-CAN-013"
+      ],
+      "usecases": [
+        "UC-CAN-001"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：只含基础注册节点的空图，另有未注册类型的适配器菜单声明。",
+      "setup": [
+        "记录原生图节点数量 0。"
+      ],
+      "steps": [
+        "分别打开空白双击、右键、底部加号菜单并读取项。",
+        "尝试新增文本节点并撤销/重做。"
+      ],
+      "expected": [
+        "三处可用节点集合一致，未注册类型不出现。",
+        "创建后节点数为 1，撤销为 0，重做为 1。",
+        "初始位置位于指定落点且不额外生成历史步骤。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/creative_canvas_catalog.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-004",
+      "title": "批量上传顺序与部分格式拒绝",
+      "features": [
+        "F-CAN-005",
+        "F-CAN-036"
+      ],
+      "usecases": [
+        "UC-CAN-002"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：A.png、B.mp4、C.webp、D.txt；有效媒体为小尺寸本地自建内容。",
+      "setup": [
+        "空图；另建已有素材 X 的上传节点。",
+        "拦截记录上传请求，不接任何生成节点。"
+      ],
+      "steps": [
+        "按 A/B/C/D 顺序拖到空白。",
+        "将 A/B 一起拖到 X 卡片。"
+      ],
+      "expected": [
+        "第一次创建三个支持文件节点，顺序 A/B/C；D 给出格式提示。",
+        "第二次新建两个节点，X 的素材与名称不变。",
+        "上传文件写入允许的 input 相对目录，返回引用不含任意绝对路径。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tools/media_upload_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-005",
+      "title": "替换成功提交、失败回滚及跨类型拒绝",
+      "features": [
+        "F-CAN-006"
+      ],
+      "usecases": [
+        "UC-CAN-002"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：已连接输出的 A.png；替换 B.png、C.mp4；上传端点可注入 500。",
+      "setup": [
+        "记录原素材 JSON、标题及连线快照。"
+      ],
+      "steps": [
+        "上传端点返回 500 时替换 B。",
+        "恢复端点后同类型替换 B。",
+        "尝试替换为 C.mp4。"
+      ],
+      "expected": [
+        "500 后原 JSON、图片和连接完整保留。",
+        "成功后引用变为 B，自动标题更新但已手工命名标题保留。",
+        "已连线跨类型替换拒绝，不发送有效替换或修改连接。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tools/media_upload_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-006",
+      "title": "上传迟到回包不得覆盖新状态",
+      "features": [
+        "F-CAN-005",
+        "F-CAN-006",
+        "F-CAN-027"
+      ],
+      "usecases": [
+        "UC-CAN-002"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：可控制响应顺序的本地上传模拟端点及两个节点 A/B。",
+      "setup": [
+        "A 开始请求 R1 并挂起；B 保持已有素材。"
+      ],
+      "steps": [
+        "A 发起 R2，先返回 R2 再返回 R1。",
+        "重复一次，在回包前删除 A；再重复一次在回包前载入另一工作流。"
+      ],
+      "expected": [
+        "R2 成功后最终引用为 R2，R1 不覆盖。",
+        "删除/换图后回包不复活节点、不修改新图。",
+        "B 的引用、忙碌态和媒体未改变；取消句柄已释放。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-CAN-007",
+      "title": "素材比例、长标题和控件缩放视觉基线",
+      "features": [
+        "F-CAN-003",
+        "F-CAN-007",
+        "F-CAN-009",
+        "F-CAN-010"
+      ],
+      "usecases": [
+        "UC-CAN-002",
+        "UC-CAN-013"
+      ],
+      "level": "host",
+      "priority": "P1",
+      "phase": "M2",
+      "fixture": "拟创建：16:9、9:16、1:1 图片，长中文名视频，两个空上传；截图基线。",
+      "setup": [
+        "视口 1440×900 和 680×720；画布缩放 50%/100%/150%。"
+      ],
+      "steps": [
+        "逐一悬停、选中和键盘聚焦素材。",
+        "让缩略图屏幕宽度跨越 160px 阈值。",
+        "检查长标题和右上按钮位置。"
+      ],
+      "expected": [
+        "原素材无拉伸和擅自裁切；空态比例 16:9。",
+        "标题、外置标题间距及 Slot 按既有屏幕像素规则显示。",
+        "低于阈值的操作按规范隐藏；以上状态不溢出、无重复文件名层，焦点可见。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tools/creative_material_theme_smoke.mjs",
+        "canvas:tools/creative_layout_smoke.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-008",
+      "title": "视频控制不拖动节点且实例独立",
+      "features": [
+        "F-CAN-007",
+        "F-CAN-011",
+        "F-CAN-027"
+      ],
+      "usecases": [
+        "UC-CAN-002",
+        "UC-CAN-013"
+      ],
+      "level": "host",
+      "priority": "P1",
+      "phase": "M2",
+      "fixture": "拟创建：两个 3 秒带音轨本地视频 A/B。",
+      "setup": [
+        "记录 A/B 画布位置；两者暂停。"
+      ],
+      "steps": [
+        "只播放 A，拖动 A 进度/音量、静音、下载并请求全屏。",
+        "移出鼠标、切换模式，再替换/删除 A。"
+      ],
+      "expected": [
+        "B 仍暂停且进度未变化，A/B 节点位置不变。",
+        "控件显隐不重置播放；隐藏模式/删除按生命周期暂停并释放媒体。",
+        "下载链接对应 A 的原文件；全屏不可用时显示错误而不破坏编辑。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tools/media_upload_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-009",
+      "title": "文本组合输入、STRING 输出和收藏快照",
+      "features": [
+        "F-CAN-003",
+        "F-CAN-008",
+        "F-CAN-020"
+      ],
+      "usecases": [
+        "UC-CAN-005"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：文本 A/B、无副作用 STRING 消费者、空收藏目录。",
+      "setup": [
+        "A/B 使用不同初始文本；启用中文输入法。"
+      ],
+      "steps": [
+        "A 输入中文组合串并按 Enter 确认候选，继续输入换行。",
+        "收藏 A，修改 A，再读取文本输出和收藏。",
+        "在文本编辑区按 Backspace/Ctrl+C/V。"
+      ],
+      "expected": [
+        "候选确认不提交错误中间值或触发画布动作；最终多行内容完整。",
+        "STRING 输出等于 A 当前值，B 保持原文；收藏等于收藏瞬间值。",
+        "文本快捷键不删除节点/连线，不复制图剪贴板。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/mixed_group.test.mjs",
+        "canvas:tools/creative_field_smoke.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-010",
+      "title": "自动/手工重命名、取消与组内身份保持",
+      "features": [
+        "F-CAN-009",
+        "F-CAN-015"
+      ],
+      "usecases": [
+        "UC-CAN-002",
+        "UC-CAN-003",
+        "UC-CAN-013"
+      ],
+      "level": "host",
+      "priority": "P1",
+      "phase": "M2",
+      "fixture": "拟创建：文件名自动标题节点 A、手工标题节点 B、包含 A 的组。",
+      "setup": [
+        "记录 A/B 节点 ID 与素材引用。"
+      ],
+      "steps": [
+        "替换 A/B 为同类型新素材。",
+        "双击孤立节点/组内节点/组标题，分别提交、Esc 取消和输入空白。",
+        "移出组、保存重载。"
+      ],
+      "expected": [
+        "A 自动标题跟随新文件名，B 手工名不被替换。",
+        "Esc/空白保留原标题；组合输入不提前提交。",
+        "重命名不改变 ID、素材引用和组关系；重载显示一致。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-CAN-011",
+      "title": "视口坐标映射与导航不污染编辑历史",
+      "features": [
+        "F-CAN-010",
+        "F-CAN-013"
+      ],
+      "usecases": [
+        "UC-CAN-006",
+        "UC-CAN-013"
+      ],
+      "level": "domain",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：不同 deltaMode、边界缩放与固定世界坐标的参数夹具。",
+      "setup": [
+        "给定视口 x/y/zoom 和指针屏幕坐标。"
+      ],
+      "steps": [
+        "分别应用普通/Shift/Ctrl 滚轮和像素/行/页 delta。",
+        "在宿主夹具中产生一条可重做编辑，平移/缩放，再重做。"
+      ],
+      "expected": [
+        "普通平移与 Shift 横移方向/单位符合定义；缩放限制在合法范围。",
+        "缩放前后指针下的世界坐标差小于 1e-6（纯模型）。",
+        "视口变化不清空重做，重做恢复业务编辑且使用当前视角。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/creative_navigation.test.mjs",
+        "canvas:tests/creative_canvas_model.test.mjs",
+        "canvas:tools/creative_navigation_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-012",
+      "title": "选择/拖动状态机与 pointercancel 清理",
+      "features": [
+        "F-CAN-011",
+        "F-CAN-015"
+      ],
+      "usecases": [
+        "UC-CAN-003",
+        "UC-CAN-013"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：紧密相邻素材、组内成员、含输入字段/下载链接的节点。",
+      "setup": [
+        "记录位置、选择集合和组关系。"
+      ],
+      "steps": [
+        "框选并追加选择；拖动普通节点与组成员。",
+        "在按钮、链接、字段、媒体滑条上操作。",
+        "拖动中发出 Escape/pointercancel。"
+      ],
+      "expected": [
+        "选择集合符合修饰键规则，控件操作不改变节点位置。",
+        "取消回到既定取消结果并清除捕获、高亮和预览。",
+        "后续普通点击可重新选择，无必须刷新才能恢复的状态。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tools/creative_selection_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-013",
+      "title": "选区复制重映射与外部连接隔离",
+      "features": [
+        "F-CAN-012",
+        "F-CAN-015",
+        "F-CAN-020"
+      ],
+      "usecases": [
+        "UC-CAN-006"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：含组、两个指向同文件节点、一个内部连接和一个外部连接的选区。",
+      "setup": [
+        "保存源图摘要；测试适配器提供 prepareCopy/remapCopy 与请求 ID。"
+      ],
+      "steps": [
+        "复制选区，粘贴两次。",
+        "读取副本成员 ID、原生连线、文件引用和请求 ID。",
+        "输入无效剪贴板 JSON。"
+      ],
+      "expected": [
+        "每个副本节点/请求 ID 唯一，组成员指向本次副本，内部连线正确重建。",
+        "不复制选区外部连接；同文件独立节点身份仍区分，源图内容未被修改。",
+        "无效 JSON 不创建部分节点。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/creative_navigation.test.mjs",
+        "canvas:tests/material_groups.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-014",
+      "title": "跨节点事务和派生修改保持撤销一致",
+      "features": [
+        "F-CAN-013"
+      ],
+      "usecases": [
+        "UC-CAN-006",
+        "UC-CAN-010"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：两素材节点、一个组、无付费下游；可读取宿主历史计数。",
+      "setup": [
+        "清空测试工作流历史，记录基准序列化快照。"
+      ],
+      "steps": [
+        "执行一次含创建/连接/定位的复合动作，撤销再重做。",
+        "由已完成编辑触发异步派生同步。",
+        "建立可重做编辑，再触发不改变业务含义的布局更新。"
+      ],
+      "expected": [
+        "复合动作只增加一次历史，撤销/重做完整恢复节点与连接。",
+        "派生同步不增加独立历史、不清空重做。",
+        "恢复过程中不发起新业务请求，历史状态不引用已销毁实例。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-CAN-015",
+      "title": "保存格式与无运行态泄漏的往返",
+      "features": [
+        "F-CAN-014",
+        "F-CAN-020",
+        "F-CAN-026"
+      ],
+      "usecases": [
+        "UC-CAN-006",
+        "UC-CAN-014"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "拟创建：包含旧上传/组/文本/剪辑及 daelabCreativeCanvasV1 的金样 JSON。",
+      "setup": [
+        "金样原文件设为只读；注入 mock running 任务及临时 UI 状态。"
+      ],
+      "steps": [
+        "加载、编辑一个标题、保存到新路径并重载。",
+        "比较节点类型、槽位顺序、连线、素材 JSON 与画布布局。",
+        "扫描保存结果中的任务运行态、凭据、DOM/Promise 标记。"
+      ],
+      "expected": [
+        "除显式编辑与已报告迁移字段外，已承诺数据含义一致。",
+        "稳定 ID/槽位保持，引用 input/output 目录正确。",
+        "运行中忙碌/临时请求、凭据和 UI 对象未进入工作流；原文件未改。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/creative_canvas_model.test.mjs",
+        "canvas:tests/material_groups.test.mjs",
+        "canvas:tests/video_edit_model.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-016",
+      "title": "混合素材组快照顺序、克隆隔离和未就绪语义",
+      "features": [
+        "F-CAN-015",
+        "F-CAN-020"
+      ],
+      "usecases": [
+        "UC-CAN-003",
+        "UC-CAN-005",
+        "UC-CAN-010"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：图片 A、文本 T、视频 B、重复文件不同节点 C 的有序组。",
+      "setup": [
+        "注册纯测试适配器；准备 Active/停用/ready:false 变体。"
+      ],
+      "steps": [
+        "读取 assets/inputSnapshot 并修改返回对象。",
+        "调整成员顺序后重读；请求停用和未就绪来源。",
+        "执行基础组节点并核对输出结构。"
+      ],
+      "expected": [
+        "媒体与文本顺序符合合同，C 不因文件相同丢失。",
+        "修改快照不能改变原组；后续读取来自新顺序。",
+        "停用返回不可消费，ready:false 不等同可执行空组。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/mixed_group.test.mjs",
+        "canvas:tests/material_groups.test.mjs",
+        "canvas:tools/material_groups_backend_smoke.py"
+      ]
+    },
+    {
+      "id": "TC-CAN-017",
+      "title": "组排列、颜色序号与工具栏跟随",
+      "features": [
+        "F-CAN-003",
+        "F-CAN-016"
+      ],
+      "usecases": [
+        "UC-CAN-003",
+        "UC-CAN-013"
+      ],
+      "level": "host",
+      "priority": "P1",
+      "phase": "M2",
+      "fixture": "拟创建：横/竖媒体、空上传、文本混合组；两个组不同颜色。",
+      "setup": [
+        "视口 1440×900 与 680×720；缩放 50%/100%/150%。"
+      ],
+      "steps": [
+        "切换三种排列，调整颜色/自选色和序号。",
+        "平移/缩放、选择成员/组并打开组菜单。",
+        "保存重载。"
+      ],
+      "expected": [
+        "排列顺序与输出顺序一致，容器贴合内容，没有新增标题空行。",
+        "序号为稳定屏幕大小，颜色和显隐重载后保留。",
+        "工具栏/菜单跟随所属组且边缘避让，另一组不受影响。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tools/material_groups_smoke.cjs",
+        "canvas:tools/creative_material_theme_smoke.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-018",
+      "title": "锁定、收起、删除与解散的恢复语义",
+      "features": [
+        "F-CAN-017",
+        "F-CAN-013"
+      ],
+      "usecases": [
+        "UC-CAN-003"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：三成员组和连接到下游的组/成员连线。",
+      "setup": [
+        "保存原始图与成员位置。"
+      ],
+      "steps": [
+        "锁定后尝试移动组/成员和切换排列。",
+        "解锁后收起/展开，执行解散并撤销。",
+        "再执行删除组并撤销。"
+      ],
+      "expected": [
+        "锁定期间位置和排列不变；收起仅影响显示。",
+        "解散保留成员和其素材数据，仅移除组及其连接。",
+        "删除移除组/成员/相关连线；单次撤销完整恢复所有对象与顺序。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/material_groups.test.mjs",
+        "canvas:tools/material_groups_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-019",
+      "title": "Slot 磁吸、屏幕命中与实例互斥",
+      "features": [
+        "F-CAN-003",
+        "F-CAN-018"
+      ],
+      "usecases": [
+        "UC-CAN-004",
+        "UC-CAN-013"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：两个相邻组、其成员、一个停用节点及两宽度不同的表格测试面板。",
+      "setup": [
+        "使用 50%/100%/150% 缩放；记录真实槽位列表。",
+        "M2表格测试面板是只验证Slot能力的契约桩；M3使用真实表格重跑。"
+      ],
+      "steps": [
+        "选中组/成员并从 32 屏幕像素邻近区移动指针。",
+        "尝试命中被压制、隐藏或停用端口。",
+        "拖动/调整目标宽度并查看连接锚点。"
+      ],
+      "expected": [
+        "端口投影不改变真实槽位数量/索引。",
+        "应不可交互端口没有磁吸命中，邻近实例不串高亮。",
+        "锚点随几何同步，已连接端点仍在规定边侧位置。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/creative_connections.test.mjs",
+        "canvas:tools/material_connection_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-020",
+      "title": "真实类型兼容、用途选择与首个空输入",
+      "features": [
+        "F-CAN-018",
+        "F-CAN-020"
+      ],
+      "usecases": [
+        "UC-CAN-004"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：IMAGE/VIDEO/STRING/DAELAB_ASSETS 和多首尾帧输入定义，含已有连接。",
+      "setup": [
+        "准备正向/反向连接及 first-free 适配器。"
+      ],
+      "steps": [
+        "遍历兼容与不兼容类型对。",
+        "对多用途目标打开用途选择。",
+        "对 first-free 目标连续接入，直到没有空槽。"
+      ],
+      "expected": [
+        "兼容矩阵与原生定义一致，不借 wildcard 放行。",
+        "多用途明确选择目标用途；已有输入不被自动替换。",
+        "first-free 选择第一个兼容空槽，无空槽则拒绝，不删除旧连接。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/creative_connections.test.mjs",
+        "canvas:tools/material_connection_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-021",
+      "title": "连线删除、取消与减少动态效果",
+      "features": [
+        "F-CAN-019",
+        "F-CAN-013"
+      ],
+      "usecases": [
+        "UC-CAN-004"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：一源两下游的连线与可编辑文本框。",
+      "setup": [
+        "记录连线 ID；启用/关闭 prefers-reduced-motion 两种环境。"
+      ],
+      "steps": [
+        "分别双击、Delete、Backspace 和拖断连线并撤销。",
+        "在文字输入中按 Backspace；拖断未达到阈值或按 Esc。",
+        "选中源并平移/缩放。"
+      ],
+      "expected": [
+        "每种有效删除只改目标连线且可一次恢复。",
+        "输入中 Backspace 只改文本，取消不丢连接。",
+        "动画相位在视口变化时连续，减少动态效果时不旋转/脉冲。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tools/material_connection_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-022",
+      "title": "一次素材填充的原子性与命中优先级",
+      "features": [
+        "F-CAN-021",
+        "F-CAN-020"
+      ],
+      "usecases": [
+        "UC-CAN-007"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟创建：接收 image/video/text 的测试业务落点、纯文本落点、相邻投影 Slot。",
+      "setup": [
+        "适配器记录 acceptMaterials 调用与历史事务，另设抛错分支。"
+      ],
+      "steps": [
+        "分别拖单图、多素材、文本及不支持媒体到直接落点/邻近 Slot。",
+        "取消拖动；模拟消费抛错；成功后修改源。"
+      ],
+      "expected": [
+        "直接落点优先，类型过滤与声明一致，非法输入不调用消费。",
+        "成功调用仅一次且位于一个事务；失败原子回滚，源位置/组关系保留。",
+        "高亮范围使用业务声明，结束清空；源后续变化不自动改目标。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/creative_material_drop.test.mjs",
+        "canvas:tests/mixed_group.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-023",
+      "title": "结果分组输出与本地文件引用完整性",
+      "features": [
+        "F-CAN-022",
+        "F-CAN-036"
+      ],
+      "usecases": [
+        "UC-CAN-007"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟创建：input/output 各一张图及短视频；groups count 正常/不匹配/空结果快照。",
+      "setup": [
+        "记录原文件大小、修改时间及摘要；启用本地素材输出端点。"
+      ],
+      "steps": [
+        "提交合法快照，创建分组素材。",
+        "提交 count 不匹配、失效文件和非法路径快照。",
+        "撤销合法创建。"
+      ],
+      "expected": [
+        "合法输出保留原文件引用、业务顺序和组名，不复制或重编码原媒体。",
+        "错误快照拒绝且不创建半成品节点/组。",
+        "撤销删除新对象而原文件/业务结果不变。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/material_output_import_test.py",
+        "canvas:tests/creative_output.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-024",
+      "title": "单素材拖出与迟到验证回包",
+      "features": [
+        "F-CAN-022",
+        "F-CAN-027"
+      ],
+      "usecases": [
+        "UC-CAN-007"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟创建：两个含不同素材的单元格测试面板；可延迟文件核验。",
+      "setup": [
+        "记录原单元格内容，开始拖出 A 并挂起核验。"
+      ],
+      "steps": [
+        "正常拖出一次，再分别在核验中修改来源、删除节点、切换工作流。",
+        "让所有核验完成。"
+      ],
+      "expected": [
+        "正常拖出恰好一个上传节点且可撤销，不额外建组。",
+        "原单元格/文件保持不变。",
+        "来源已变化的请求不创建任何节点，B 内容不受影响。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-CAN-025",
+      "title": "面板 lease、宽度取消和 fullHeight 合同",
+      "features": [
+        "F-CAN-023",
+        "F-CAN-003"
+      ],
+      "usecases": [
+        "UC-CAN-007",
+        "UC-CAN-013"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M1",
+      "fixture": "拟创建：两个带内部输入状态的 content/fullHeight/resizable 面板；一个不可调整面板。",
+      "setup": [
+        "记录各面板 root 引用、父容器和初始宽度。"
+      ],
+      "steps": [
+        "借用/归还并执行 release/abandon 重复调用。",
+        "拖边调宽，分别提交和 Esc 取消；键盘左右及 Shift 调整。",
+        "销毁面板后调用旧上下文 focus/pan/resize。"
+      ],
+      "expected": [
+        "借用保留同一 root 与内部编辑内容，归还不留下重复节点/监听。",
+        "提交保存宽度，取消恢复原宽；遵循 minWidth 和约定步长。",
+        "fullHeight 不裁切底部；失效/不可调整上下文返回失败且不影响别的实例。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/creative_panel_lease.test.mjs",
+        "canvas:tests/creative_contract.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-026",
+      "title": "收藏去重、文本快照与数据异常不覆盖",
+      "features": [
+        "F-CAN-024"
+      ],
+      "usecases": [
+        "UC-CAN-008"
+      ],
+      "level": "domain",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：文本重复/变化、相同 input/output 相对名、2000 项目录与存储失败模拟。",
+      "setup": [
+        "使用隔离资产目录；保留前一有效版本摘要。"
+      ],
+      "steps": [
+        "重复收藏同素材、同文本与不同目录同名素材。",
+        "取消收藏；尝试空文本、非法路径、超容量及写入失败。"
+      ],
+      "expected": [
+        "同身份只保留一项，input/output 同名按不同来源区分。",
+        "文本后续变化不改已收藏内容；取消不发文件删除。",
+        "非法/超额/写入失败给明确错误且有效目录摘要不变。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/asset_library.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-027",
+      "title": "旧浏览器收藏迁入后端目录且可回滚",
+      "features": [
+        "F-CAN-024",
+        "F-CAN-014"
+      ],
+      "usecases": [
+        "UC-CAN-008",
+        "UC-CAN-014"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M2",
+      "fixture": "拟创建：合法 v1、重复项、失效文件、损坏 JSON 与未知版本的 localStorage 导出。",
+      "setup": [
+        "备份旧导出和新空目录；用测试文件根映射，禁止改真实浏览器存储。"
+      ],
+      "steps": [
+        "导入合法目录，再重复导入；读取逐条报告。",
+        "分别导入损坏/未知版本。",
+        "模拟迁移中断后恢复，并核对备份。"
+      ],
+      "expected": [
+        "支持项完整迁入，重复导入幂等，失效项报告但不伪造文件。",
+        "损坏/未知格式不覆盖旧导出或已成功目录。",
+        "中断可从明确提交边界恢复/回滚，不产生半条记录。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/asset_library.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-028",
+      "title": "资产库筛选搜索、焦点恢复与失效阻止",
+      "features": [
+        "F-CAN-025",
+        "F-CAN-036"
+      ],
+      "usecases": [
+        "UC-CAN-008",
+        "UC-CAN-013"
+      ],
+      "level": "host",
+      "priority": "P1",
+      "phase": "M2",
+      "fixture": "拟创建：带中文名称的图/视频/文本收藏及一个移走文件的收藏。",
+      "setup": [
+        "打开 680×720 和 1440×900 视口，分别记录来源按钮焦点。"
+      ],
+      "steps": [
+        "按类型筛选及名称搜索，打开并关闭视频预览。",
+        "加入有效素材后撤销；加入失效素材。",
+        "平移/缩放画布并切换模式。"
+      ],
+      "expected": [
+        "筛选/搜索结果与夹具匹配；关闭预览暂停媒体且焦点返回。",
+        "有效加入增加一个相应节点，撤销回到原数；失效加入不增节点并提示。",
+        "抽屉不随画布缩放，窄窗不被宿主导航遮挡，退出画布自动折叠。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/asset_library.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-029",
+      "title": "任务快照真实状态、计数和通知消退",
+      "features": [
+        "F-CAN-026"
+      ],
+      "usecases": [
+        "UC-CAN-009",
+        "UC-CAN-012"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟创建：各状态、重复/无效 ID、已结束非成功计数、历史终态与当前终态；可控时钟。",
+      "setup": [
+        "用 mock 任务服务提供快照，记录是否存在 cancel/submit 调用。"
+      ],
+      "steps": [
+        "逐状态渲染，推进时钟到 finishedAt+3999/4000ms。",
+        "隐藏/销毁胶囊并重载页面；切换窄卡片与减少动态效果。"
+      ],
+      "expected": [
+        "非法/重复任务被过滤，结束数不写成成功数，progress 不伪造聚合。",
+        "历史无 finishedAt 的终态不通知；当前终态按 4 秒规则消退。",
+        "UI 显隐无 cancel/submit 调用，重载只有后端证据支持才标 running；窄态无尺寸膨胀。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/creative_tasks.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-030",
+      "title": "模式停用、恢复和实例释放",
+      "features": [
+        "F-CAN-027",
+        "F-CAN-002"
+      ],
+      "usecases": [
+        "UC-CAN-005",
+        "UC-CAN-009",
+        "UC-CAN-013"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M5",
+      "fixture": "拟创建：两个上传、文本、剪辑面板；对监听/定时器/媒体源设可观测计数。",
+      "setup": [
+        "A/B 均 Active，A 有播放/挂起请求，B 保持静止。"
+      ],
+      "steps": [
+        "A 依次切 Mute、Bypass、Active。",
+        "删除 A，再重载工作流并检查旧请求回调。"
+      ],
+      "expected": [
+        "停用正文 hidden/inert 且媒体暂停，恢复还原原属性和业务数据。",
+        "B 始终未改；删除后 A 的监听/订阅/媒体计数归零。",
+        "旧回调不写新实例，UI 停用不虚构后台任务取消或暂停。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/creative_panel_state.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-031",
+      "title": "剪辑按节点身份同步与手工删除保持",
+      "features": [
+        "F-CAN-028"
+      ],
+      "usecases": [
+        "UC-CAN-010"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M5",
+      "fixture": "拟创建：两个节点引用同视频、两个组、手工裁剪和已删除来源记录。",
+      "setup": [
+        "向剪辑接入组 A 并记录每个片段 source identity。"
+      ],
+      "steps": [
+        "重复同步，新增成员，再重排上游组。",
+        "接入组 B，调整动态槽位顺序，断开 A。",
+        "返回 ready:false 后再恢复有效快照。"
+      ],
+      "expected": [
+        "同文件不同节点均有独立片段；重复同步不追加副本。",
+        "已有剪辑顺序/裁剪和手工删除保持，新增仅追加。",
+        "断开 A 不改 B；未就绪不清空，槽位重编号不丢来源记录。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/video_edit_model.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-032",
+      "title": "时间轴编辑帧边界与撤销等价性",
+      "features": [
+        "F-CAN-029",
+        "F-CAN-013"
+      ],
+      "usecases": [
+        "UC-CAN-010",
+        "UC-CAN-011"
+      ],
+      "level": "domain",
+      "priority": "P0",
+      "phase": "M5",
+      "fixture": "拟创建：24fps 视频、默认图片、不同长度片段；操作序列含裁剪/分割/复制/删除/排序。",
+      "setup": [
+        "保存初始标准化 edit_data。"
+      ],
+      "steps": [
+        "执行每种操作与边界输入：0 时长、越界、末尾分割。",
+        "逐步撤销到初始，再重做到终态。",
+        "测试吸附开关及键盘 1/10 帧调整。"
+      ],
+      "expected": [
+        "图片初始 3 秒，合法片段不少于一帧，裁剪不超源时长。",
+        "分割/复制继承片段设置，排序不丢来源；非法操作拒绝或按定义限幅。",
+        "撤销回到初始、重做到同一终态；时间值按输出帧率对齐。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/video_edit_model.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-033",
+      "title": "剪辑派生同步与图删除共用一次历史",
+      "features": [
+        "F-CAN-028",
+        "F-CAN-013"
+      ],
+      "usecases": [
+        "UC-CAN-006",
+        "UC-CAN-010"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M5",
+      "fixture": "拟创建：两个组连接同一剪辑，剪辑含裁剪/分割/删除记录。",
+      "setup": [
+        "完成同步后记录宿主历史和 edit_data。"
+      ],
+      "steps": [
+        "删除组 A，等待派生清理，再撤销与重做。",
+        "删除某输入最后一个片段后撤销。",
+        "异步来源读取中载入另一工作流。"
+      ],
+      "expected": [
+        "删除 A 及其片段清理只占一个编辑步骤，撤销恢复组/连线/原编辑。",
+        "最后片段删除合并断线但不删除上游节点。",
+        "派生恢复不清空重做，新工作流不接收旧读取结果。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-CAN-034",
+      "title": "预览时间、连续播放与异步画面保留",
+      "features": [
+        "F-CAN-030"
+      ],
+      "usecases": [
+        "UC-CAN-011"
+      ],
+      "level": "host",
+      "priority": "P1",
+      "phase": "M5",
+      "fixture": "拟创建：图片→视频→同源视频裁剪段→另一视频，两个独立剪辑实例。",
+      "setup": [
+        "设定慢媒体加载模拟；记录预览时间与实际画面编号。"
+      ],
+      "steps": [
+        "播放跨片段，选中片段、撤销编辑、向时间轴末尾缩短。",
+        "重复同源连续片段并观察媒体实例数。",
+        "暂停 A 并操作 B。"
+      ],
+      "expected": [
+        "选中/未截短的撤销保留播放时间，截短只限到新末尾。",
+        "慢加载保持上一帧并停止推进，画面就绪后从正确时间恢复。",
+        "同源连续片段复用解码媒体，A/B 时间和播放状态隔离。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-CAN-035",
+      "title": "预览代理尺寸、缓存复用、失效和取消",
+      "features": [
+        "F-CAN-031"
+      ],
+      "usecases": [
+        "UC-CAN-011",
+        "UC-CAN-012"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M5",
+      "fixture": "拟创建：1920×1080、24fps、3 秒带音轨自建视频；独立临时缓存。",
+      "setup": [
+        "使用 CPU 编码器，记录原文件摘要、修改时间和临时目录。"
+      ],
+      "steps": [
+        "依次请求 0.5×、0.75×、1×，对同倍率重复请求。",
+        "修改源文件后重试；转换期间断开请求/取消。",
+        "设置旧缓存时间后触发清理。"
+      ],
+      "expected": [
+        "代理为 960×540/1440×810 等对应偶数尺寸，时长误差不超过一帧。",
+        "重复请求复用，源变更失效；仅所选倍率转换并受并发约束。",
+        "取消最终释放转换任务/临时文件，原文件未改；过期清理不删除当前结果或源文件。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-CAN-036",
+      "title": "预览与导出画幅、适配和音轨一致",
+      "features": [
+        "F-CAN-032"
+      ],
+      "usecases": [
+        "UC-CAN-011",
+        "UC-CAN-012"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M5",
+      "fixture": "拟创建：横竖色条图、可识别边缘标记视频、单频音轨；锁定与跟随分辨率配置。",
+      "setup": [
+        "准备每片段 contain/cover 与静音的组合；CPU 渲染。"
+      ],
+      "steps": [
+        "分别导出跟随首片段与锁定尺寸。",
+        "替换首片段，再导出；解锁后再次导出。",
+        "抽帧检查边缘标记和音轨能量，与预览截图对照。"
+      ],
+      "expected": [
+        "锁定时尺寸不变，解锁按新首片段选择合法偶数尺寸。",
+        "contain 保留全画面/留边，cover 填满且按约定裁切；预览与成片一致。",
+        "静音视频对应区段音频能量低于测试静音阈值，未静音区段保留；图片无静音开关。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/video_edit_model.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-037",
+      "title": "导出重复点击、定向取消和重启恢复",
+      "features": [
+        "F-CAN-033",
+        "F-CAN-026"
+      ],
+      "usecases": [
+        "UC-CAN-012"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M5",
+      "fixture": "拟创建：可控本地 ComfyUI 执行器、两个剪辑任务、可注入编码失败及服务重启。",
+      "setup": [
+        "任务账本位于独立数据目录；禁用所有付费节点。"
+      ],
+      "steps": [
+        "对 A 连续提交两次，同时正常提交 B。",
+        "取消 A 并检查 B；使重试 A 第一次失败、下一次成功。",
+        "在已提交/运行边界重启服务并核对任务。"
+      ],
+      "expected": [
+        "同一操作只对应一个有效 A 任务，B 不因 A 取消而停止。",
+        "失败/取消不标成功，输出完整前不发布成功引用。",
+        "重启通过任务账本与执行器证据恢复或标待核对；不自动重放可能重复的提交。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-CAN-038",
+      "title": "编辑版本使旧成片失效但保留连接",
+      "features": [
+        "F-CAN-034",
+        "F-CAN-033"
+      ],
+      "usecases": [
+        "UC-CAN-004",
+        "UC-CAN-012"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M5",
+      "fixture": "拟创建：成功导出的剪辑 A、已连接下游、可延迟完成的下一次导出。",
+      "setup": [
+        "记录结果版本、成片引用和既有连线。"
+      ],
+      "steps": [
+        "编辑片段后尝试正向/反向/原生模式新连线。",
+        "启动 R2 后再次编辑，再返回 R2 成功。",
+        "导出当前版本并输出为素材。"
+      ],
+      "expected": [
+        "编辑后旧结果不允许新连接，但既有连接保留。",
+        "R2 不匹配当前编辑时不标当前成片有效，不清空下游已有编辑。",
+        "当前版本成功后门禁开放，VIDEO/引用/素材输出指向同一文件。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/creative_connections.test.mjs",
+        "canvas:tests/creative_output.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-039",
+      "title": "ComfyTV 可选安装与未知节点保留",
+      "features": [
+        "F-CAN-035",
+        "F-CAN-001"
+      ],
+      "usecases": [
+        "UC-CAN-001",
+        "UC-CAN-014"
+      ],
+      "level": "host",
+      "priority": "P1",
+      "phase": "M6",
+      "fixture": "拟创建：无 ComfyTV 环境、有固定版本 ComfyTV 环境、包含未知第三方节点的旧图。",
+      "setup": [
+        "使用两份独立测试用户目录；固定上游提交且只读。"
+      ],
+      "steps": [
+        "在无上游环境执行基础素材/组/剪辑流程。",
+        "在有上游环境加载兼容节点并查看公开面板/执行结果。",
+        "导入含未知节点图后导出迁移报告。"
+      ],
+      "expected": [
+        "无上游基础功能可用，菜单无失效 ComfyTV 入口。",
+        "兼容不改上游文件/注册实现，稳定输出槽位保留。",
+        "未知节点被报告且原序列化数据保留，不能静默删除。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/comfytv_adapter.test.mjs",
+        "canvas:tools/repository_split_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-040",
+      "title": "素材路径边界、input/output 区分与端点拒绝",
+      "features": [
+        "F-CAN-036"
+      ],
+      "usecases": [
+        "UC-CAN-002",
+        "UC-CAN-007",
+        "UC-CAN-008",
+        "UC-CAN-014"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M5",
+      "fixture": "拟创建：允许根内文件、根外文件、../、绝对路径、非法类型、同名 input/output；Origin/remote 测试请求。",
+      "setup": [
+        "所有夹具置于隔离临时目录，不读取真实敏感文件。",
+        "M2由TC-SYS-020先验纯路径服务；本测试在M5联测素材输出与媒体预览入口，M6回归。"
+      ],
+      "steps": [
+        "调用导入/媒体检查/预览入口处理合法与非法引用。",
+        "向素材输出端点发送非本机或不匹配 Origin 请求。",
+        "移走合法文件后重新读取。"
+      ],
+      "expected": [
+        "合法引用只解析到指定根内文件，input/output 不混淆。",
+        "穿越、根外、非法类型和不允许请求被拒绝；无根外读写副作用。",
+        "失效文件返回可定位错误，不创建伪有效引用或空节点。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/material_output_import_test.py",
+        "canvas:tests/asset_library.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-041",
+      "title": "画布/资产库交互性能预算",
+      "features": [
+        "F-CAN-037",
+        "F-CAN-010",
+        "F-CAN-025"
+      ],
+      "usecases": [
+        "UC-CAN-008",
+        "UC-CAN-013"
+      ],
+      "level": "performance",
+      "priority": "P1",
+      "phase": "M2",
+      "fixture": "M2 使用 FX-PERF-S/M 的纯画布子场景（暂不含未迁表格），以及 2000 条收藏；M5 使用完整 FX-PERF-S/M 再验收。",
+      "setup": [
+        "记录 CPU/GPU/内存、浏览器和宿主版本；先预热素材，关闭无关后台负载。",
+        "以下数值是拟定准入门槛，M0 测基线后需评审锁定；修改门槛须留决策记录。"
+      ],
+      "steps": [
+        "按 TEST_STRATEGY 的统一测量协议，预热10秒后每场景采样30秒、重复5次。",
+        "对2000条收藏执行固定搜索序列并记录输入到结果显示时间。"
+      ],
+      "expected": [
+        "画布分别满足 PERF-01/02；M2只评价画布子场景，不能据此宣称M5完整性能通过。",
+        "2000条收藏搜索满足 PERF-08。",
+        "输出全部原始采样与环境；预算只在 TEST_STRATEGY 维护。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-CAN-042",
+      "title": "宿主能力缺失诊断与架构边界扫描",
+      "features": [
+        "F-CAN-038",
+        "F-CAN-013",
+        "F-CAN-023"
+      ],
+      "usecases": [
+        "UC-CAN-001",
+        "UC-CAN-013",
+        "UC-CAN-014"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M1",
+      "fixture": "拟创建：支持/缺少 history、mode、serialization 能力的宿主契约桩；新库依赖图。",
+      "setup": [
+        "禁止在业务与共享组件导入宿主私有 API；允许清单仅包含 integrations/comfyui。"
+      ],
+      "steps": [
+        "扫描宿主私有字段、菜单 DOM 和直接图修改的拥有模块。",
+        "运行能力探测，逐个移除必要能力。",
+        "对每个声明支持宿主版本执行契约用例。"
+      ],
+      "expected": [
+        "受限访问只存在适配层，业务依赖统一命令/契约。",
+        "缺失能力给出具体诊断并拒绝可能损坏保存/撤销的操作。",
+        "支持矩阵每项有通过证据；未验证组合不标已支持。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tests/creative_contract.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-043",
+      "title": "离线资源、共享组件状态与样式隔离",
+      "features": [
+        "F-CAN-003",
+        "F-CAN-039"
+      ],
+      "usecases": [
+        "UC-CAN-001",
+        "UC-CAN-013",
+        "UC-CAN-014"
+      ],
+      "level": "host",
+      "priority": "P1",
+      "phase": "M1",
+      "fixture": "拟创建：断外网环境、组件状态陈列和原生宿主对照截图。",
+      "setup": [
+        "只允许本机资源请求；分别加载产品真实按钮/字段/标题/任务组件。",
+        "任务胶囊只接收固定只读快照，不调用尚未完成的M4任务服务。"
+      ],
+      "steps": [
+        "校验字体/图标清单与许可证，加载所有所用资源。",
+        "键盘遍历正常/焦点/禁用/忙碌/错误/长内容状态。",
+        "比较打开画布前后宿主输入/按钮样式。"
+      ],
+      "expected": [
+        "所需资源本地加载成功，校验清单匹配，许可证/来源随包交付。",
+        "组件样例引用产品真实实现；状态可区分，焦点不被裁切。",
+        "宿主和未迁入插件控件样式不被全局选择器污染；陈列结果单独标注为辅助证据。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tools/verify_assets.mjs",
+        "canvas:tools/creative_button_smoke.mjs",
+        "canvas:tools/creative_field_smoke.mjs"
+      ]
+    },
+    {
+      "id": "TC-CAN-044",
+      "title": "历史金样迁移与完整无付费闭环",
+      "features": [
+        "F-CAN-014",
+        "F-CAN-024",
+        "F-CAN-035",
+        "F-CAN-036",
+        "F-CAN-038"
+      ],
+      "usecases": [
+        "UC-CAN-006",
+        "UC-CAN-008",
+        "UC-CAN-014"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "拟创建：冻结版本的纯 Canvas、含业务结果/表格引用、含 ComfyTV、损坏/未知版本四类金样，配相对路径媒体。",
+      "setup": [
+        "保留原 JSON/收藏/文件清单校验值；仅新包启用，另设 ComfyTV 可选环境。"
+      ],
+      "steps": [
+        "逐份导入，读取迁移报告并核对节点/槽位/引用。",
+        "对受支持图执行编辑→撤销→保存→重载→资产复用→CPU 剪辑导出。",
+        "对失败图执行回滚并核对原资料。"
+      ],
+      "expected": [
+        "受支持图无未报告的数据丢失，稳定 ID/槽位/序列化含义保持。",
+        "原文件/素材不被覆盖；未知项和缺失文件逐条报告，失败可回滚。",
+        "结果记录自动/真实宿主/本地导出分别通过或失败；未调用任何付费生成。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "canvas:tools/repository_split_smoke.cjs",
+        "canvas:tests/material_output_import_test.py"
+      ]
+    },
+    {
+      "id": "TC-CAN-045",
+      "title": "生命周期压力与资源回收预算",
+      "features": [
+        "F-CAN-037",
+        "F-CAN-027",
+        "F-CAN-030",
+        "F-CAN-031"
+      ],
+      "usecases": [
+        "UC-CAN-011",
+        "UC-CAN-013"
+      ],
+      "level": "performance",
+      "priority": "P1",
+      "phase": "M5",
+      "fixture": "拟创建：20 个视频卡片、2 个剪辑预览、100 个基础节点，带订阅/计时器/媒体源观测。",
+      "setup": [
+        "在记录过的性能机器预热；建立空图资源计数和稳定堆基线。",
+        "资源阈值为拟定准入门槛，M0 基线评审锁定并记录。"
+      ],
+      "steps": [
+        "新建→播放/预览→切换模式→删除全部节点循环20轮，使用 TEST_STRATEGY 的统一采样协议。",
+        "在最后一次释放后等待异步清理完成，按统一采样方式记录堆/媒体/订阅。",
+        "隐藏画布静置 30 秒，采集更新调用。"
+      ],
+      "expected": [
+        "已删除实例对应监听/订阅/取消句柄/媒体源均归零；不再发起旧请求。",
+        "满足 PERF-05：受控GC后最后5轮堆中位数不高于前5轮15%，且增长不超过20MiB；资源计数回到基线。",
+        "隐藏视图不继续全量画布扫描，媒体未后台播放；若失败保存可复现剖析记录。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    }
+  ]
+}

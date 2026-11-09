@@ -1,0 +1,2954 @@
+{
+  "features": [
+    {
+      "id": "F-BIZ-001",
+      "title": "通用表格文档与稳定身份",
+      "decision": "保留",
+      "current": "源码已存在；表格以 fields/records/meta 保存，字段、记录和素材具有 ID。",
+      "source": [
+        "business:web/data_table_model.mjs",
+        "business:nodes/daelab_comfytv_storyboard/table_node.py"
+      ],
+      "target": "frontend/src/features/table; backend/contracts/table",
+      "phase": "M3",
+      "rationale": "保留成熟数据语义，通过单一编辑命令写回原生图的序列化数据。",
+      "acceptance": [
+        "字段、记录和素材身份不以名称、行号或 URL 替代。",
+        "保存重载保留未知兼容字段；不建立与原生图并行可写的文档副本。"
+      ]
+    },
+    {
+      "id": "F-BIZ-002",
+      "title": "表格行的增删、复制、排序与选择",
+      "decision": "保留",
+      "current": "源码已存在；复制行清理生成任务身份与结果。",
+      "source": [
+        "business:web/data_table_model.mjs",
+        "business:web/data_table_editor.mjs"
+      ],
+      "target": "frontend/src/features/table",
+      "phase": "M3",
+      "rationale": "保留编辑行为，明确复制与执行身份分离。",
+      "acceptance": [
+        "复制行产生新记录及素材实例身份，不继承原任务执行权。",
+        "删除、排序和复制分别可撤销，其他表格实例不变。"
+      ]
+    },
+    {
+      "id": "F-BIZ-003",
+      "title": "字段类型、增删、改名、隐藏与列宽",
+      "decision": "保留",
+      "current": "源码已存在；支持 content/text/longtext/number/checkbox/select/assets/json 等字段与展示用途。",
+      "source": [
+        "business:web/data_table_model.mjs",
+        "business:web/data_table_editor.mjs",
+        "business:web/table_column_splitters.mjs"
+      ],
+      "target": "frontend/src/features/table",
+      "phase": "M3",
+      "rationale": "字段类型、生成用途和提示词来源必须保持独立概念。",
+      "acceptance": [
+        "改名、排序和隐藏不改变稳定 ID 或引用指向。",
+        "类型转换失败不部分写入；列宽在重载后保留。"
+      ]
+    },
+    {
+      "id": "F-BIZ-004",
+      "title": "网格选择、文本编辑及复制粘贴",
+      "decision": "保留",
+      "current": "源码已存在；内容展示与编辑态、表内范围选择、TSV/自有剪贴板格式并存。",
+      "source": [
+        "business:web/data_table_editor.mjs",
+        "business:web/table_content_view.mjs",
+        "business:web/data_table_model.mjs"
+      ],
+      "target": "frontend/src/features/table",
+      "phase": "M3",
+      "rationale": "保留中文输入和表格选择优先级，统一编辑事务。",
+      "acceptance": [
+        "输入框内多行粘贴不误变成多条记录。",
+        "Shift/Ctrl 表格选择不被画布抢占；非法粘贴不部分修改。"
+      ]
+    },
+    {
+      "id": "F-BIZ-005",
+      "title": "文字与多媒体单元格、媒体预览和排序",
+      "decision": "保留",
+      "current": "当前 fillMaterialCell 支持向 content 格追加多个素材；历史文档有单素材限制描述，需核对实际 UI 后冻结基线。",
+      "source": [
+        "business:web/table_material_columns.mjs:44",
+        "business:web/table_content_view.mjs",
+        "business:web/data_table_editor.mjs",
+        "business:docs/table-material-columns.md"
+      ],
+      "target": "frontend/src/features/table; frontend/src/features/assets",
+      "phase": "M3",
+      "rationale": "以当前代码和真实 UI 对照消除规范漂移，首版不擅自缩减现有数据。",
+      "acceptance": [
+        "一个格中的多个历史素材无损加载；顺序与素材 ID 保留。",
+        "悬停预览不改变格宽高；视频关闭预览暂停；缺失媒体保留错误占位。"
+      ]
+    },
+    {
+      "id": "F-BIZ-006",
+      "title": "列头广播、按行填充及单格追加素材",
+      "decision": "保留",
+      "current": "源码已存在：单图/视频/文本填满现有列，多个按序填入并补行；行头横向填充，单格追加。",
+      "source": [
+        "business:web/table_material_columns.mjs",
+        "business:web/creative_canvas_adapter.js"
+      ],
+      "target": "frontend/src/features/table; frontend/src/application",
+      "phase": "M3",
+      "rationale": "保持一次快照语义，不借迁移引入隐藏的持续同步。",
+      "acceptance": [
+        "单个素材广播且空表创建一行；多个素材不覆盖未涉及尾行。",
+        "非法媒体或超过 500 行/64 列当前边界时整次拒绝；空集合不清空。"
+      ]
+    },
+    {
+      "id": "F-BIZ-007",
+      "title": "表格单素材复制到画布",
+      "decision": "保留",
+      "current": "源码已存在；通过公开 materialItem/beginMaterialDrag 接入画布。",
+      "source": [
+        "business:web/table_material_item.mjs",
+        "business:web/data_table_editor.mjs:90",
+        "business:web/creative_canvas_adapter.js:17"
+      ],
+      "target": "frontend/src/application; frontend/src/features/table",
+      "phase": "M3",
+      "rationale": "复用统一素材契约，避免表格直接创建宿主私有对象。",
+      "acceptance": [
+        "拖到空白画布保留源单元格、文件引用和显示名称。",
+        "复制可撤销；异步上传/解析结束前验证源快照仍有效。"
+      ]
+    },
+    {
+      "id": "F-BIZ-008",
+      "title": "表格尺寸、浮动操作及空表删除行为",
+      "decision": "保留",
+      "current": "源码已存在；内容表与旧工作台呈现不同；创建默认值已变为素材列、提示词/生成列和 3 行，与旧 2×2 文档不一致。",
+      "source": [
+        "business:web/table_material_columns.mjs:5",
+        "business:web/table_content_view.mjs",
+        "business:web/data_table_nodes.mjs",
+        "business:web/creative_canvas_adapter.js:39",
+        "business:docs/table-material-columns.md"
+      ],
+      "target": "frontend/src/features/table; frontend/src/ui",
+      "phase": "M3",
+      "rationale": "先用真实 UI 和当前规范冻结默认模板，禁止按旧文档直接改写现有体验。",
+      "acceptance": [
+        "明确记录默认创建结构的源码/规范差异和最终批准基线。",
+        "调整宽度、长表自然撑高和边缘菜单均可达；仅通用画布表删除最后行/列时删节点并可撤销。"
+      ]
+    },
+    {
+      "id": "F-BIZ-009",
+      "title": "业务面板生命周期、实例隔离与模式切换",
+      "decision": "重构",
+      "current": "源码已存在；当前同时覆盖 Canvas、原生图和 App Mode，并有跨仓控件 fallback。",
+      "source": [
+        "business:web/app_mode_bypass.js",
+        "business:web/app_mode_bypass_model.mjs",
+        "business:web/data_table_nodes.mjs",
+        "business:web/table_controls.mjs"
+      ],
+      "target": "frontend/src/integrations/comfyui; frontend/src/application",
+      "phase": "M1",
+      "rationale": "单包消除跨仓 fallback，保留现有宿主模式和实例语义。",
+      "acceptance": [
+        "两实例的文档、弹层、媒体播放与任务订阅互不串扰。",
+        "Mute/Bypass 隐藏并释放活动交互，Active 恢复原状态；卸载释放全部监听和轮询。"
+      ]
+    },
+    {
+      "id": "F-BIZ-010",
+      "title": "表级唯一提示词来源",
+      "decision": "保留",
+      "current": "源码已存在：meta.generationInput 保存唯一 promptFieldId；一致旧显式绑定才迁移。",
+      "source": [
+        "business:web/table_prompt_source.mjs",
+        "business:nodes/daelab_comfytv_storyboard/table_source.py",
+        "business:docs/table-prompt-source.md"
+      ],
+      "target": "frontend/src/features/prompt; backend/contracts/table",
+      "phase": "M3",
+      "rationale": "保留明确来源，禁止用列名或列顺序猜测生成输入。",
+      "acceptance": [
+        "同一表最多一个来源；取消/删除来源后新提交被阻止。",
+        "改名/隐藏不丢绑定；复制列不复制来源标记；旧冲突绑定必须提示选择。"
+      ]
+    },
+    {
+      "id": "F-BIZ-011",
+      "title": "同行文本引用与稳定字段锚点",
+      "decision": "保留",
+      "current": "源码已存在；菜单插入字段 ID，普通粘贴 @列名仍为文本。",
+      "source": [
+        "business:web/table_prompt_template.mjs",
+        "business:web/table_prompt_source.mjs",
+        "business:nodes/daelab_comfytv_storyboard/prompt_compiler.py"
+      ],
+      "target": "frontend/src/features/prompt; backend/prompt",
+      "phase": "M3",
+      "rationale": "保持前后端相同的引用展开与失效规则。",
+      "acceptance": [
+        "更名、重排后引用仍展开同行同字段。",
+        "拒绝递归、自引用、空值、失效类型与删除字段；不悄悄回退到别列。"
+      ]
+    },
+    {
+      "id": "F-BIZ-012",
+      "title": "同行媒体引用、素材 ID 与顺序",
+      "decision": "保留",
+      "current": "源码已存在；单行引用使用 assetId，模板按行对应位置初始化并在移动前固定绑定。",
+      "source": [
+        "business:web/table_prompt_template.mjs",
+        "business:web/table_video_references.mjs",
+        "business:nodes/daelab_comfytv_storyboard/video_references.py"
+      ],
+      "target": "frontend/src/features/prompt; backend/prompt",
+      "phase": "M3",
+      "rationale": "避免移动或重排素材后引用误指向新文件。",
+      "acceptance": [
+        "同一行内跨列移动/排序后引用跟随素材 ID。",
+        "跨行移动或删除显示失效；媒体引用顺序与执行输入一致。"
+      ]
+    },
+    {
+      "id": "F-BIZ-013",
+      "title": "整列模板、单行覆盖和首尾帧标记",
+      "decision": "保留",
+      "current": "源码已存在；设置和提示词内联帧标记共用结构；恢复模板与清空覆盖使用不同兼容值。",
+      "source": [
+        "business:web/table_prompt_template.mjs",
+        "business:web/table_generation_panel.mjs",
+        "business:web/table_generation_model.mjs"
+      ],
+      "target": "frontend/src/features/prompt; frontend/src/features/generation",
+      "phase": "M3",
+      "rationale": "保留列默认与行覆盖优先级以及帧标记语义。",
+      "acceptance": [
+        "修改模板不覆盖显式行覆盖；清空和恢复模板行为可区分。",
+        "首尾帧选择/交换/清除后内联标记与提交绑定一致，标记不进入纯文本提示词。"
+      ]
+    },
+    {
+      "id": "F-BIZ-014",
+      "title": "最终提示词预览与前后端编译一致性",
+      "decision": "保留",
+      "current": "源码已存在；表格、解析器和外部生成节点共享展开输入与后端校验。",
+      "source": [
+        "business:web/table_prompt_template.mjs",
+        "business:web/table_exchange.mjs",
+        "business:nodes/daelab_comfytv_storyboard/prompt_compiler.py",
+        "business:nodes/daelab_comfytv_storyboard/prompt_service.py"
+      ],
+      "target": "frontend/src/features/prompt; backend/prompt",
+      "phase": "M3",
+      "rationale": "预览必须表达实际执行输入，不能维护另一套展示编译器。",
+      "acceptance": [
+        "同夹具在预览、导出、后端编译得到相同文本和素材顺序。",
+        "缺引用/非法模式预检失败，且无生成提交。"
+      ]
+    },
+    {
+      "id": "F-BIZ-015",
+      "title": "单格及整列提示词优化、审阅与应用",
+      "decision": "保留",
+      "current": "源码已存在；支持生成建议后手动应用、修订保护和批量撤销。",
+      "source": [
+        "business:web/prompt_optimization_controller.mjs",
+        "business:web/prompt_optimization_panel.mjs",
+        "business:web/prompt_optimization_workflow_history.mjs",
+        "business:docs/table-column-optimization.md"
+      ],
+      "target": "frontend/src/features/prompt; backend/prompt",
+      "phase": "M3",
+      "rationale": "优化结果与原文分开，保留用户明确应用及失效保护。",
+      "acceptance": [
+        "未应用不改变表格；整次应用可一步撤销/重做。",
+        "过期结果、已删除行、修改后输入不能直接覆盖；成功/失败/跳过分别计数。"
+      ]
+    },
+    {
+      "id": "F-BIZ-016",
+      "title": "优化模型设置、报价与凭据边界",
+      "decision": "重构",
+      "current": "源码已存在：Comfy 原生 GPT、DeepSeek、自有本地 Qwen；表格优化账本有报价和预算快照。",
+      "source": [
+        "business:nodes/prompt_optimization/service.py",
+        "business:nodes/prompt_optimization/pricing.py",
+        "business:nodes/prompt_optimization/deepseek.py",
+        "business:nodes/prompt_optimization/api.py"
+      ],
+      "target": "backend/prompt; backend/providers; frontend/src/features/prompt",
+      "phase": "M3",
+      "rationale": "统一提供方能力与认证边界，保留既有费用确认、报价和恢复保护。",
+      "acceptance": [
+        "能力/报价与提交快照一致；过期报价重新确认而非继续提交。",
+        "本地模型请求不带云凭据；工作流、回执、日志不保存密钥。"
+      ]
+    },
+    {
+      "id": "F-BIZ-017",
+      "title": "文本润色与图片反推提示词",
+      "decision": "重构",
+      "current": "源码已存在；独立画布入口目前以进程内字典保存最多 256 条请求，重启后不保留。",
+      "source": [
+        "business:nodes/prompt_optimization/canvas.py",
+        "business:web/llm_style_preview_panel.mjs",
+        "business:tests/test_canvas_polish.py"
+      ],
+      "target": "frontend/src/features/prompt; backend/prompt; backend/jobs",
+      "phase": "M3",
+      "rationale": "保留功能并迁到统一持久任务协议，消除重启丢失防重记录的独立路径。",
+      "acceptance": [
+        "润色与图片反推使用用户选定的真实来源；非法/过大图片拒绝。",
+        "服务重启后同一请求不因记录丢失重复调用；不明结果进入待处理状态。",
+        "M3交付输入、审阅与应用流程；统一账本及服务重启不重复调用由M4 TC-BIZ-021验收。"
+      ]
+    },
+    {
+      "id": "F-BIZ-018",
+      "title": "DOCX 分镜原文读取与最终视图",
+      "decision": "保留",
+      "current": "源码已存在；解析修订后最终可见内容、合并单元格、来源行和图片出现位置。",
+      "source": [
+        "business:nodes/daelab_comfytv_storyboard/script_document.py",
+        "business:nodes/daelab_comfytv_storyboard/script_contract.py",
+        "business:docs/script-parser.md"
+      ],
+      "target": "backend/storyboard; frontend/src/features/storyboard",
+      "phase": "M3",
+      "rationale": "文稿原文和来源是用户数据资产，不能以重写解析器丢失。",
+      "acceptance": [
+        "插入修订保留、删除修订排除；合并锚点保留且物理行不误合并。",
+        "文档有坏图仍保留文字与错误定位；不擅自补写镜头内容。"
+      ]
+    },
+    {
+      "id": "F-BIZ-019",
+      "title": "分镜字段映射、来源追踪与待分配图片",
+      "decision": "保留",
+      "current": "源码已存在；原文、inventory、未分配图片及映射随文档保存。",
+      "source": [
+        "business:web/script_parser_model.mjs",
+        "business:web/script_parser_panel.mjs",
+        "business:nodes/daelab_comfytv_storyboard/script_api.py",
+        "business:docs/script-parser.md"
+      ],
+      "target": "frontend/src/features/storyboard; backend/storyboard",
+      "phase": "M3",
+      "rationale": "避免把无法定位的图片强塞到错误分镜，保留可复查来源。",
+      "acceptance": [
+        "同一图片多次出现保留多个实例及顺序；表外图片保留待分配项。",
+        "刷新后可查看原文并调整映射，不依赖 temp 缓存；缺 inventory 的旧文件明确提示补充。"
+      ]
+    },
+    {
+      "id": "F-BIZ-020",
+      "title": "文稿追加、去重、修订及原子导入",
+      "decision": "保留",
+      "current": "源码已存在；文档指纹加来源定位去重，映射调整保护手工编辑与生成结果。",
+      "source": [
+        "business:web/script_parser_model.mjs",
+        "business:web/script_parser_panel.mjs",
+        "business:nodes/daelab_comfytv_storyboard/script_contract.py"
+      ],
+      "target": "frontend/src/features/storyboard; frontend/src/application",
+      "phase": "M3",
+      "rationale": "保留用户编辑与生成身份，导入作为一个可撤销事务。",
+      "acceptance": [
+        "重复导入不重复行；内容变更的新文档版本可追踪。",
+        "读入期间表格变化、容量超限或类型冲突整次拒绝；活动任务期间不改写其输入快照。"
+      ]
+    },
+    {
+      "id": "F-BIZ-021",
+      "title": "既有通用文稿和表格文件导入",
+      "decision": "保留",
+      "current": "源码已存在；既有入口接收 DOCX/XLSX/XLSM/CSV/TSV/TXT/MD/PDF，支持程度以解析器与夹具核定。",
+      "source": [
+        "business:nodes/daelab_comfytv_storyboard/document_import.py",
+        "business:web/data_table_nodes.mjs:111",
+        "business:nodes/daelab_comfytv_storyboard/import_node.py"
+      ],
+      "target": "backend/storyboard; frontend/src/features/storyboard",
+      "phase": "M3",
+      "rationale": "迁移现有可用格式，不把扩展名列表当所有复杂文档已通过。",
+      "acceptance": [
+        "逐格式提供正常、空、损坏和结构异常夹具并记录支持限制。",
+        "导入错误不覆盖当前表；引用图片入资产管理而不是内嵌临时路径。"
+      ]
+    },
+    {
+      "id": "F-BIZ-022",
+      "title": "可选 AI 文稿归类",
+      "decision": "保留",
+      "current": "源码已存在；通过私有后端配置调用兼容服务，仅显式归类选中文本，不发送图片。",
+      "source": [
+        "business:nodes/daelab_comfytv_storyboard/script_ai.py",
+        "business:nodes/daelab_comfytv_storyboard/script_api.py",
+        "business:docs/script-parser.md"
+      ],
+      "target": "backend/storyboard; backend/providers; frontend/src/features/storyboard",
+      "phase": "M3",
+      "rationale": "保留手工完整流程，AI 仅提供受约束分类建议。",
+      "acceptance": [
+        "无配置仍能完成导入；未点击归类无外部请求。",
+        "返回不得增删来源、跨行或改写原文，非法返回保留原草稿。"
+      ]
+    },
+    {
+      "id": "F-BIZ-023",
+      "title": "表内图片/视频生成列与提交范围",
+      "decision": "保留",
+      "current": "源码已存在；整列、选中行及单行入口共享生成任务。",
+      "source": [
+        "business:web/table_generation_model.mjs",
+        "business:web/table_generation_panel.mjs",
+        "business:web/table_generation_tasks.mjs"
+      ],
+      "target": "frontend/src/features/generation; backend/generation",
+      "phase": "M4",
+      "rationale": "表内生成是完整创作闭环的主要入口，不能只保留外部生成节点。",
+      "acceptance": [
+        "选中行优先，否则仅选有效空结果行；提交前显示范围且全批预检。",
+        "列配置草稿在点击生成时生效；恢复原任务使用原快照。"
+      ]
+    },
+    {
+      "id": "F-BIZ-024",
+      "title": "外部生成节点与表格双向交换",
+      "decision": "重构",
+      "current": "源码已存在；生成节点接收表格、文本和帧素材，并以稳定行/列身份同步。",
+      "source": [
+        "business:web/table_exchange.mjs",
+        "business:web/libtv_panel.js",
+        "business:web/libtv_video_model.mjs",
+        "business:web/video_task_linked_prompt.mjs"
+      ],
+      "target": "frontend/src/features/generation; frontend/src/application",
+      "phase": "M4",
+      "rationale": "与表内入口共用同一生成应用服务，保留两种工作方式。",
+      "acceptance": [
+        "导入表格保留行、来源、帧绑定和节点专属输入。",
+        "修改/撤销只同步匹配字段；源断开/删除时阻止新提交，不覆盖已有结果。"
+      ]
+    },
+    {
+      "id": "F-BIZ-025",
+      "title": "精确模型能力、参数与模式预检",
+      "decision": "重构",
+      "current": "源码已存在；云端与本地有各自能力映射，当前包含精确 Fast/Mini 等型号与 H3 三模式。",
+      "source": [
+        "business:nodes/libtv_bridge/table_comfy_video.py",
+        "business:nodes/libtv_bridge/table_comfy_image.py",
+        "business:nodes/libtv_bridge/table_local_models.py",
+        "business:web/table_prompt_settings.mjs"
+      ],
+      "target": "backend/providers; backend/contracts/generation; frontend/src/features/generation",
+      "phase": "M4",
+      "rationale": "参数模型与提供方能力统一管理，禁止静默选替代型号。",
+      "acceptance": [
+        "前后端拒绝不支持参数、缺帧、错媒体类型和不存在模型。",
+        "本地/云端切换只按明确规则迁移兼容设置，不保留无效隐藏参数。"
+      ]
+    },
+    {
+      "id": "F-BIZ-026",
+      "title": "Comfy 账户积分图片和视频生成",
+      "decision": "保留",
+      "current": "源码已存在；经原生 Comfy API 节点执行，旧 LibTV 服务已退役；本清单不声明真实付费输出验收。",
+      "source": [
+        "business:nodes/libtv_bridge/table_comfy_video.py",
+        "business:nodes/libtv_bridge/table_comfy_image.py",
+        "business:docs/comfy-credit-generation.md"
+      ],
+      "target": "backend/providers/comfy_partner; backend/integrations/comfyui",
+      "phase": "M4",
+      "rationale": "继续依托 ComfyUI 的执行和认证，单仓库不内置第二套 Comfy 引擎。",
+      "acceptance": [
+        "未登录、未知型号或非法参数在入队前失败。",
+        "认证仅传入 sensitive 数据；本轮云端通道只用假服务验证协议，真实输出、费用和水印效果保持未验收，不作为迁移退出门槛。"
+      ]
+    },
+    {
+      "id": "F-BIZ-027",
+      "title": "本地 Qwen 图片生成",
+      "decision": "保留",
+      "current": "源码已存在；依赖已安装模型和 Comfy 节点，缺依赖需清晰预检。",
+      "source": [
+        "business:nodes/libtv_bridge/table_local_image.py",
+        "business:nodes/libtv_bridge/table_local_models.py",
+        "business:docs/table-local-qwen.md"
+      ],
+      "target": "backend/providers/local_image; backend/integrations/comfyui",
+      "phase": "M4",
+      "rationale": "迁移模型工作流构建与校验，不把模型权重和 GPU 环境视为单包自带。",
+      "acceptance": [
+        "缺模型/节点不下载替代物或入队；提示确切缺项。",
+        "本地任务使用同一账本并串行调度；输出校验为真实存在的 output 文件。"
+      ]
+    },
+    {
+      "id": "F-BIZ-028",
+      "title": "本地 MiniMax H3 文生、首帧、首尾帧视频",
+      "decision": "保留",
+      "current": "源码已存在；三模式分别构图，媒体数量和不支持的参考视频/音频会被拒绝。",
+      "source": [
+        "business:nodes/libtv_bridge/table_local_video.py",
+        "business:nodes/libtv_bridge/table_local_execution.py",
+        "business:tests/test_table_local_h3.py"
+      ],
+      "target": "backend/providers/local_video; backend/integrations/comfyui",
+      "phase": "M4",
+      "rationale": "保留已明确的模式语义与帧绑定，避免迁移时降成一个模糊视频入口。",
+      "acceptance": [
+        "三模式分别接受 0/1/2 张图且不静默切模式。",
+        "真实本地执行需单独记录设备、模型与输出；mock 或 validate_prompt 不冒充执行成功。"
+      ]
+    },
+    {
+      "id": "F-BIZ-029",
+      "title": "不可变输入快照、指纹与媒体冻结",
+      "decision": "保留",
+      "current": "源码已存在；生成前计算输入指纹、文件哈希并冻结素材。",
+      "source": [
+        "business:nodes/libtv_bridge/media_snapshot.py",
+        "business:nodes/libtv_bridge/table_generation_api.py:140",
+        "business:nodes/libtv_bridge/runtime.py:74"
+      ],
+      "target": "backend/contracts/generation; backend/jobs; backend/assets",
+      "phase": "M4",
+      "rationale": "这是防止重复计费和恢复时输入漂移的核心，不应在重构中丢弃。",
+      "acceptance": [
+        "同 requestId 同输入复用原记录，不同输入明确拒绝。",
+        "源文件替换后旧任务仍指向冻结版本；凭据不进入指纹或快照。"
+      ]
+    },
+    {
+      "id": "F-BIZ-030",
+      "title": "统一持久任务账本与恢复状态机",
+      "decision": "重构",
+      "current": "当前生成为原子 JSON 回执、表格优化为 SQLite 账本、画布润色为内存缓存；尚非统一任务服务。",
+      "source": [
+        "business:nodes/libtv_bridge/table_generation_api.py",
+        "business:nodes/prompt_optimization/service.py:140",
+        "business:nodes/prompt_optimization/canvas.py:12"
+      ],
+      "target": "backend/jobs; frontend/src/features/tasks",
+      "phase": "M4",
+      "rationale": "统一权威任务记录，前端/工作流仅保留引用和展示缓存。",
+      "acceptance": [
+        "每个状态转移、请求和执行身份均可追踪；重启不重置防重依据。",
+        "提交响应未知独立于失败；没有可查询远端 ID 时禁止自动新提交。"
+      ]
+    },
+    {
+      "id": "F-BIZ-031",
+      "title": "原任务查询、结果下载恢复与结果完整性",
+      "decision": "重构",
+      "current": "源码已存在；恢复已有执行与下载分开，缺失本地结果和不明任务有显式处理。",
+      "source": [
+        "business:nodes/libtv_bridge/recovery.py",
+        "business:nodes/libtv_bridge/table_generation_api.py",
+        "business:nodes/libtv_bridge/table_local_execution.py"
+      ],
+      "target": "backend/jobs; backend/providers; backend/assets",
+      "phase": "M4",
+      "rationale": "把当前可靠恢复语义收敛到统一服务并保留有界重试。",
+      "acceptance": [
+        "下载失败恢复仅查询/下载原结果，不再次创建生成。",
+        "文件缺失/变化不标成功；后端重启后 running 无 worker 进入待恢复。"
+      ]
+    },
+    {
+      "id": "F-BIZ-032",
+      "title": "暂停、停止后续提交与本地中断",
+      "decision": "保留",
+      "current": "源码已存在：本地当前任务可中断并在继续时重跑当前行；云端已提交任务继续完成。",
+      "source": [
+        "business:nodes/libtv_bridge/table_generation_api.py",
+        "business:nodes/libtv_bridge/table_local_execution.py:34",
+        "business:web/table_generation_tasks.mjs"
+      ],
+      "target": "backend/jobs; backend/integrations/comfyui; frontend/src/features/tasks",
+      "phase": "M4",
+      "rationale": "保留不同执行器的真实取消能力，禁止将停止等待队列宣传为撤销远端费用。",
+      "acceptance": [
+        "暂停只影响指定请求/批次；其他实例继续运行。",
+        "本地继续创建明确的新原生执行记录；云端恢复关联原执行。"
+      ]
+    },
+    {
+      "id": "F-BIZ-033",
+      "title": "结果写回、过期保护、历史结果与撤销隔离",
+      "decision": "保留",
+      "current": "源码已存在；结果按请求/行/列/输入戳写回，历史结果可显式追加。",
+      "source": [
+        "business:web/table_generation_model.mjs",
+        "business:web/table_generation_tasks.mjs",
+        "business:web/table_generation_history.mjs"
+      ],
+      "target": "frontend/src/application; frontend/src/features/generation; backend/jobs",
+      "phase": "M4",
+      "rationale": "编辑历史不能倒退不可撤销的外部执行事实。",
+      "acceptance": [
+        "删除/改动目标或切换工作流后旧响应不覆盖当前内容。",
+        "历史结果按任务身份去重；撤销编辑不删除服务端账本或触发重复生成。"
+      ]
+    },
+    {
+      "id": "F-BIZ-034",
+      "title": "任务进度、失败分类与节点汇总",
+      "decision": "重构",
+      "current": "源码已存在；任务纯快照展示，生成每实例轮询 3 秒，优化/文稿各有提供者。",
+      "source": [
+        "business:web/task_snapshots.mjs",
+        "business:web/table_generation_tasks.mjs:178",
+        "business:docs/architecture/NODE_TASKS.md"
+      ],
+      "target": "frontend/src/features/tasks; backend/jobs",
+      "phase": "M4",
+      "rationale": "统一订阅和错误模型，减少实例级重复轮询但保留真实进度语义。",
+      "acceptance": [
+        "只有提供方报告百分比时显示百分比，其余显示阶段/计数。",
+        "完成/失败/跳过/过期分开；刷新历史成功不反复发完成通知。"
+      ]
+    },
+    {
+      "id": "F-BIZ-035",
+      "title": "云并发、本地串行与 GPU 资源协调",
+      "decision": "重构",
+      "current": "源码已存在：表格云预算 32、本地 1；native_admission 目前从优化模块提供，宿主进程内调度。",
+      "source": [
+        "business:nodes/libtv_bridge/table_generation_api.py:22",
+        "business:nodes/libtv_bridge/table_local_execution.py:54",
+        "business:nodes/prompt_optimization/local_qwen.py"
+      ],
+      "target": "backend/jobs; backend/integrations/comfyui",
+      "phase": "M4",
+      "rationale": "抽出公共资源协调；当前数字只作为盘点基线，新预算经测量确定。",
+      "acceptance": [
+        "跨表/节点共享预算，单行失败不阻塞无关任务。",
+        "本地 Qwen 与原生 GPU 入队遵守同一资源租约，卸载失败隔离并给出恢复动作。"
+      ]
+    },
+    {
+      "id": "F-BIZ-036",
+      "title": "生成结果预览、素材组输出与再次引用",
+      "decision": "保留",
+      "current": "源码已存在；结果按行/任务输出有序素材，表格和生成节点通过公开 adapter 提供素材。",
+      "source": [
+        "business:web/table_material_output.mjs",
+        "business:web/libtv_video_model.mjs",
+        "business:web/creative_canvas_adapter.js"
+      ],
+      "target": "frontend/src/features/assets; frontend/src/application",
+      "phase": "M5",
+      "rationale": "打通生成到编辑/剪辑的闭环，复用真实文件引用。",
+      "acceptance": [
+        "每任务独立成组、按任务名命名并保持结果顺序；空结果跳过。",
+        "输出复制不移动原结果；已完成结果可作为后续提示词参考。"
+      ]
+    },
+    {
+      "id": "F-BIZ-037",
+      "title": "旧节点 ID、端口、工作流和记录兼容",
+      "decision": "重构",
+      "current": "源码已存在；当前继续使用 DAELAB.Table、StoryboardImport、ScriptParser、LibTV.VideoGenerate 等旧 ID。",
+      "source": [
+        "business:nodes/daelab_comfytv_storyboard/__init__.py",
+        "business:nodes/libtv_bridge/node.py",
+        "business:web/creative_canvas_adapter.js",
+        "business:docs/client-workflow-foundation.md"
+      ],
+      "target": "compat/workflows; compat/legacy; backend/integrations/comfyui",
+      "phase": "M6",
+      "rationale": "内部命名清理与外部兼容分离，单包注册唯一节点拥有者。",
+      "acceptance": [
+        "已发布 ID、槽位顺序和 widget 序列无损读取，必要新增端口只追加。",
+        "同机旧库冲突可识别；迁移后的单包不依赖旧仓库路径。"
+      ]
+    },
+    {
+      "id": "F-BIZ-038",
+      "title": "退役 LibTV 通道的历史只读兼容",
+      "decision": "重构",
+      "current": "源码明确禁用旧 LibTV CLI 与批量执行；完成结果保留，未完成旧任务不得恢复生成。",
+      "source": [
+        "business:nodes/libtv_bridge/runtime.py:56",
+        "business:nodes/libtv_bridge/node.py:113",
+        "business:nodes/libtv_bridge/__init__.py",
+        "business:docs/comfy-credit-generation.md"
+      ],
+      "target": "compat/legacy; backend/jobs",
+      "phase": "M6",
+      "rationale": "保留数据而不恢复已退役服务；新云任务必须显式选择现支持通道。",
+      "acceptance": [
+        "旧完成回执和素材可查看/导出。",
+        "旧 waiting/running/unknown 恢复不启动 CLI、不入 Comfy 队列、不静默转收费任务。"
+      ]
+    },
+    {
+      "id": "F-BIZ-039",
+      "title": "旧徽章与展厅业务",
+      "decision": "不迁入",
+      "current": "业务根入口仍注册徽章各阶段、材质、蒙版和展厅提示词等独立业务。",
+      "source": [
+        "business:__init__.py:17",
+        "business:__init__.py:29",
+        "business:__init__.py:85",
+        "business:docs/architecture/SCOPE.md"
+      ],
+      "target": "旧业务仓库保留；新库无对应模块",
+      "phase": "M6",
+      "rationale": "不属于创作画布当前产品范围，避免把历史业务带进新单包。",
+      "acceptance": [
+        "新包导入/注册/构建不依赖徽章或展厅模块。",
+        "旧项目仍可在原环境运行；新库不承诺这些节点的迁移。"
+      ]
+    },
+    {
+      "id": "F-BIZ-040",
+      "title": "旧布尔控制、分割与多边形工具",
+      "decision": "不迁入",
+      "current": "业务根入口仍注册布尔层级/组旁路、SAM3 和 PolygonMask 等节点。",
+      "source": [
+        "business:__init__.py:1",
+        "business:__init__.py:73",
+        "business:__init__.py:77",
+        "business:__init__.py:81",
+        "business:docs/architecture/SCOPE.md"
+      ],
+      "target": "旧业务仓库保留；新库无对应模块",
+      "phase": "M6",
+      "rationale": "仅提取创作功能确实需要且独立的公共逻辑，不携带整套旧工具。",
+      "acceptance": [
+        "新包依赖扫描无这些业务模块和其专用资产。",
+        "遇到含此类节点的混合旧工作流明确报告外部依赖，不静默删除节点。"
+      ]
+    },
+    {
+      "id": "F-BIZ-041",
+      "title": "同步表格来源与投影所有权",
+      "decision": "重构",
+      "current": "源码已存在；liveSource 保留源字段/行身份，投影任务不拥有远端回执轮询权。",
+      "source": [
+        "business:web/table_exchange.mjs",
+        "business:web/table_generation_tasks.mjs:74",
+        "business:web/data_table_nodes.mjs"
+      ],
+      "target": "frontend/src/application; frontend/src/features/table; frontend/src/contracts",
+      "phase": "M3",
+      "rationale": "把单向派生与双向允许编辑的边界显式化，避免持续回写与撤销污染。",
+      "acceptance": [
+        "只有拥有生成列的文档对账该任务；只读投影不重复轮询。",
+        "源断开保留来源身份并禁用定位/新提交；恢复连接不覆盖手工允许编辑的字段。"
+      ]
+    },
+    {
+      "id": "F-BIZ-042",
+      "title": "原生生成节点输出与已完成结果读取",
+      "decision": "保留",
+      "current": "源码已存在；旧 VideoGenerate 原生 execute 已禁止直接调用 LibTV，读取面板已完成结果。",
+      "source": [
+        "business:nodes/libtv_bridge/node.py",
+        "business:web/libtv_video_model.mjs",
+        "business:tests/libtv_canvas_result.test.mjs",
+        "business:docs/comfy-credit-generation.md"
+      ],
+      "target": "backend/integrations/comfyui; frontend/src/features/generation; compat/legacy",
+      "phase": "M4",
+      "rationale": "单包仍是 ComfyUI 扩展，原生图的类型化输出与创作面板保持一致。",
+      "acceptance": [
+        "无完成结果、结果来源变化或文件缺失时返回明确错误而非悄悄生成。",
+        "已完成结果通过原槽位输出，输出不会触发第二次付费请求。"
+      ]
+    },
+    {
+      "id": "F-BIZ-043",
+      "title": "LLM 优化节点的多源输入与审阅后输出",
+      "decision": "保留",
+      "current": "LLMStylePreviewB 是当前生产入口，支持文本、图片、素材组、表格和其他输入，提供结果与逐行结果两个输出；后端执行只读已应用结果。",
+      "source": [
+        "business:web/llm_style_preview.js",
+        "business:web/llm_slot_model.mjs",
+        "business:web/llm_io_model.mjs",
+        "business:nodes/prompt_optimization/approved_result.py",
+        "business:docs/architecture/LLM_SLOT_IO.md"
+      ],
+      "target": "frontend/src/features/prompt; frontend/src/application; backend/prompt; backend/integrations/comfyui",
+      "phase": "M3",
+      "rationale": "不能把生产 LLM 节点缩减为一次性润色弹窗；保留组合输入、逐行身份和显式审阅。",
+      "acceptance": [
+        "多源输入按稳定身份读取；不得因缺来源取其他预览作替代。",
+        "只有应用后的结果可接线；逐行结果保留唯一行 ID；原生执行不触发模型调用。"
+      ]
+    },
+    {
+      "id": "F-BIZ-044",
+      "title": "旧独立分镜生成与 LLM 样式原型的收敛",
+      "decision": "重构",
+      "current": "GPTImageStoryboardStage 当前仍有 Comfy 图片执行实现；LLM A/C/D/E 为前端虚拟样式原型。新库只读兼容/显式转换是拟定收敛决策，并非当前都已退役。",
+      "source": [
+        "business:nodes/daelab_comfytv_storyboard/node.py",
+        "business:web/llm_style_preview.js:12",
+        "business:web/llm_style_preview.js:58"
+      ],
+      "target": "compat/workflows; compat/legacy",
+      "phase": "M6",
+      "rationale": "分镜生成统一到通用表格/生成服务，原型数据可导入，避免生产继续暴露多套重叠执行入口。",
+      "acceptance": [
+        "旧分镜表/结果/输入可读取并预览转换差异，用户显式转换后才启用新生成入口。",
+        "A/C/D/E 不作为新包生产节点注册；可恢复数据并显式转换到 B，不静默丢弃原型内容。"
+      ]
+    }
+  ],
+  "usecases": [
+    {
+      "id": "UC-BIZ-001",
+      "title": "建立并整理两个独立素材表",
+      "features": [
+        "F-BIZ-001",
+        "F-BIZ-002",
+        "F-BIZ-003",
+        "F-BIZ-004",
+        "F-BIZ-008",
+        "F-BIZ-009"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "单包已在支持的 ComfyUI 版本加载；无旧业务库依赖。",
+        "默认新表结构已通过源码/实际 UI/规范核对并冻结。"
+      ],
+      "steps": [
+        "在画布新建 A、B 两表；核对默认字段和行。",
+        "在 A 新增文字、数字和素材字段，编辑长中文；复制、排序、删除行，调整列宽和隐藏列。",
+        "复制粘贴选区，撤销/重做后保存；切换原生图、App Mode 和画布，再刷新。"
+      ],
+      "outcomes": [
+        "A 恢复全部编辑、字段与宽度；B 未变化。",
+        "焦点、中文输入、选择与菜单始终可达；文档数据以原生图序列化为权威。"
+      ],
+      "exceptions": [
+        "不支持的类型转换提示原因并保留旧值。",
+        "达到已冻结容量边界拒绝整次操作。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-002",
+      "title": "从画布填充表格并整理单元格媒体",
+      "features": [
+        "F-BIZ-005",
+        "F-BIZ-006",
+        "F-BIZ-007",
+        "F-BIZ-012"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "有单图片、单视频、单文本和包含多个素材的组；A 表已有 3 行。"
+      ],
+      "steps": [
+        "将单图片/文本分别拖到兼容列头；把多素材组拖入另一列。",
+        "将组拖到行头和已有素材格，比较横向填充与单格追加结果。",
+        "在同一行内重新排序/跨列移动媒体；把单个表格素材复制到空白画布。"
+      ],
+      "outcomes": [
+        "列广播、顺序填充、按行填充和追加遵守各自规则；源对象保持原位置。",
+        "媒体引用跟随稳定素材身份；复制到画布不删除源格内容。"
+      ],
+      "exceptions": [
+        "含缺失媒体、不兼容字段或超容量时整次拒绝。",
+        "跨行移动使旧同行引用失效并阻止新生成。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-003",
+      "title": "导入 DOCX 并修正文稿映射",
+      "features": [
+        "F-BIZ-018",
+        "F-BIZ-019",
+        "F-BIZ-020"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "有包含合并格、插入/删除修订、重复图片和表外图片的固定 DOCX 夹具。"
+      ],
+      "steps": [
+        "在解析器导入文档并查看原文来源、章节与图片顺序。",
+        "手工调整字段/单元格映射，分配一张表外图片并保留另一张待处理。",
+        "修改一行文字后再次导入同文件，再追加内容发生变化的新版本。",
+        "撤销导入、重做、保存刷新并继续查看来源。"
+      ],
+      "outcomes": [
+        "重复来源不重复创建；变化版本可追踪。",
+        "手工编辑、行/素材 ID 和既有结果保持；inventory 与待处理项跨刷新保留。"
+      ],
+      "exceptions": [
+        "坏图保留原文和错误定位。",
+        "活动任务、导入期间编辑或映射冲突阻止不安全覆盖。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-004",
+      "title": "从既有表格/文本文件整理分镜",
+      "features": [
+        "F-BIZ-001",
+        "F-BIZ-004",
+        "F-BIZ-021"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "已列出首版明确支持的格式与限制；每格式有正常和损坏夹具。"
+      ],
+      "steps": [
+        "分别导入 DOCX、电子表格、分隔文本、纯文本和 PDF 支持夹具。",
+        "检查字段类型、文本换行、媒体引用与原始来源。",
+        "尝试导入损坏文件后继续编辑现有表格。"
+      ],
+      "outcomes": [
+        "可支持内容进入统一表格契约并可保存重载。",
+        "错误导入不覆盖现有内容；不支持的结构明确报告。"
+      ],
+      "exceptions": [
+        "扩展名受支持但内部结构不可解析时保留原表。",
+        "文件超过大小/容量限制时在提交前拒绝。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-005",
+      "title": "配置唯一提示词来源和同行引用",
+      "features": [
+        "F-BIZ-010",
+        "F-BIZ-011",
+        "F-BIZ-012",
+        "F-BIZ-013",
+        "F-BIZ-014"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "表中含画面文本、备注、两张图片及视频；有至少两行不同内容。"
+      ],
+      "steps": [
+        "指定画面列为唯一提示词来源，插入同行文本和图片引用。",
+        "设置整列模板并为第二行添加覆盖；重命名/重排列和媒体。",
+        "选择首帧/尾帧，预览展开文本，再导出到外部生成节点。",
+        "清空覆盖后恢复模板；取消来源并尝试生成。"
+      ],
+      "outcomes": [
+        "预览、导出和后端编译的文本/引用顺序一致。",
+        "重命名不丢引用；覆盖优先级和帧标记保持；取消来源后无提交。"
+      ],
+      "exceptions": [
+        "递归引用、缺失媒体或非文本来源会显示精确位置。",
+        "旧冲突绑定要求显式选择，不按列序猜测。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-006",
+      "title": "优化提示词并审阅后应用",
+      "features": [
+        "F-BIZ-015",
+        "F-BIZ-016"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "表有两行文本和引用锚点；选择本地假服务或白名单内的本地Qwen。",
+        "云端报价、预算与认证行为仅用假服务验证，不进行真实云调用。"
+      ],
+      "steps": [
+        "打开单格或整列优化设置，选择模型和处理要求。",
+        "请求建议；执行过程中修改其中一行并等待所有结果。",
+        "审阅成功、失败和过期项，仅应用仍匹配的建议。",
+        "撤销/重做整次应用，保存刷新后查看原批次。"
+      ],
+      "outcomes": [
+        "未应用前原文不变；过期项不覆盖；引用锚点保留。",
+        "应用只形成一个编辑事务；任务事实独立于撤销历史。"
+      ],
+      "exceptions": [
+        "报价过期、认证缺失、网络结果未知时停止发送并保留账本。",
+        "本地模型不收取/转发云凭据。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-007",
+      "title": "润色文本或从图片反推提示词",
+      "features": [
+        "F-BIZ-017",
+        "F-BIZ-016",
+        "F-BIZ-030",
+        "F-BIZ-043"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "有文本节点和一张用户选定图片；使用固定结果替身或白名单内的本地Qwen。"
+      ],
+      "steps": [
+        "分别选择文本润色和图片反推；核对实际输入来源。",
+        "发起请求，模拟响应丢失或宿主重启后重开同任务。",
+        "查看建议并决定应用到当前文本。",
+        "向 LLM B 连接文本、素材组和多行表格，审阅并应用后读取结果及逐行结果槽位。"
+      ],
+      "outcomes": [
+        "图片反推发送选定图片而非其他预览；文本结果与原文分离。",
+        "同请求恢复不重复提交；未知结果清楚标识。",
+        "未应用时输出不可用；已应用逐行结果保留行 ID，原生图执行只读结果不重新调用模型。"
+      ],
+      "exceptions": [
+        "图片过大/损坏、来源已变更或任务未完成时阻止应用。",
+        "本轮禁止云端及其他模型真实调用；本地Qwen能力缺失时标阻塞，不替换提供方。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-008",
+      "title": "可选 AI 归类文稿",
+      "features": [
+        "F-BIZ-018",
+        "F-BIZ-019",
+        "F-BIZ-022"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "DOCX 已导入；无 AI 配置时也可手工操作。"
+      ],
+      "steps": [
+        "先手工完成一行归类，再配置允许的服务并选择几行文本。",
+        "显式点击 AI 归类，核对请求范围与返回映射。",
+        "提交伪造缺行/跨行/改写的响应以检查拒绝行为。"
+      ],
+      "outcomes": [
+        "只有选中文本和来源 ID 被发送，图片不发送。",
+        "合法归类仅更新分类建议；非法结果不改原文/草稿。"
+      ],
+      "exceptions": [
+        "无配置、超时、结构不合法时保留完整手工流程。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-009",
+      "title": "在表格中按行批量生成图片或视频",
+      "features": [
+        "F-BIZ-023",
+        "F-BIZ-025",
+        "F-BIZ-026",
+        "F-BIZ-027",
+        "F-BIZ-028",
+        "F-BIZ-029",
+        "F-BIZ-033"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "有有效提示词来源、素材引用和生成列；测试默认使用不付费执行替身。"
+      ],
+      "steps": [
+        "配置模型、模式及参数；只选择两行，提交前检查范围。",
+        "让结果逆序返回；生成期间编辑一行输入。",
+        "查看结果、过期状态和错误行；取消选择后生成有效空结果行。"
+      ],
+      "outcomes": [
+        "任务按稳定行/列/request 身份写回；返回顺序不影响目标。",
+        "修改后的行不被旧结果覆盖；已有结果保留至新结果成功。"
+      ],
+      "exceptions": [
+        "任一明确选中行预检不通过时全批不提交。",
+        "模型缺失、错媒体类型或缺帧时给出可操作错误。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-010",
+      "title": "用独立生成节点处理表格任务或连线输入",
+      "features": [
+        "F-BIZ-024",
+        "F-BIZ-025",
+        "F-BIZ-041",
+        "F-BIZ-042"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "表内有唯一提示词和帧绑定；创建两个独立生成节点。"
+      ],
+      "steps": [
+        "把表格导入/连接到两个节点，修改其中一个任务的允许字段。",
+        "在源表改文字和帧绑定，再撤销；检查两个节点同步。",
+        "断开源或删除源行，尝试新提交；恢复源后读取已完成结果的原生输出。"
+      ],
+      "outcomes": [
+        "同步只更新匹配身份与允许字段，节点专有设置/已有结果保留。",
+        "断开时保留来源信息并阻止新提交；原生输出读取完成结果不重复执行。"
+      ],
+      "exceptions": [
+        "源失效、旧快照或无完成结果明确报错。",
+        "投影文档不重复拥有远端任务轮询。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-011",
+      "title": "中断后恢复原任务和下载",
+      "features": [
+        "F-BIZ-029",
+        "F-BIZ-030",
+        "F-BIZ-031",
+        "F-BIZ-033",
+        "F-BIZ-038"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "账本中分别有已提交、提交响应未知、已完成但下载失败、本地队列丢失和旧 LibTV 记录。"
+      ],
+      "steps": [
+        "关闭前端并重新打开，再重启宿主读取各状态。",
+        "对有远端 ID 的任务恢复查询/下载，对无 ID 的未知任务查看处理提示。",
+        "替换或删除结果文件后再次请求状态；查看历史完成结果。"
+      ],
+      "outcomes": [
+        "恢复仅连接原执行；下载失败不会发起第二次生成。",
+        "文件不完整不能标成功；退役任务仅可读取历史完成结果。"
+      ],
+      "exceptions": [
+        "未知执行无安全查询方式时禁止自动重发。",
+        "本地任务不在队列/历史时要求显式重新生成。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-012",
+      "title": "暂停一批任务并继续",
+      "features": [
+        "F-BIZ-023",
+        "F-BIZ-030",
+        "F-BIZ-032",
+        "F-BIZ-035"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "A、B 两表均有等待和执行中任务；区分本地/云端能力。"
+      ],
+      "steps": [
+        "暂停 A 的一个任务或整列；观察 B。",
+        "在本地执行器确认中断后点击继续；对云端观察已提交任务完成。",
+        "服务重启后查看暂停记录并显式继续。"
+      ],
+      "outcomes": [
+        "未发送项停止；B 不受影响。",
+        "本地继续明确重跑当前行；云端已提交任务不伪装为取消或退款。"
+      ],
+      "exceptions": [
+        "中断未确认时显示暂停中，不提前宣告完成。",
+        "资源隔离未解除时保留暂停及恢复说明。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-013",
+      "title": "查看任务汇总并把结果送往后续创作",
+      "features": [
+        "F-BIZ-034",
+        "F-BIZ-036",
+        "F-BIZ-033"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "有成功、失败、等待、未知及多个历史结果的混合任务表。"
+      ],
+      "steps": [
+        "观察表级/节点级任务快照及单行阶段，打开原错误信息。",
+        "将当前/历史结果追加到格内，再按任务输出到画布素材组。",
+        "预览媒体并将生成结果作为另一个生成列的输入。"
+      ],
+      "outcomes": [
+        "统计不把失败/过期当成功；无提供方百分比时不编造百分比。",
+        "组名、任务顺序与媒体顺序可追踪；重复追加不重复素材。"
+      ],
+      "exceptions": [
+        "历史文件缺失提示恢复，不创建空成功结果。",
+        "再次引用不自动执行下游。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-014",
+      "title": "在资源受限环境运行多个创作任务",
+      "features": [
+        "F-BIZ-027",
+        "F-BIZ-028",
+        "F-BIZ-035",
+        "F-BIZ-034"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "有本地 Qwen、H3 和原生 Comfy 队列执行替身；可记录 GPU 租约和并发峰值。"
+      ],
+      "steps": [
+        "同时从多个节点提交云端和本地任务。",
+        "让一行失败、一次卸载超时，并尝试原生图任务入队。",
+        "恢复资源后继续其余任务并检查等待/失败反馈。"
+      ],
+      "outcomes": [
+        "云与本地遵守各自共享预算；本地 GPU 争用受到统一门控。",
+        "一个失败不阻塞其他独立任务；不可安全卸载时隔离并明确处理。"
+      ],
+      "exceptions": [
+        "缺模型或设备不足不自动换模型。",
+        "性能和实际设备上限需单独测量，不直接照搬旧并发 32。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-015",
+      "title": "迁移旧创作工作流、任务记录与素材",
+      "features": [
+        "F-BIZ-037",
+        "F-BIZ-038",
+        "F-BIZ-039",
+        "F-BIZ-040",
+        "F-BIZ-029",
+        "F-BIZ-030",
+        "F-BIZ-044"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "已备份原工作流、关联素材、生成 JSON 回执和优化 SQLite 数据；旧环境可回退。"
+      ],
+      "steps": [
+        "运行只读迁移预检并列出旧节点、槽位、素材和任务身份。",
+        "在新包隔离环境导入，检查混合旧业务依赖与退役通道提示。",
+        "保存新副本后重载，查看历史结果并尝试安全恢复原任务。",
+        "读取旧 GPTImageStoryboardStage 与 LLM A/C/D/E 数据；预览并显式选择转换到统一表格/LLM B。"
+      ],
+      "outcomes": [
+        "创作节点、端口、行列/素材 ID、结果和任务关联完整保留。",
+        "混合徽章/展厅/分割节点明确列外部依赖，不删除；旧环境可继续使用备份。",
+        "旧独立执行/原型入口不继续生产注册；转换可审阅且保留原件。"
+      ],
+      "exceptions": [
+        "同 ID 重复注册、未知 schema 或文件缺失使迁移停止并报告。",
+        "退役旧任务不自动转换为新收费任务。"
+      ]
+    },
+    {
+      "id": "UC-BIZ-016",
+      "title": "长期编辑与大表格操作",
+      "features": [
+        "F-BIZ-001",
+        "F-BIZ-005",
+        "F-BIZ-008",
+        "F-BIZ-009",
+        "F-BIZ-034",
+        "F-BIZ-041"
+      ],
+      "actor": "创作者",
+      "preconditions": [
+        "在固定机器、固定 Comfy 版本和视口上准备 500 行/64 列上限夹具及大量缩略图；阈值在 M0 性能基线中批准。",
+        "统一压力夹具包含2张和10张各500行的表；单表上限仍为500行/64列。"
+      ],
+      "steps": [
+        "连续执行表格编辑、筛选可见内容/滚动、模式切换、删除和恢复实例。",
+        "开闭媒体预览并运行任务状态替身，重复 20 轮。",
+        "采集输入到绘制延迟、长任务、内存、监听/订阅数量及响应体规模。"
+      ],
+      "outcomes": [
+        "满足批准的 p95 响应与内存预算；卸载后资源回到基线允许范围。",
+        "文档、任务和媒体身份在长时操作后仍一致。"
+      ],
+      "exceptions": [
+        "超预算保留复现夹具与 trace，不能用掩盖内容或放弃保存兼容通过。"
+      ]
+    }
+  ],
+  "tests": [
+    {
+      "id": "TC-BIZ-001",
+      "title": "表格增删改排序与工作流序列化往返",
+      "features": [
+        "F-BIZ-001",
+        "F-BIZ-002",
+        "F-BIZ-003"
+      ],
+      "usecases": [
+        "UC-BIZ-001"
+      ],
+      "level": "domain",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 table/basic-v1.json：3 行、7 类字段、未知扩展字段及稳定 ID。",
+      "setup": [
+        "加载原始夹具并深拷贝基线。"
+      ],
+      "steps": [
+        "新增/删除/排序记录和字段；编辑中文、数字、布尔与空值。",
+        "执行撤销/重做，再通过 Comfy widget JSON 保存并读回。"
+      ],
+      "expected": [
+        "当前数据等于预期快照；未操作的扩展字段保留。",
+        "ID、顺序与类型无变化；撤销恢复基线且原夹具对象未被副作用修改。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/data_table.test.mjs",
+        "business:tests/table_structure.test.mjs",
+        "business:tests/test_data_table.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-002",
+      "title": "复制行与复制节点不继承任务执行身份",
+      "features": [
+        "F-BIZ-002",
+        "F-BIZ-029",
+        "F-BIZ-033"
+      ],
+      "usecases": [
+        "UC-BIZ-001",
+        "UC-BIZ-009"
+      ],
+      "level": "domain",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 table/copy-with-receipts.json：一行含当前任务、历史结果和两个引用素材。",
+      "setup": [
+        "准备原任务账本替身并记录其调用次数。"
+      ],
+      "steps": [
+        "复制行，再复制包含该行的节点。",
+        "比较记录/素材实例 ID、请求 ID、帧引用和原文。"
+      ],
+      "expected": [
+        "复制对象使用新编辑身份，未继承原任务执行权或自动提交。",
+        "原文与合法引用保留；原行、账本及执行计数不变。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/data_table.test.mjs",
+        "business:tests/table_generation.test.mjs",
+        "business:tests/table_generation_history.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-003",
+      "title": "字段转换与稳定引用的原子保护",
+      "features": [
+        "F-BIZ-003",
+        "F-BIZ-010",
+        "F-BIZ-011"
+      ],
+      "usecases": [
+        "UC-BIZ-001",
+        "UC-BIZ-005"
+      ],
+      "level": "domain",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 table/field-conversion.json：文本来源列、素材列、数字列及跨字段引用。",
+      "setup": [
+        "记录所有字段/记录 ID 与初值。"
+      ],
+      "steps": [
+        "更名、隐藏、重排来源列；尝试将其转成含媒体的内容列。",
+        "删除来源后撤销，再提交包含非法数字的批量转换。"
+      ],
+      "expected": [
+        "身份和绑定在更名/重排后保持；删除来源后生成阻止。",
+        "失败转换无部分写入；撤销恢复字段与引用。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_structure.test.mjs",
+        "business:tests/table_prompt_source.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-004",
+      "title": "表内范围选择、剪贴板与中文输入",
+      "features": [
+        "F-BIZ-004"
+      ],
+      "usecases": [
+        "UC-BIZ-001"
+      ],
+      "level": "host",
+      "priority": "P1",
+      "phase": "M3",
+      "fixture": "拟建 table/clipboard.json：含多行文本、素材格和空格的两实例。",
+      "setup": [
+        "真实 ComfyUI；拦截生成提交端点。"
+      ],
+      "steps": [
+        "Shift/Ctrl 选择表内矩形，复制粘贴到另一范围。",
+        "进入多行编辑器粘贴含换行/Tab 的文字；组合输入期间按 Enter/Escape。",
+        "退出编辑后执行撤销/重做。"
+      ],
+      "expected": [
+        "范围选择不改变画布多选；编辑器粘贴保留一格。",
+        "组合输入不误提交；一次粘贴对应一个事务，第二实例不变。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/data_table.test.mjs",
+        "business:tests/table_text_side.test.mjs",
+        "business:tools/data_table_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-005",
+      "title": "单素材广播与多素材顺序填列",
+      "features": [
+        "F-BIZ-006"
+      ],
+      "usecases": [
+        "UC-BIZ-002"
+      ],
+      "level": "domain",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 table/fill-column.json：0/1/3 行表、图片/视频/文本集合。",
+      "setup": [
+        "为每次操作建立独立表副本。"
+      ],
+      "steps": [
+        "单图片、单视频和单文本填入兼容列；对空表重复。",
+        "以 2 项和 5 项集合填入已有 3 行表；填入空集合。"
+      ],
+      "expected": [
+        "单项填满所有现有行，空表生成 1 行。",
+        "多项仅改相应行并按需补行；尾行、其他列、源数据保持；空集合无变化。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_material_columns.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-006",
+      "title": "行头/单格填充及容量错误不部分写入",
+      "features": [
+        "F-BIZ-005",
+        "F-BIZ-006"
+      ],
+      "usecases": [
+        "UC-BIZ-002"
+      ],
+      "level": "domain",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 table/fill-boundaries.json：499/500 行、63/64 列与缺失素材集合。",
+      "setup": [
+        "保存操作前 JSON 与素材身份清单。"
+      ],
+      "steps": [
+        "横向填入超出可编辑列的素材并验证补列；向已有格追加集合。",
+        "分别提交第 501 行、第 65 列、不兼容文本列和含 missing 项集合。"
+      ],
+      "expected": [
+        "成功操作保持给定顺序和既有内容；仅预期行/格变化。",
+        "失败操作抛出对应容量/类型/缺失错误，表 JSON 与基线完全一致。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_material_columns.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-007",
+      "title": "媒体移动和重排不误绑定提示词",
+      "features": [
+        "F-BIZ-005",
+        "F-BIZ-012"
+      ],
+      "usecases": [
+        "UC-BIZ-002",
+        "UC-BIZ-005"
+      ],
+      "level": "domain",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 prompt/asset-identity.json：同名不同 ID 素材、重复文件实例、跨列和跨行引用。",
+      "setup": [
+        "创建明确 assetId 引用及旧位置引用各一条。"
+      ],
+      "steps": [
+        "在原行重排并跨列移动素材；复制后删除原件。",
+        "把原件移到另一行，再解析提示词。"
+      ],
+      "expected": [
+        "同一行内引用跟随原 assetId，副本有独立 ID。",
+        "跨行/删除后引用失效，不绑定到相同位置、同名或相同 URL 的替代素材。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_prompt_template.test.mjs",
+        "business:tests/table_video_references.test.mjs",
+        "business:tests/table_material_columns.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-008",
+      "title": "多媒体单元格预览与交互释放",
+      "features": [
+        "F-BIZ-005",
+        "F-BIZ-009"
+      ],
+      "usecases": [
+        "UC-BIZ-002",
+        "UC-BIZ-016"
+      ],
+      "level": "host",
+      "priority": "P1",
+      "phase": "M3",
+      "fixture": "拟建 table/media-preview.json：不同宽高比图片、视频、长名称、多项单格与缺失媒体。",
+      "setup": [
+        "真实 ComfyUI 创建两表；记录格尺寸、视频状态和监听数量。"
+      ],
+      "steps": [
+        "选格、悬停展开预览、播放/暂停、拖进度、Ctrl+滚轮缩放。",
+        "移出、取消选择、模式切换、删除/恢复节点；测试 Delete 与 Enter。"
+      ],
+      "expected": [
+        "预览保持原比例不改变格尺寸；收起/销毁后视频暂停且监听释放。",
+        "单项删除/排序可撤销，第二表状态不受影响；缺媒体有占位而无错图。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_panel_views.test.mjs",
+        "business:tests/table_material_columns.test.mjs",
+        "business:tools/data_table_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-009",
+      "title": "表格素材复制到画布的来源校验",
+      "features": [
+        "F-BIZ-007"
+      ],
+      "usecases": [
+        "UC-BIZ-002"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 integration/table-material-drag.json：图片/视频格和延迟 materialItem 提供器。",
+      "setup": [
+        "使用公开素材合同替身和一次实际宿主拖拽。"
+      ],
+      "steps": [
+        "拖一个素材到空白画布，撤销/重做。",
+        "第二次拖拽延迟返回期间删除或替换源素材。"
+      ],
+      "expected": [
+        "正常拖拽创建一个上传素材节点并保留源单元格和文件引用。",
+        "来源变化后拒绝迟到结果，无幽灵节点或重复创建；整个创建仅一条编辑历史。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_material_output.test.mjs",
+        "business:tests/live_chain.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-010",
+      "title": "新建默认结构与历史规范差异冻结",
+      "features": [
+        "F-BIZ-008"
+      ],
+      "usecases": [
+        "UC-BIZ-001"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 baseline/table-defaults.json：记录当前 createMaterialTable 输出及实际 UI 截图。",
+      "setup": [
+        "先核查当前源码默认 3 行及素材/提示词/生成列；对照旧 2×2 文档。"
+      ],
+      "steps": [
+        "在当前旧环境与新包各新建两个表，记录序列化和界面。",
+        "由产品基线记录确定首版默认结构；再执行自动比较。"
+      ],
+      "expected": [
+        "差异有明确记录和批准基线，不凭旧文档或代码单方面改变产品。",
+        "新包两个实例均匹配冻结结构；现有工作流数据不被默认模板覆盖。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_material_columns.test.mjs",
+        "business:tools/data_table_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-011",
+      "title": "表格尺寸、边缘菜单和最后行列删除",
+      "features": [
+        "F-BIZ-008"
+      ],
+      "usecases": [
+        "UC-BIZ-001"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 table/layout-empty.json：长表、单行单列表、解析器空态及旧工作台。",
+      "setup": [
+        "真实 ComfyUI 两实例，50%/100%/150% 缩放，800px/1440px 视口。"
+      ],
+      "steps": [
+        "拖拽右边缘和列分隔条，使用键盘调整并 Escape 取消。",
+        "把菜单移近视口边缘；删除通用表最后一行/列并撤销。",
+        "对解析器空态和原生图重复空表操作，保存刷新。"
+      ],
+      "expected": [
+        "宽度保存并独立恢复，长内容和焦点无不可达裁切。",
+        "仅符合通用画布规则的空表删除节点；撤销恢复连线/内容，解析器待上传入口保留。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_column_splitters.test.mjs",
+        "business:tests/table_empty_node.test.mjs",
+        "business:tests/table_workbench_height.test.mjs",
+        "business:tools/table_splitter_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-012",
+      "title": "两实例、模式往返与卸载完整性",
+      "features": [
+        "F-BIZ-009"
+      ],
+      "usecases": [
+        "UC-BIZ-001",
+        "UC-BIZ-016"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 host/business-lifecycle.json：两个表、两个生成节点、两个解析器。",
+      "setup": [
+        "在隔离 ComfyUI 中只安装新包；记录活动订阅、弹层和媒体引用。"
+      ],
+      "steps": [
+        "分别编辑不同实例，打开弹层，执行 Active/Mute/Bypass 往返。",
+        "在原生图/App Mode/画布切换 20 轮，删除和恢复实例，保存刷新。"
+      ],
+      "expected": [
+        "业务数据、播放状态、任务和焦点归正确实例。",
+        "没有重复挂载、残留弹层或累积监听；非 Active 隐藏正文，Active 恢复。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/app_mode_bypass_model.test.mjs",
+        "business:tests/dynamic_widget_lifecycle.test.mjs",
+        "business:tests/table_node_install.test.mjs",
+        "business:tools/comfy_credit_ui_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-013",
+      "title": "唯一来源旧绑定迁移、取消与复制",
+      "features": [
+        "F-BIZ-010",
+        "F-BIZ-037"
+      ],
+      "usecases": [
+        "UC-BIZ-005",
+        "UC-BIZ-015"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 migration/prompt-source.json：一致旧绑定、冲突绑定、无绑定、未知 version 和显式 null。",
+      "setup": [
+        "为每种旧表备份原 JSON。"
+      ],
+      "steps": [
+        "读取并迁移，切换来源、复制来源列、隐藏、更名、删除后撤销。",
+        "对冲突、显式取消和未知版本尝试生成预检。"
+      ],
+      "expected": [
+        "仅一致显式旧绑定自动迁移；其他情况不按名称/顺序猜测。",
+        "复制列不复制表级绑定；未知版本保留原数据并报告；无有效来源零提交。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_prompt_source.test.mjs",
+        "business:tests/test_prompt_source.py",
+        "business:tools/prompt_source_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-014",
+      "title": "同行文本引用解析与异常定位",
+      "features": [
+        "F-BIZ-011",
+        "F-BIZ-014"
+      ],
+      "usecases": [
+        "UC-BIZ-005"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 prompt/text-reference.json：正常引用、改名、空值、删除、自引用、循环及字面 @文本。",
+      "setup": [
+        "同一 JSON 同时输入前端与 Python 解析器。"
+      ],
+      "steps": [
+        "插入结构化引用，重排字段后编译；直接粘贴 @列名。",
+        "逐一引入空值、类型变化、自引用和循环。"
+      ],
+      "expected": [
+        "正常结果完全一致，字面 @文本不被转成引用。",
+        "各非法输入在前后端均定位相同字段/行并拒绝，无递归溢出或生成调用。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_prompt_source.test.mjs",
+        "business:tests/table_prompt_template.test.mjs",
+        "business:tests/test_prompt_source.py",
+        "business:tests/test_prompt_compiler.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-015",
+      "title": "媒体引用与首尾帧顺序的一致性",
+      "features": [
+        "F-BIZ-012",
+        "F-BIZ-013"
+      ],
+      "usecases": [
+        "UC-BIZ-005"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 prompt/frame-reference.json：两图一视频、同文件不同实例、失效和跨行绑定。",
+      "setup": [
+        "构建 table/ScriptParser/外部生成节点三种投影。",
+        "M3使用生成节点输入投影的契约替身，不提交生成；M4由TC-BIZ-028/012完成真实宿主联测。"
+      ],
+      "steps": [
+        "选择、交换、删除和重加帧标记，重排列中素材。",
+        "保存重载后生成输入；尝试用视频/外行图片作为帧。"
+      ],
+      "expected": [
+        "帧绑定 ID 与顺序在三入口一致；帧标记不成为文本 token。",
+        "不兼容媒体和跨行绑定被拒绝；不暗中替换帧。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/generation_input_regression.test.mjs",
+        "business:tests/table_video_references.test.mjs",
+        "business:tests/table_exchange.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-016",
+      "title": "模板、行覆盖和清空/恢复语义",
+      "features": [
+        "F-BIZ-013"
+      ],
+      "usecases": [
+        "UC-BIZ-005"
+      ],
+      "level": "domain",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 prompt/template-overrides.json：模板行、显式覆盖、空段落覆盖和旧空字符串恢复值。",
+      "setup": [
+        "记录每行最终编译文本与设置。"
+      ],
+      "steps": [
+        "修改列模板；清空第二行覆盖，再明确恢复模板。",
+        "撤销/重做并序列化重载。"
+      ],
+      "expected": [
+        "模板仅影响未覆盖行；显式空白不被误判成继承。",
+        "恢复模板采用兼容语义；行设置、帧身份和历史无损。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_prompt_template.test.mjs",
+        "business:tests/table_generation.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-017",
+      "title": "预览、表格导出和后端编译逐项相等",
+      "features": [
+        "F-BIZ-014",
+        "F-BIZ-024"
+      ],
+      "usecases": [
+        "UC-BIZ-005",
+        "UC-BIZ-010"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 contracts/generation-input.json：文字引用、媒体引用、模板覆盖、首尾帧与 Unicode。",
+      "setup": [
+        "所有生成端点改为计数替身。",
+        "M3使用生成节点输入投影的契约替身，不提交生成；M4由TC-BIZ-028/012完成真实宿主联测。"
+      ],
+      "steps": [
+        "分别由通用表、分镜表预览并导出到生成节点。",
+        "把相同快照交 Python 编译器，比对文本、素材顺序、模式和身份。"
+      ],
+      "expected": [
+        "四条路径输入结果逐项相同，不出现预览正确而提交错列。",
+        "全过程生成创建次数为 0；非法引用均在预检阶段拒绝。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/generation_input_regression.test.mjs",
+        "business:tests/test_prompt_compiler.py",
+        "business:tests/table_exchange.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-018",
+      "title": "优化建议审阅与批量应用事务",
+      "features": [
+        "F-BIZ-015"
+      ],
+      "usecases": [
+        "UC-BIZ-006"
+      ],
+      "level": "host",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 prompt/optimization-review.json：两行建议、引用锚点、不同优化状态。",
+      "setup": [
+        "使用本地固定响应替身；建立两个表实例。"
+      ],
+      "steps": [
+        "请求单格和整列建议，核对未应用原文。",
+        "应用有效建议；一次撤销/重做，保存刷新后查看回执。"
+      ],
+      "expected": [
+        "建议未应用时表数据不变；应用保留引用与唯一来源。",
+        "整次应用一条历史，第二实例不变；刷新不会重复应用或重新请求。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/column_optimization.test.mjs",
+        "business:tests/prompt_optimization_workflow_history.test.mjs",
+        "business:tests/prompt_optimization_history_review.test.mjs",
+        "business:tools/column_optimization_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-019",
+      "title": "优化异步结果的修订、切换与删除保护",
+      "features": [
+        "F-BIZ-015",
+        "F-BIZ-033"
+      ],
+      "usecases": [
+        "UC-BIZ-006"
+      ],
+      "level": "domain",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 prompt/stale-responses.json：可控制返回顺序的 3 个优化请求。",
+      "setup": [
+        "在文档 revision/epoch 和 requestId 上布置观测。"
+      ],
+      "steps": [
+        "请求后修改一行，删除另一行，切换工作流后返回全部结果。",
+        "撤销/重做原编辑并尝试应用旧建议。"
+      ],
+      "expected": [
+        "只有仍匹配范围/版本的建议可应用；旧回调不写当前文档。",
+        "撤销不使失效 epoch 回退；失败/过期计数不算成功。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/prompt_optimization_controller.test.mjs",
+        "business:tests/prompt_optimization_model.test.mjs",
+        "business:tests/column_optimization.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-020",
+      "title": "提供方报价、预算和认证不进入工作流",
+      "features": [
+        "F-BIZ-016",
+        "F-BIZ-026"
+      ],
+      "usecases": [
+        "UC-BIZ-006",
+        "UC-BIZ-009"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 providers/auth-quote.json：过期报价、变更模型、无凭据、伪 401/402/429 和本地请求。",
+      "setup": [
+        "使用 loopback 假提供方与脱敏日志捕获；阻断公网。"
+      ],
+      "steps": [
+        "获取报价后改变模型/输入再提交；尝试无认证提交。",
+        "把临时云凭据传给云请求，再调用本地请求并导出工作流/账本/日志。"
+      ],
+      "expected": [
+        "不匹配或过期报价要求重确认；缺认证在创建前失败。",
+        "凭据不进入序列化/指纹/日志，本地请求不读取或转发云凭据；未知 POST 结果不自动重发。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_prompt_optimization_quote_version.py",
+        "business:tests/test_prompt_optimization_deepseek.py",
+        "business:tests/native_prompt_optimization_probe.py",
+        "business:tests/column_optimization.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-021",
+      "title": "画布润色和反推纳入持久账本",
+      "features": [
+        "F-BIZ-017",
+        "F-BIZ-030"
+      ],
+      "usecases": [
+        "UC-BIZ-007"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 jobs/canvas-polish-restart.json：正常文本、真实小图、损坏/超限图及提交后崩溃点。",
+      "setup": [
+        "新统一账本使用临时目录；提供方 create 为计数替身。"
+      ],
+      "steps": [
+        "请求一次并在收到结果前模拟进程终止；重启后用同 requestId 恢复。",
+        "以相同 ID 改输入，再提交损坏和超限图片。"
+      ],
+      "expected": [
+        "重启后原请求记录仍在，不能产生第二次 create；不明结果明确标记。",
+        "不同输入同 ID 和非法图片拒绝；反推只携带选定图片；现有内存版测试仅作部分参考。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_canvas_polish.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-022",
+      "title": "DOCX 修订、合并单元格和图片出现顺序",
+      "features": [
+        "F-BIZ-018"
+      ],
+      "usecases": [
+        "UC-BIZ-003"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 storyboard/revisions.docx：DrawingML/VML、插入/删除修订、合并格和重复图片。",
+      "setup": [
+        "使用可重建 DOCX 夹具，记录预期物理行、锚点和图片 occurrence。"
+      ],
+      "steps": [
+        "解析文档最终视图；提取文字、段落、表格、来源和图片。",
+        "校验损坏图片与未知结构处理。"
+      ],
+      "expected": [
+        "删除修订文字/图片排除，插入内容保留；物理行与合并锚点正确。",
+        "重复图片保持出现次数/顺序并有独立实例；坏图不让其他文本丢失。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_script_document.py",
+        "business:tests/test_script_contract.py",
+        "business:tests/storyboard_fixture.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-023",
+      "title": "映射修订和 inventory 跨刷新恢复",
+      "features": [
+        "F-BIZ-019",
+        "F-BIZ-020"
+      ],
+      "usecases": [
+        "UC-BIZ-003"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 storyboard/mapping-v1.json：手工编辑、已完成结果、待分配图片、缺 inventory 的旧版本。",
+      "setup": [
+        "导入夹具并删除临时解析缓存，仅保留工作流和 input 素材。"
+      ],
+      "steps": [
+        "重载后查看原文和待处理项；修改一列及单格映射。",
+        "对缺 inventory 旧版本执行查看与调整。"
+      ],
+      "expected": [
+        "新版本无需 temp 缓存可恢复映射；手工编辑、行/素材身份及结果保留，冲突可定位。",
+        "旧版本明确提示重新上传原件补充，不能猜测来源或丢弃原数据。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/script_parser.test.mjs",
+        "business:tests/test_script_contract.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-024",
+      "title": "追加去重、导入竞态和活动任务保护",
+      "features": [
+        "F-BIZ-020",
+        "F-BIZ-029"
+      ],
+      "usecases": [
+        "UC-BIZ-003"
+      ],
+      "level": "domain",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 storyboard/import-races.json：同指纹重导、新版本、500 行边界及各活动任务阶段。",
+      "setup": [
+        "准备可延迟返回的导入请求及前后 JSON 快照。"
+      ],
+      "steps": [
+        "重复导入同文档，追加新版本；导入等待时编辑表格。",
+        "在 waiting/running/pausing/paused/needs_recovery 各状态尝试重映射和历史恢复。"
+      ],
+      "expected": [
+        "重复来源跳过；合法新版本可追踪；竞态和超限导入无部分写入。",
+        "任务快照/request ID 不被导入或撤销清除/替换；用户编辑和已有结果保持。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/script_parser.test.mjs",
+        "business:tests/table_generation_history.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-025",
+      "title": "各支持文件格式的真实解析夹具",
+      "features": [
+        "F-BIZ-021"
+      ],
+      "usecases": [
+        "UC-BIZ-004"
+      ],
+      "level": "backend",
+      "priority": "P1",
+      "phase": "M3",
+      "fixture": "拟建 import/formats/：DOCX/XLSX/XLSM/CSV/TSV/TXT/MD/PDF 各正常/空/损坏样本。",
+      "setup": [
+        "冻结每格式支持边界和最大文件大小；不使用用户私密文稿作固定夹具。"
+      ],
+      "steps": [
+        "逐格式解析并规范化到表格契约；测中文、引号、换行和表外说明。",
+        "提交损坏/加密/结构不支持文件并检查原表快照。"
+      ],
+      "expected": [
+        "正常夹具输出符合明确预期；未支持结构有可理解错误。",
+        "解析失败不改现有表格、不触发生成；支持扩展名不等于自动通过所有格式验收。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_daelab_storyboard_import.py",
+        "business:tests/daelab_storyboard_import.test.mjs",
+        "business:tools/storyboard_import_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-026",
+      "title": "AI 归类的发送范围和结构拒绝",
+      "features": [
+        "F-BIZ-022",
+        "F-BIZ-019"
+      ],
+      "usecases": [
+        "UC-BIZ-008"
+      ],
+      "level": "backend",
+      "priority": "P1",
+      "phase": "M3",
+      "fixture": "拟建 storyboard/ai-classification.json：选中 2 行原文、未选行、图片和非法分类响应。",
+      "setup": [
+        "提供方为本机假服务，记录完整请求但不放真实凭据。"
+      ],
+      "steps": [
+        "未点击按钮时加载/保存文稿；显式点击归类后捕获请求。",
+        "返回缺行、重复来源、跨行、改写文字与合法结果。"
+      ],
+      "expected": [
+        "未点击零请求；请求仅有选中文本/来源 ID，不含图片或未选原文。",
+        "非法响应不改变原文和草稿；无配置时手工流程仍完整。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_script_ai.py",
+        "business:tests/test_script_contract.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-027",
+      "title": "生成行选择、配置草稿和全批预检",
+      "features": [
+        "F-BIZ-023",
+        "F-BIZ-025"
+      ],
+      "usecases": [
+        "UC-BIZ-009"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 generation/selection.json：空结果、已有结果、失效提示词、运行中任务及选中标记。",
+      "setup": [
+        "生成服务为计数替身；配置面板保留未折叠/已折叠两种草稿。"
+      ],
+      "steps": [
+        "选中两行提交，其中一行非法；取消选择提交有效空结果行。",
+        "修改参数后不另点保存直接生成，再用恢复操作提交原任务。"
+      ],
+      "expected": [
+        "明确选中批次任一非法行时全部零提交；默认只选有效空结果行且不重复运行中项。",
+        "新提交采用最新草稿；恢复严格使用原输入快照。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_generation_request.test.mjs",
+        "business:tests/table_generation.test.mjs",
+        "business:tests/test_table_generation.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-028",
+      "title": "表格与外部生成节点双向同步及断开",
+      "features": [
+        "F-BIZ-024",
+        "F-BIZ-041"
+      ],
+      "usecases": [
+        "UC-BIZ-010"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 integration/table-generation-exchange.json：源表和两个任务节点、节点独有参数。",
+      "setup": [
+        "使用稳定 source/record/field ID；记录编辑命令次数。"
+      ],
+      "steps": [
+        "导入表格，修改源提示词/帧、节点允许编辑项，执行撤销/重做。",
+        "重排列并删除源行、断开来源，返回延迟同步响应。"
+      ],
+      "expected": [
+        "匹配身份的数据同步且节点专有设置/结果保留；不同实例不串改。",
+        "断开/删除阻止新提交；无反馈回写循环，迟到响应不覆盖当前值。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_exchange.test.mjs",
+        "business:tests/generation_input_regression.test.mjs",
+        "business:tests/video_task_linked_prompt.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-029",
+      "title": "型号、模式和媒体能力前后端一致",
+      "features": [
+        "F-BIZ-025",
+        "F-BIZ-013"
+      ],
+      "usecases": [
+        "UC-BIZ-009",
+        "UC-BIZ-010"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 providers/capabilities.json：Comfy 精确型号、local Qwen/H3 三模式与非法旧参数。",
+      "setup": [
+        "从当前支持清单构造能力夹具；外部调用全部替身。"
+      ],
+      "steps": [
+        "逐型号生成合法与非法参数组合；切换本地/云端和模式。",
+        "传入缺帧、多余帧、视频充当图片及未知型号。"
+      ],
+      "expected": [
+        "前端展示与后端接受范围一致；型号身份不被 Fast/Mini 或近似名替代。",
+        "不兼容保存参数明确迁移/拒绝；非法请求均不入队。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/generation_parameters.test.mjs",
+        "business:tests/generation_input_regression.test.mjs",
+        "business:tests/test_table_comfy_video.py",
+        "business:tests/test_table_local_h3.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-030",
+      "title": "Comfy 原生图校验、认证隔离和错误分类",
+      "features": [
+        "F-BIZ-026",
+        "F-BIZ-042"
+      ],
+      "usecases": [
+        "UC-BIZ-009",
+        "UC-BIZ-010"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 providers/comfy-graphs.json：支持图像/视频型号与模式、空认证、伪 401/402/429。",
+      "setup": [
+        "运行受支持 Comfy 核心的 validate_prompt；队列 put 为可计数替身；阻断付费端点。"
+      ],
+      "steps": [
+        "构建各型号原生图并仅校验；无认证和非法设置尝试提交。",
+        "带虚拟凭据执行队列替身并检查 extra/sensitive 与回执。"
+      ],
+      "expected": [
+        "合法图通过类型/输入校验，非法配置和无认证在入队前失败。",
+        "凭据仅出现在 sensitive；错误分类可操作；无真实生成调用，校验不记为输出成功。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_table_comfy_video.py",
+        "business:tests/table_comfy_transport.test.mjs",
+        "business:tools/comfy_credit_validate.py",
+        "business:tools/comfy_credit_api_smoke.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-031",
+      "title": "本地 Qwen 构图、缺依赖与结果验证",
+      "features": [
+        "F-BIZ-027",
+        "F-BIZ-025"
+      ],
+      "usecases": [
+        "UC-BIZ-009",
+        "UC-BIZ-014"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 providers/local-qwen.json：正常依赖、缺模型/节点、坏输出和越界输出路径。",
+      "setup": [
+        "模型目录与 Comfy 注册节点使用临时夹具；队列为替身。"
+      ],
+      "steps": [
+        "逐项移除必要依赖再预检；构建合法图片工作流。",
+        "返回存在、缺失、非 output 和越界路径的结果。"
+      ],
+      "expected": [
+        "缺依赖列出准确项目且零入队，不自动换模型。",
+        "仅真实存在且位于 output 根内的合法结果被接受；构图通过不算实机出图。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_table_local_qwen.py",
+        "business:tests/table_local_qwen.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-032",
+      "title": "本地 H3 三模式与帧绑定回归",
+      "features": [
+        "F-BIZ-028",
+        "F-BIZ-025"
+      ],
+      "usecases": [
+        "UC-BIZ-009",
+        "UC-BIZ-010"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 providers/local-h3-modes.json：文生、首帧、首尾帧和不支持参考视频/音频。",
+      "setup": [
+        "使用节点/模型目录夹具，不装载真实权重。"
+      ],
+      "steps": [
+        "分别构图并检查 0/1/2 图输入顺序和模式特有节点。",
+        "使用缺帧、多图、视频/音频参考及旧不支持模式。"
+      ],
+      "expected": [
+        "三模式构图与绑定独立正确，保存参数无静默降级。",
+        "不支持组合在入队前拒绝；测试只证明构图/校验。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_table_local_h3.py",
+        "business:tests/generation_input_regression.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-033",
+      "title": "幂等指纹、冻结媒体与重复提交",
+      "features": [
+        "F-BIZ-029",
+        "F-BIZ-030"
+      ],
+      "usecases": [
+        "UC-BIZ-009",
+        "UC-BIZ-011"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 jobs/idempotency.json：同 ID 同/异输入、不同 ID 同输入和可替换源文件。",
+      "setup": [
+        "临时持久账本、媒体目录和计数执行器；并发请求使用独立客户端。"
+      ],
+      "steps": [
+        "并发提交同请求两次；以同 ID 改提示词/参数再提交。",
+        "撤销浏览器回执后以同输入恢复；替换源媒体并查询原任务。"
+      ],
+      "expected": [
+        "同执行至多创建一次；不同输入同 ID 拒绝；明确新生成才分配新执行。",
+        "原任务使用冻结文件与哈希，源替换不改变旧快照；密钥不进入指纹。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_table_generation.py",
+        "business:tests/test_table_completed_input.py",
+        "business:tests/test_table_concurrency.py",
+        "business:tests/test_libtv_bridge.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-034",
+      "title": "多种旧任务存储迁移与崩溃恢复",
+      "features": [
+        "F-BIZ-030",
+        "F-BIZ-037"
+      ],
+      "usecases": [
+        "UC-BIZ-011",
+        "UC-BIZ-015"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "拟建 migration/job-stores/：生成 JSON、优化 SQLite、润色内存无持久记录的边界及备份清单。",
+      "setup": [
+        "新账本在隔离目录；保留旧文件校验和；建立各阶段中断注入点。"
+      ],
+      "steps": [
+        "迁入完整/损坏/重复/未知 schema 记录并重复运行迁移。",
+        "在提交前、提交后未落远端 ID、落 ID 后、完成后分别强制终止再重启。"
+      ],
+      "expected": [
+        "迁移幂等且不改旧原件；损坏记录隔离报告，无偷偷补造执行身份。",
+        "重启状态可追踪；旧内存记录缺失明确声明不可恢复，不能虚构任务成功或自动重发。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_prompt_optimization.py",
+        "business:tests/test_table_completed_input.py",
+        "business:tests/test_table_recovery.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-035",
+      "title": "提交结果未知时禁止自动重发",
+      "features": [
+        "F-BIZ-030",
+        "F-BIZ-016",
+        "F-BIZ-026"
+      ],
+      "usecases": [
+        "UC-BIZ-006",
+        "UC-BIZ-011"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 jobs/uncertain-submit.json：create 被服务端接收后断网、无远端 ID、有远端 ID 两种回执。",
+      "setup": [
+        "假提供方记录 create/query 次数并可丢弃响应。"
+      ],
+      "steps": [
+        "触发提交断网并重启后端；自动刷新状态和点击恢复原任务。",
+        "在相同 requestId 上更换输入，并模拟 401/429 查询失败。"
+      ],
+      "expected": [
+        "未知无 ID 状态保持待处理，create 总次数仍为 1。",
+        "有 ID 时只 query 原任务；不同输入拒绝；错误不触发隐式新收费请求。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_prompt_optimization.py",
+        "business:tests/test_prompt_optimization_deepseek.py",
+        "business:tests/native_prompt_optimization_probe.py",
+        "business:tests/test_table_recovery.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-036",
+      "title": "下载失败、文件缺失和有界恢复",
+      "features": [
+        "F-BIZ-031",
+        "F-BIZ-033"
+      ],
+      "usecases": [
+        "UC-BIZ-011",
+        "UC-BIZ-013"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 jobs/download-recovery.json：生成成功下载失败、临时网络错误、平台终止失败及文件哈希变化。",
+      "setup": [
+        "假提供方提供相同 remote ID 和可控下载器；配置恢复查询上限。"
+      ],
+      "steps": [
+        "恢复下载失败任务，交替返回网络错误/等待/完成。",
+        "删除或修改已完成文件；持续返回不可恢复响应直到上限。"
+      ],
+      "expected": [
+        "恢复只下载或查询，create 不增加；哈希/存在校验失败不得显示完整成功。",
+        "重试有界，终止失败不继续轮询；错误和可执行恢复动作保留。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_table_recovery.py",
+        "business:tests/test_table_generation_diagnosis.py",
+        "business:tests/test_table_completed_input.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-037",
+      "title": "暂停范围、本地中断和云任务继续",
+      "features": [
+        "F-BIZ-032",
+        "F-BIZ-035"
+      ],
+      "usecases": [
+        "UC-BIZ-012"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 jobs/pause-matrix.json：两批次等待/运行任务、本地队列项和云端已提交项。",
+      "setup": [
+        "执行器可控制何时入队/开始/中断；记录所有 request/remote/prompt ID。"
+      ],
+      "steps": [
+        "暂停 A 某行、再暂停 A 整批；观察 B。",
+        "确认本地中断并继续；让已提交云任务完成后恢复。"
+      ],
+      "expected": [
+        "A 未提交项停止，B 不变；本地中断未确认前保持 pausing。",
+        "本地继续明确重跑当前行，云端仅恢复原执行；UI 文案不承诺已提交云任务取消/退款。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_table_concurrency.py",
+        "business:tests/test_table_local_qwen.py",
+        "business:tests/table_generation.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-038",
+      "title": "逆序完成、过期结果、历史追加与撤销",
+      "features": [
+        "F-BIZ-033",
+        "F-BIZ-029"
+      ],
+      "usecases": [
+        "UC-BIZ-009",
+        "UC-BIZ-011",
+        "UC-BIZ-013"
+      ],
+      "level": "domain",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 generation/result-order.json：3 行、两代请求、历史结果和可删除目标。",
+      "setup": [
+        "控制结果返回顺序并记录事务及任务账本变化。"
+      ],
+      "steps": [
+        "逆序完成任务，期间编辑一行、删除另一行并切换文档。",
+        "撤销编辑，追加同一历史结果两次，再重做。"
+      ],
+      "expected": [
+        "只有匹配行/列/request/输入戳的结果写回；过期结果保留可审查状态。",
+        "历史追加去重；编辑撤销不删除账本、不倒退执行事实、不触发新请求。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_generation_history.test.mjs",
+        "business:tests/table_generation.test.mjs",
+        "business:tests/table_generation_polling.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-039",
+      "title": "任务汇总真实性与订阅生命周期",
+      "features": [
+        "F-BIZ-034",
+        "F-BIZ-009"
+      ],
+      "usecases": [
+        "UC-BIZ-013",
+        "UC-BIZ-016"
+      ],
+      "level": "contract",
+      "priority": "P1",
+      "phase": "M4",
+      "fixture": "拟建 tasks/mixed-states.json：等待、成功、失败、跳过、过期、未知及带/不带百分比。",
+      "setup": [
+        "统一任务订阅器计数；旧轮询适配器使用假时钟。"
+      ],
+      "steps": [
+        "展示多个节点汇总，重复刷新完成记录；开闭节点和切换模式。",
+        "供应方仅给阶段或给真实百分比时分别更新。"
+      ],
+      "expected": [
+        "成功计数不包含失败/跳过/过期；仅真实百分比展示为百分比。",
+        "历史完成不重复提示；同任务订阅去重且销毁后无新增请求。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/task_snapshots.test.mjs",
+        "business:tests/prompt_optimization_status.test.mjs",
+        "business:tests/table_generation_polling.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-040",
+      "title": "跨节点并发预算和失败隔离",
+      "features": [
+        "F-BIZ-035",
+        "F-BIZ-030"
+      ],
+      "usecases": [
+        "UC-BIZ-014"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 jobs/concurrency.json：3 批次各 50 个 mock 云任务、10 个 mock 本地任务和执行别名。",
+      "setup": [
+        "以首版批准的云/本地预算运行；记录活跃执行峰值及全部 request ID。"
+      ],
+      "steps": [
+        "同时提交多批次，加入两个指向同执行的回执别名。",
+        "让一个任务失败并暂停部分等待项，等待其余完成。"
+      ],
+      "expected": [
+        "全进程峰值不超过批准预算；本地串行，别名不重叠执行。",
+        "失败/暂停只影响目标，其他任务全部可完成；不存在无界并发或任务丢失。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_table_concurrency.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-041",
+      "title": "本地 LLM 与原生 Comfy 队列共享资源门控",
+      "features": [
+        "F-BIZ-035",
+        "F-BIZ-027",
+        "F-BIZ-028"
+      ],
+      "usecases": [
+        "UC-BIZ-014"
+      ],
+      "level": "backend",
+      "priority": "P0",
+      "phase": "M4",
+      "fixture": "拟建 resources/gpu-admission.json：Qwen 占用、原生入队、卸载成功/超时、隔离标记和暂停竞态。",
+      "setup": [
+        "GPU 操作为替身；记录租约获取、释放和 queue.put 顺序。"
+      ],
+      "steps": [
+        "Qwen 运行期间申请原生/H3 入队；模拟卸载超时。",
+        "申请期间暂停目标，重启后读取隔离标记，再显式恢复。"
+      ],
+      "expected": [
+        "不安全状态不进入原生队列；暂停后不延迟入队。",
+        "异常释放资源或明确保持隔离；恢复动作可追踪，无资源租约泄漏。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_local_qwen.py",
+        "business:tests/test_table_local_h3.py",
+        "business:tests/test_table_local_qwen.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-042",
+      "title": "有序结果成组、再引用和原生输出只读",
+      "features": [
+        "F-BIZ-036",
+        "F-BIZ-042",
+        "F-BIZ-033"
+      ],
+      "usecases": [
+        "UC-BIZ-010",
+        "UC-BIZ-013"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M5",
+      "fixture": "拟建 integration/results-to-canvas.json：多行/多结果、空行、同文件不同实例和已变更输入。",
+      "setup": [
+        "结果文件为真实小媒体夹具；生成创建函数设置为调用即失败。"
+      ],
+      "steps": [
+        "按任务输出素材组，追加历史结果并作为新提示词引用。",
+        "通过原生 VideoGenerate 旧槽位读取结果；删除文件和改变来源后重复。"
+      ],
+      "expected": [
+        "每任务独立成组，名称和顺序保持；空任务跳过，重复追加无重复素材。",
+        "合法原生输出只读完成结果；缺失/失效明确失败，创建函数从未调用。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_material_output.test.mjs",
+        "business:tests/libtv_canvas_result.test.mjs",
+        "business:tests/libtv_video_model.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-043",
+      "title": "旧工作流、资产及槽位的单包迁移",
+      "features": [
+        "F-BIZ-037",
+        "F-BIZ-029"
+      ],
+      "usecases": [
+        "UC-BIZ-015"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "拟建 migration/golden-workflows/：表格、解析器、生成、LLM B、旧槽位和保存的结果/任务。",
+      "setup": [
+        "复制真实结构的去敏工作流与所有引用文件；记录旧环境节点/槽位/文件哈希。"
+      ],
+      "steps": [
+        "新包隔离安装导入，检查缺依赖/重复注册，再保存新副本并重载。",
+        "运行不执行生成的输出/类型校验，读取迁入历史回执。"
+      ],
+      "expected": [
+        "节点 ID、槽位顺序、行列/素材身份、文件哈希和任务关联符合黄金清单。",
+        "不依赖旧仓库目录；无静默丢节点/重置设置/生成调用；旧原件可回退。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_node_install.test.mjs",
+        "business:tests/generation_input_regression.test.mjs",
+        "business:tests/test_table_completed_input.py",
+        "business:tools/video_tasks_restore_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-044",
+      "title": "退役 LibTV 记录只能读取历史结果",
+      "features": [
+        "F-BIZ-038",
+        "F-OUT-010"
+      ],
+      "usecases": [
+        "UC-BIZ-011",
+        "UC-BIZ-015"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "拟建 migration/retired-libtv.json：complete/waiting/running/unknown、StoryboardBatch 和旧 Lib Image 配置。",
+      "setup": [
+        "CLI 启动、付费创建和 Comfy queue.put 均设为调用即失败。"
+      ],
+      "steps": [
+        "读取旧完成结果并导出；对未完成记录点击恢复/继续。",
+        "尝试按旧配置创建新云任务。"
+      ],
+      "expected": [
+        "完整旧结果可读；未完成记录明确退役，不启动任何执行。",
+        "新任务必须显式重新配置现支持型号，不把旧名称推断为新通道；所有执行计数为 0。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/test_libtv_bridge.py",
+        "business:tests/test_libtv_batch.py",
+        "business:tests/test_table_comfy_video.py",
+        "business:tools/comfy_credit_api_smoke.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-045",
+      "title": "大表、媒体与长时编辑性能预算",
+      "features": [
+        "F-BIZ-001",
+        "F-BIZ-005",
+        "F-BIZ-008",
+        "F-BIZ-009",
+        "F-BIZ-034"
+      ],
+      "usecases": [
+        "UC-BIZ-016"
+      ],
+      "level": "performance",
+      "priority": "P1",
+      "phase": "M6",
+      "fixture": "FX-PERF-S/M/L：标准场景2张各500×10表，压力场景10张各500×10表；不扩大单表500行/64列容量。",
+      "setup": [
+        "固定硬件、浏览器、Comfy 版本和视口；加载 M0 已批准预算，未设置预算不得判通过。",
+        "视频仅按可见/主动播放策略解码；禁止真实生成。"
+      ],
+      "steps": [
+        "记录首次可操作、文本编辑到绘制、滚动与布局 p95；采集长任务和峰值内存。",
+        "执行 20 轮打开/关闭面板、模式切换、删除/恢复，并等待 GC 稳态。"
+      ],
+      "expected": [
+        "各指标满足批准预算且不比冻结旧基线出现未批准退化。",
+        "卸载后订阅/监听为基线值；内存无连续增长趋势；保存数据未因性能优化截断。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": []
+    },
+    {
+      "id": "TC-BIZ-046",
+      "title": "云端适配协议与禁止真实调用保护",
+      "features": [
+        "F-BIZ-026",
+        "F-BIZ-025",
+        "F-BIZ-031",
+        "F-BIZ-016",
+        "F-BIZ-017"
+      ],
+      "usecases": [
+        "UC-BIZ-009",
+        "UC-BIZ-011",
+        "UC-BIZ-006",
+        "UC-BIZ-007"
+      ],
+      "level": "contract",
+      "priority": "P1",
+      "phase": "M4",
+      "fixture": "拟建 providers/cloud-contract.json：Comfy/DeepSeek 图片、视频与优化通道的确定性假响应；禁止访问真实端点。",
+      "setup": [
+        "使用本机假提供方、虚构凭据和固定响应；真实远端请求一旦发生即失败。",
+        "记录假服务create/query/download计数及真实出站调用计数；本轮不配置真实云凭据。"
+      ],
+      "steps": [
+        "向假服务提交各通道的合法与非法参数，验证身份、引用和错误映射。",
+        "模拟429、应答丢失、已提交查询恢复、下载中断及水印参数处理。",
+        "验证优化建议、引用保持、模拟用量/费用字段和审阅应用；检查真实网络调用计数。"
+      ],
+      "expected": [
+        "参数、鉴权边界、状态转换及恢复同一身份符合合同，真实提供方调用次数为零。",
+        "模拟结果、费用和水印参数仅证明协议处理；不声明真实模型效果、水印表现或计费已验收。",
+        "云端适配能力保留；真实云调用不属于本轮测试，也不构成本轮退出门槛。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tools/comfy_credit_validate.py",
+        "business:tools/comfy_credit_ui_smoke.cjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-047",
+      "title": "本地 Qwen 与 MiniMax 真实生成结果",
+      "features": [
+        "F-BIZ-027",
+        "F-BIZ-028",
+        "F-BIZ-035"
+      ],
+      "usecases": [
+        "UC-BIZ-009",
+        "UC-BIZ-014"
+      ],
+      "level": "provider-live",
+      "priority": "P1",
+      "phase": "M4",
+      "fixture": "拟建 provider-live/local-acceptance.json：本地Qwen文本优化/图片反推、Qwen文生图及MiniMax H3文生/首帧/首尾帧视频的最小合法样本。",
+      "setup": [
+        "真实模型仅限live_models白名单且必须使用本地执行路径；同名云端Minimax H3不允许调用。",
+        "确认本地权重、节点、GPU与资源窗口，记录版本；缺少条件标阻塞，不回退云端或其他模型。",
+        "本轮仅修订文档，后续测试执行时使用隔离输出并阻断云端提交。"
+      ],
+      "steps": [
+        "使用本地Qwen优化文本和按当前支持能力反推图片，审阅后应用并核对引用。",
+        "执行Qwen文生图及MiniMax H3三种视频模式，保存本地prompt/task ID、峰值显存、耗时和输出。",
+        "核对首尾帧顺序、媒体解码、分辨率、来源和资源释放；统计云端提交数。"
+      ],
+      "expected": [
+        "纳入的本地模式分别有真实结果；失败不得用其他模型或模式替代。",
+        "文本应用与媒体结果关联正确输入快照；缺依赖明确列阻塞，静态校验不冒充真实生成通过。",
+        "全部真实调用使用白名单本地路径，云端提交次数为零。"
+      ],
+      "automation": "人工",
+      "execution_policy": "仅本地 Qwen/MiniMax",
+      "existing_coverage": [
+        "business:tests/test_table_local_h3.py",
+        "business:tests/test_table_local_qwen.py"
+      ],
+      "live_models": [
+        "qwen3.5:9b-q4_K_M",
+        "Qwen-Image-2.1 Turbo（本地）",
+        "MiniMax H3 FL（本地）"
+      ]
+    },
+    {
+      "id": "TC-BIZ-048",
+      "title": "LLM 多源输入、应用后输出及模型调用边界",
+      "features": [
+        "F-BIZ-017",
+        "F-BIZ-043",
+        "F-BIZ-016"
+      ],
+      "usecases": [
+        "UC-BIZ-007",
+        "UC-BIZ-006"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 llm/multi-input-approved.json：文本、图、混合素材组、多行表格、已应用/未应用与重复行 ID。",
+      "setup": [
+        "模型调用使用固定结果替身；原生 ApprovedLLMResult 执行禁止网络。"
+      ],
+      "steps": [
+        "为两个 B 节点连接不同来源并生成建议；未应用时读取两个输出。",
+        "应用后检查文本和逐行 JSON，重排/删除来源、保存重载；测试重复行 ID。"
+      ],
+      "expected": [
+        "未应用不提供有效输出；应用后逐行 ID 唯一且与原来源一致。",
+        "原生执行只读取应用快照，零模型调用；来源失效不使用别的预览；DeepSeek/Comfy仅协议模拟，本地Qwen真实结果由TC-BIZ-047验收。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/llm_slot_model.test.mjs",
+        "business:tests/llm_io_model.test.mjs",
+        "business:tests/llm_task_model.test.mjs",
+        "business:tests/test_canvas_polish.py"
+      ]
+    },
+    {
+      "id": "TC-BIZ-049",
+      "title": "同步投影不拥有任务轮询且不污染撤销",
+      "features": [
+        "F-BIZ-041",
+        "F-BIZ-033",
+        "F-BIZ-024"
+      ],
+      "usecases": [
+        "UC-BIZ-010",
+        "UC-BIZ-016"
+      ],
+      "level": "contract",
+      "priority": "P0",
+      "phase": "M3",
+      "fixture": "拟建 table/live-source-ownership.json：一个来源生成列、两个只读投影和一个本地生成列。",
+      "setup": [
+        "为每列 task status 调用和编辑历史设置计数器。",
+        "M3任务对账使用确定性状态服务；M4再接真实账本与生成节点，不能将替身通过当成后端恢复通过。"
+      ],
+      "steps": [
+        "轮询多个周期并同步源完成状态；执行用户编辑后撤销，再让旧状态返回。",
+        "断开/重连源，删除源行；检查定位和新提交权限。"
+      ],
+      "expected": [
+        "只有来源拥有列和本地自有生成列对账；投影无重复远程查询。",
+        "派生同步不消耗用户撤销或清空重做；断开后来源身份保留且不可新提交。"
+      ],
+      "automation": "自动",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_generation_polling.test.mjs",
+        "business:tests/table_exchange.test.mjs",
+        "business:tests/column_optimization.test.mjs"
+      ]
+    },
+    {
+      "id": "TC-BIZ-050",
+      "title": "生产注册白名单与旧入口显式转换",
+      "features": [
+        "F-BIZ-039",
+        "F-BIZ-040",
+        "F-BIZ-044",
+        "F-BIZ-037",
+        "F-OUT-011"
+      ],
+      "usecases": [
+        "UC-BIZ-015"
+      ],
+      "level": "migration",
+      "priority": "P0",
+      "phase": "M6",
+      "fixture": "拟建 migration/registration-manifest.json：全旧节点清单、含 GPTImageStoryboardStage 与 LLM A/C/D/E 的工作流。",
+      "setup": [
+        "冻结新包生产注册白名单与兼容读取清单；以纯新包干净环境启动。"
+      ],
+      "steps": [
+        "扫描构建/导入依赖和实际节点注册；导入含徽章/展厅/分割的混合文件。",
+        "读取旧分镜阶段与样式原型数据，预览并显式转换到通用表格/生成和 LLM B。"
+      ],
+      "expected": [
+        "新包不注册被排除旧业务或 LLM A/C/D/E 生产入口；缺外部依赖明确报告且不删节点。",
+        "GPTImageStoryboardStage 兼容读取与显式转换不宣称当前旧实现已退役；转换保留数据/结果及原件，未确认不执行。"
+      ],
+      "automation": "混合",
+      "execution_policy": "不付费",
+      "existing_coverage": [
+        "business:tests/table_node_install.test.mjs",
+        "business:tests/llm_slot_model.test.mjs",
+        "business:tests/test_daelab_comfytv_storyboard.py"
+      ]
+    }
+  ]
+}
