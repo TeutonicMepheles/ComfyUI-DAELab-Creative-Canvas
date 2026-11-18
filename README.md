@@ -14,6 +14,8 @@ git clone https://github.com/TeutonicMepheles/ComfyUI-DAELab-Creative-Canvas.git
 
 已有 DAELab 节点库用户应先按 [迁移说明](docs/migration.md) 更新业务库。不要与仍内置创作画布／上传节点的旧业务库版本同时安装。
 
+与 Creative Studio 共存时，在宿主的 `user/daelab/coexistence.json` 授权 `ComfyUI-DAELab-Creative-Canvas`，并将 `layerOwners.canvas` 设为 `studio`。Studio 启用时由它提供画布节点、前端与素材输出路由。独立使用时，Canvas 提供这些入口。
+
 ## 协作者 Agent 环境准备指南
 
 接手此仓库的 Agent 请按以下顺序准备环境，再开始功能开发。优先复用已安装环境，不覆盖工作流、素材、凭据或未提交的改动。
