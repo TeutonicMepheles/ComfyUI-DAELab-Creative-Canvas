@@ -14,6 +14,8 @@ git clone https://github.com/TeutonicMepheles/ComfyUI-DAELab-Creative-Canvas.git
 
 已有 DAELab 节点库用户应先按 [迁移说明](docs/migration.md) 更新业务库。不要与仍内置创作画布／上传节点的旧业务库版本同时安装。
 
+与 Creative Studio 共存时，在宿主的 `user/daelab/coexistence.json` 授权 `ComfyUI-DAELab-Creative-Canvas`，并将 `layerOwners.canvas` 设为 `studio`。Studio 启用时由它提供画布节点、前端与素材输出路由。独立使用时，Canvas 提供这些入口。
+
 ## 协作者 Agent 环境准备指南
 
 接手此仓库的 Agent 请按以下顺序准备环境，再开始功能开发。优先复用已安装环境，不覆盖工作流、素材、凭据或未提交的改动。
@@ -123,6 +125,10 @@ npm run build
 ComfyUI 真机浏览器验证需安装 `frontend` 的 Playwright 依赖，并将该 `node_modules` 加入 `NODE_PATH`。设置 `COMFY_URL` 指向隔离测试服务。先执行 `node tools/media_upload_smoke.cjs artifacts/upload`，再在同级目录运行连接、导航和框选脚本。联合用例需要业务库和 ComfyTV；上传用例只需要本扩展。脚本会替换测试页面工作流，不要指向正在工作的浏览器会话。
 
 公开扩展接口见 [适配器契约](docs/adapter-contract.md)，交付验证见 [验收记录](docs/validation.md)。CI 检查纯模块、资源完整性和辅助陈列构建；真实 ComfyUI 交互仍需单独验收。
+
+## 单仓库迁移规划
+
+完整创作产品的目标范围、功能取舍、新目录结构、实施阶段及功能/测试用例见 [单仓库迁移方案](docs/migration-blueprint/README.md)。该方案是后续迁移的实施基线，尚未替换当前安装方式或运行代码。
 
 ## 来源与第三方资源
 

@@ -1,0 +1,160 @@
+{
+  "features": [
+    {
+      "id": "F-OUT-001",
+      "title": "展厅专用提示词、风格库与旧展厅 App Mode",
+      "decision": "不迁入",
+      "current": "业务库注册 SeedreamExhibitionPromptBuilder，按展厅风格与空间参数拼接提示词，并依赖展厅样式资产。",
+      "source": ["business:nodes/seedream_exhibition_prompt_builder/node.py:353", "business:web/styles.json"],
+      "target": "旧仓库固定基线归档；新包不注册展厅节点、不携带展厅专用样式与界面。",
+      "phase": "M0",
+      "rationale": "展厅业务不属于素材—分镜—表格—生成—剪辑创作闭环；通用文本能力由新产品已有文本与提示词模块承担。",
+      "acceptance": ["新包节点目录不含 SeedreamExhibitionPromptBuilder。", "导入包含该节点的旧工作流时报告不支持范围并保留原始节点数据，不静默删除。"]
+    },
+    {
+      "id": "F-OUT-002",
+      "title": "徽章早期设计、合成、局部编辑与状态存档流水线",
+      "decision": "不迁入",
+      "current": "badge_workflow 注册 10 个设计/合成/存档节点，badge_relief_prompt 另注册徽章浮雕提示词节点。",
+      "source": ["business:nodes/badge_workflow/node.py:884", "business:nodes/badge_relief_prompt/node.py:136"],
+      "target": "历史业务归档；新包不加载徽章设计与编辑流水线。",
+      "phase": "M0",
+      "rationale": "这些节点围绕徽章专有数据、工艺与局部编辑流程，不能因包含 canvas、prompt 或 state 等名称而作为创作画布基础组件迁入。",
+      "acceptance": ["NODE_INVENTORY 对这 11 个 ID 均有明确不迁入结论。", "新生成、素材和历史模块不 import badge_workflow 或 badge_relief_prompt。"]
+    },
+    {
+      "id": "F-OUT-003",
+      "title": "徽章 87/88 应用、区域编辑器与专用执行界面",
+      "decision": "不迁入",
+      "current": "badge_app_87、badge_app_88 通过包级映射合并注册 8 个 ID；徽章区域几何 API 还存在受 PromptServer 条件保护的注册入口。",
+      "source": ["business:nodes/badge_app_87/__init__.py", "business:nodes/badge_app_88/__init__.py", "business:nodes/badge_app_87/geometry_api.py:31", "business:web/badge_app_layout.js", "business:web/badge_execution_87.mjs"],
+      "target": "历史业务归档；新包不注册徽章专用 HTTP 路由及原型界面。",
+      "phase": "M0",
+      "rationale": "旧 App Mode 的布局、队列与区域编辑不能成为新创作画布的依赖。",
+      "acceptance": ["新包没有 /daelab/badge87/region-geometry 路由。", "新包启动与资源构建无需导入 badge_app_87/88 或对应前端文件。"]
+    },
+    {
+      "id": "F-OUT-004",
+      "title": "徽章路由、颜色 ID 与局部选择控制节点",
+      "decision": "不迁入",
+      "current": "badge_app_workflow 注册 8 个徽章输入路由、延迟开关、颜色 ID 缓存与选择约束节点。",
+      "source": ["business:nodes/badge_app_workflow/node.py:840"],
+      "target": "历史业务归档；创作画布的选择、Bypass 与任务控制使用新产品自己的统一契约。",
+      "phase": "M0",
+      "rationale": "徽章路由内部约束不等于通用画布选择或任务状态模型，避免把业务状态复制为公共内核。",
+      "acceptance": ["8 个 ID 均在节点清单标为不迁入。", "新画布选择与任务控制的依赖图不含 badge_app_workflow。"]
+    },
+    {
+      "id": "F-OUT-005",
+      "title": "徽章高度层、浮雕结构与渲染空间对齐",
+      "decision": "不迁入",
+      "current": "badge_height_layer、badge_height_structure 与 badge_render_space_mask 共同注册 7 个高度、几何、结构约束和对齐节点。",
+      "source": ["business:nodes/badge_height_layer/node.py:633", "business:nodes/badge_height_structure/node.py:850", "business:nodes/badge_render_space_mask/node.py:650"],
+      "target": "历史业务归档；不随新包安装相关节点和专用 UI。",
+      "phase": "M0",
+      "rationale": "属于徽章制造与渲染专用算法，不是创作画布的媒体导入、预览或剪辑基础能力。",
+      "acceptance": ["新包节点映射不含这些 7 个 ID。", "输入普通图片、视频和文本不触发徽章高度/结构模块加载。"]
+    },
+    {
+      "id": "F-OUT-006",
+      "title": "徽章材质目录、材质区域、颜色锁定与语义合成",
+      "decision": "不迁入",
+      "current": "badge_strict_material 注册 12 个节点，gpt_image2_material_prompt 注册 2 个材质节点并读取 web/materials.json 与材质缩略图。",
+      "source": ["business:nodes/badge_strict_material/node.py:1835", "business:nodes/gpt_image2_material_prompt/node.py:901", "business:web/materials.json"],
+      "target": "历史业务归档；材质目录与专有图像处理不进入新产品素材库。",
+      "phase": "M0",
+      "rationale": "徽章材质 catalog 与用户创作素材库语义不同；共享图像操作若确有新需求，只按函数职责抽取并独立验证。",
+      "acceptance": ["14 个 ID 均有排除记录。", "新资产库不依赖 materials.json、material_thumbs 或徽章颜色锁定状态。", "不得为了复用单个帮助函数整包导入徽章模块。"]
+    },
+    {
+      "id": "F-OUT-007",
+      "title": "分割、抠图、颜色掩膜、多边形与 BBox 工具节点",
+      "decision": "不迁入",
+      "current": "旧库注册多色掩膜 2 个、多边形/徽章选择掩膜 3 个及 RMBGConfig、SAM3ComplexCollector、BBoxPromptReroute，共 8 个 ID。",
+      "source": ["business:nodes/multi_color_mask/node.py:319", "business:nodes/polygon_mask/node.py:476", "business:nodes/rmbg_config/node.py:48", "business:nodes/sam3_complex_collector/node.py:382", "business:nodes/bbox_prompt_reroute/node.py:39"],
+      "target": "首版产品不提供这组图像编辑工具；历史工作流保留原始数据并提示缺失依赖。",
+      "phase": "M0",
+      "rationale": "当前迁移目标是已有创作闭环与管理体系，不同时扩展为完整图像编辑器。原生 ComfyUI 工作流仍可引用由其他已安装插件提供的节点。",
+      "acceptance": ["新包启动不依赖这些专用分割或掩膜模块。", "对含被排除 ID 的工作流给出节点级报告，不能自动替换为语义不同的上传节点。"]
+    },
+    {
+      "id": "F-OUT-008",
+      "title": "布尔列表、层级列表与旧分组 Bypass 控制节点",
+      "decision": "不迁入",
+      "current": "业务库注册 BooleanList、BooleanListHierarchy、BooleanListHierarchyGet、BooleanGroupBypassController。",
+      "source": ["business:nodes/boolean_list/node.py:88", "business:nodes/boolean_list_hierarchy/node.py:522", "business:nodes/boolean_list_hierarchy_get/node.py:104", "business:nodes/boolean_group_bypass_controller/node.py:22"],
+      "target": "历史通用节点留在旧库归档；新包的 Active/Mute/Bypass 展示由统一生命周期服务负责。",
+      "phase": "M0",
+      "rationale": "旧图形工作流分支工具不应仅因名称含 group 或 bypass 被误迁为素材组实现。",
+      "acceptance": ["新包不注册这 4 个节点。", "保留的创作节点仍逐一验收 Mute/Bypass/Active，并不以删除旧控制节点为由取消模式支持。"]
+    },
+    {
+      "id": "F-OUT-009",
+      "title": "旧独立模型配置节点和 App Mode 上传壳",
+      "decision": "不迁入",
+      "current": "GPTImage2Config 仅输出 size/background/quality；AppModeLoadImage 继承原生 LoadImage 并配合旧 App Mode 的展示。",
+      "source": ["business:nodes/gpt_image2_config/node.py:54", "business:nodes/app_mode_load_image/node.py:14", "business:web/app_mode_load_image_preview.js"],
+      "target": "新包统一模型配置 schema 和 DAELAB.MediaUpload；旧独立辅助节点不生产注册。",
+      "phase": "M0",
+      "rationale": "相关参数能力保留在生成模块；避免重复上传节点和多套配置 UI。旧工作流不能在缺少输入语义映射时自动替换。",
+      "acceptance": ["生成配置仍能表达受支持模型的尺寸、质量等有效参数。", "新包不注册 GPTImage2Config 或 AppModeLoadImage，导入旧工作流时明确报告。"]
+    },
+    {
+      "id": "F-OUT-010",
+      "title": "已退役的 LibTV 云通道、登录桥与旧批量执行",
+      "decision": "不迁入",
+      "current": "connection_api 已固定返回 410；table_generation_api 拒绝非 local/comfy provider；StoryboardBatch.execute 明确报停用。VideoGenerate 的稳定 ID 仍承载当前生成面板结果读取，不能按名称删除。",
+      "source": ["business:nodes/libtv_bridge/connection_api.py:28", "business:nodes/libtv_bridge/table_generation_api.py:37", "business:nodes/libtv_bridge/batch_node.py:28", "business:nodes/libtv_bridge/node.py:91", "business:nodes/libtv_bridge/runtime.py", "business:nodes/libtv_bridge/connection.py"],
+      "target": "停止迁入旧云执行与登录实现；保留历史回执、provider 标记、结果引用及只读兼容；DAELAB.LibTV.VideoGenerate ID 保留并映射现行生成能力。",
+      "phase": "M6",
+      "rationale": "代码目录或稳定 ID 含 LibTV 不代表旧通道仍受支持。必须按实际 provider 与职责拆分，迁移不得把历史 LibTV 请求自动重投到 Comfy。",
+      "acceptance": ["旧 LibTV 回执可以查看状态与已有本地结果，但无法恢复或重跑退役 provider。", "用户显式新建任务才可使用当前 Comfy/local provider，生成新的任务身份。", "旧 StoryboardBatch 可只读兼容并提示转换，不调用旧 Bridge。", "依赖闭包检查确认保留的生成节点与 schema 不再因 MODELS 或辅助函数 import 退役执行器。"]
+    },
+    {
+      "id": "F-OUT-011",
+      "title": "LLM A/C/D/E 样式原型及生产界面的演示内容",
+      "decision": "不迁入",
+      "current": "web/llm_style_preview.js 动态注册 A–E 五种前端类型；A/C/D/E 为 isVirtualNode 的样式原型，B 有对应后端 ApprovedLLMResult。",
+      "source": ["business:web/llm_style_preview.js:8", "business:web/llm_style_preview_panel.mjs:6", "business:nodes/prompt_optimization/approved_result.py:4"],
+      "target": "仅迁入 B 的实际提示词优化功能；A/C/D/E 的历史节点数据可只读导入，布局候选和示例文案保留为开发资料。",
+      "phase": "M0",
+      "rationale": "设计候选不能与生产能力一起计为五个 LLM 产品节点，避免样式预览、示例结果与真实生成混淆。",
+      "acceptance": ["生产新建菜单仅出现正式 LLM 优化能力。", "旧 A/C/D/E 数据保留且不触发模型请求。", "生产界面不显示固定示例结果、样式候选标签或假进度。"]
+    },
+    {
+      "id": "F-OUT-012",
+      "title": "ComfyTV 上游实现与上游节点注册",
+      "decision": "不迁入",
+      "current": "Canvas 的 comfytv 适配器仅匹配外部 ComfyTV.* 类型和公共 widget/执行事件，不提供上游 Python 节点。DAELAB.ComfyTV.GPTImageStoryboardStage 则是本业务库自己的节点，另在 NODE_INVENTORY 记录。",
+      "source": ["canvas:web/adapters/comfytv.mjs:1", "business:nodes/daelab_comfytv_storyboard/node.py:427"],
+      "target": "上游代码保持外部可选依赖；新包可保留受控兼容适配器，不复制或重新注册 ComfyTV.*。",
+      "phase": "M0",
+      "rationale": "单一自有产品仓库不意味着拥有或打包全部第三方插件。稳定自有 ID 与第三方命名空间必须分开盘点。",
+      "acceptance": ["没有安装 ComfyTV 时新产品基础创作闭环正常工作。", "可选安装 ComfyTV 时验证适配器，确认不修改上游文件或注册同名节点。"]
+    },
+    {
+      "id": "F-OUT-013",
+      "title": "旧展厅/徽章 App Mode 布局、选色与错误展示补丁集合",
+      "decision": "不迁入",
+      "current": "业务前端含徽章布局、原型、颜色选择、参考图与错误提示等多个旧 App Mode 脚本；app_mode_bypass_model 列表覆盖历史节点与 LLM 样式类型。",
+      "source": ["business:web/badge_app_layout.js", "business:web/badge_app_prototype.js", "business:web/badge_color_picker.mjs", "business:web/app_mode_error_dismiss.js", "business:web/app_mode_bypass_model.mjs:3"],
+      "target": "不搬入旧页面补丁；迁入节点的模式行为按新组件生命周期统一实现，并保留受影响原生模式验收。",
+      "phase": "M0",
+      "rationale": "模式行为是需保留的产品契约，旧业务 DOM、布局和全局补丁并非必须保留的实现。",
+      "acceptance": ["新包不加载旧徽章/展厅布局或原型脚本。", "全部迁入节点在原生图与创作画布间切换、Mute/Bypass/Active 后可恢复且无残留面板。"]
+    },
+    {
+      "id": "F-OUT-014",
+      "title": "跨旧仓库路径转发、复制控件与运行包中的辅助陈列",
+      "decision": "不迁入",
+      "current": "业务主题是 Canvas 的兼容转发，表格/LLM 控件按旧扩展目录动态导入；Canvas frontend 为辅助陈列而非正式画布。",
+      "source": ["business:web/creative_theme.css", "business:web/table_controls.mjs:3", "business:web/llm_style_preview_panel.mjs:4", "canvas:frontend/README.md"],
+      "target": "新库共享包通过内部模块依赖引用；陈列保留在开发工具边界，生产包仅包含实际运行资源和必要兼容导入。",
+      "phase": "M6",
+      "rationale": "迁移的退出条件是去除两个旧仓库的运行依赖；不能让新仓库继续通过旧 URL 或 fallback 使用第二套控件。",
+      "acceptance": ["关闭两个旧包后新包控件、主题、字体、撤销与模式行为完整。", "产物检查不含旧扩展目录的必需导入路径。", "辅助陈列通过不作为真实 ComfyUI 产品验收通过。"]
+    }
+  ],
+  "usecases": [],
+  "tests": []
+}
